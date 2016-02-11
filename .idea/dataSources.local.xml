@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="SplendidLog DB" uuid="19c7c6a4-82ed-4023-b539-416bbe0d8c51">
+      <secret-storage>master_key</secret-storage>
+      <user-name>splendidbits</user-name>
+      <schema-pattern>splendidlog.pg_catalog splendidlog.public</schema-pattern>
+      <default-schemas>splendidlog.public</default-schemas>
+    </data-source>
+    <data-source name="Commute Alerts DB" uuid="d8f68036-b30b-402e-a792-2ad5def92cdd">
+      <secret-storage>master_key</secret-storage>
+      <user-name>splendidbits</user-name>
+      <schema-pattern>splendidlog.pg_catalog splendidlog.public</schema-pattern>
+      <default-schemas>splendidlog.public</default-schemas>
+    </data-source>
+  </component>
+</project>
