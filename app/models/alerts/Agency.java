@@ -8,13 +8,12 @@ import java.util.List;
 @Entity
 @Table(name = "agencies")
 public class Agency extends Model {
-    public static Finder<Integer, Agency> find = new Model.Finder<>(Integer.class, Agency.class);
+    public static Finder<Integer, Agency> find = new Model.Finder<>("route_alerts", Integer.class, Agency.class);
 
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
     @Id
     public Integer id;
 
-    @OneToMany(mappedBy = "agency")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency")
     public List<Route> routes;
 
     public String agencyName;

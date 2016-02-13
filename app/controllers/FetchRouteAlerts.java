@@ -29,30 +29,31 @@ public class FetchRouteAlerts extends Controller {
     public Result downloadSeptaAlerts() {
 
         Alert currentAlert = new Alert();
-        currentAlert.currentMessage = "this is a messagee";
-        currentAlert.lastUpdated = "now";
+        currentAlert.currentMessage = "Until Further Notice<\\/p>\\n\\t\\t\\t\\t <p>Due to an unstable building adjacent to the Chester Transportation Center entrance passengers will board on Welsh St. (";
+        currentAlert.lastUpdated = "03:18:14:647PM";
 
         Alert advisoryAlert = new Alert();
-        advisoryAlert.advisoryMessage = "this is an advisory";
-        advisoryAlert.lastUpdated = "then";
+        advisoryAlert.advisoryMessage = "<div class=\\\"fares_container\\\">\\n\\t\\t\\t\\t <h3 class=\\\"separated\\\">Stop Discontinuation | Wynnewood Rd. & Lancaster Ave. (Westbound)<\\/h3>\\n\\t\\t\\t\\t <p class=\\\"desc separated\\\">Until Further Notice<\\/p>\\n\\t\\t\\t\\t <p>Due to construction, the Route 105 westbound transit stop at Wynnewood Rd. and Lancaster Ave. will be discontinued until further notice<\\/p>\\n<p>Customers should use the stop on Wynnewood Rd. at Penn Rd. (Wynnewood Station)<\\/p>\\n\\t\\t\\t <\\/div>\\n\\t\\t\\t <div class=\\\"fares_container\\\">\\n\\t\\t\\t\\t <h3 class=\\\"separated\\\">Temporary Stop Discontinuation<\\/h3>\\n\\t\\t\\t\\t <p class=\\\"desc separated\\\">Beginning Monday, March 30, 2015 - Until Further Notice<\\/p>\\n\\t\\t\\t\\t <p>Due to area construction, the Eastbound Transit stop for Routes 92, <strong>105<\\/strong>, and 106 on Lancaster Ave. and Valley Rd. will be discontinued until further notice<\\/p>\\n<p>Customers should use the next eastbound stop, located at Lancaster Ave. and Darby Rd.<\\/p>\\n\\t\\t\\t <\\/div>";
+        advisoryAlert.lastUpdated = "03:48:14:647 PM";
 
         ArrayList<Alert> alerts = new ArrayList<>();
         alerts.add(currentAlert);
         alerts.add(advisoryAlert);
 
         Route route = new Route();
-        route.routeId = "bus_route_22";
-        route.routeName = "22";
+        route.routeId = "bus_route_105";
+        route.routeName = "105";
         route.routeAlerts = alerts;
 
         ArrayList<Route> routes = new ArrayList<>();
         routes.add(route);
 
         Agency agency = new Agency();
+        agency.id = 1;
         agency.agencyName = "SEPTA";
         agency.routes = routes;
 
-        AlertsDatabaseService alda = new AlertsDatabaseService();
+        AlertsDatabaseService alda = AlertsDatabaseService.getInstance();
         alda.saveRouteAlerts(agency);
 
         return ok();

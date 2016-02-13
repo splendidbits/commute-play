@@ -7,7 +7,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "alerts")
 public class Alert extends Model{
-    public static Finder<Integer, Alert> find = new Model.Finder<>(Integer.class, Alert.class);
+    public static Finder<Integer, Alert> find = new Model.Finder<>("route_alerts", Integer.class, Alert.class);
 
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     @Id

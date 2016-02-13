@@ -1,4 +1,4 @@
-package appmodels;
+package models;
 
 import models.alerts.Agency;
 import models.alerts.Route;

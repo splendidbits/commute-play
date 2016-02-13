@@ -1,4 +1,4 @@
-package appmodels;
+package models;
 
 /**
  * Common interface shared between all agencies
