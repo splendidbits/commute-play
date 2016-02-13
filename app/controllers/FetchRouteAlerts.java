@@ -1,9 +1,9 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import models.Agency;
-import models.Alert;
-import models.Route;
+import models.alerts.Agency;
+import models.alerts.Alert;
+import models.alerts.Route;
 import play.Logger;
 import play.db.ebean.Transactional;
 import play.libs.F;

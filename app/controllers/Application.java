@@ -1,12 +1,11 @@
 package controllers;
 
-import main.LogConfig;
-import models.Person;
+import main.Log;
+import models.persons.Person;
 import play.data.Form;
 import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.Logger;
 import views.html.index;
 
 import java.util.List;
@@ -21,18 +20,20 @@ public class Application extends Controller {
 
     @Transactional
     public Result addPerson() {
-        Person person = Form.form(Person.class).bindFromRequest().get();
+        Form<Person> persons = Form.form(Person.class).bindFromRequest();
+        Person person = persons.get();
+        Log.getInstance().d("Saving name: " + person.name);
         person.save();
         return redirect(routes.Application.index());
     }
 
     @Transactional
     public Result getPersons() {
-        Logger logger = Logger.getInstance(new LogConfig());
+        Log log = Log.getInstance();
         List<Person> persons = Person.find.all();
 
         for (Person person : persons) {
-            logger.d(person.name);
+            log.d("Found name: " + person.name);
         }
         return ok(toJson(persons));
     }

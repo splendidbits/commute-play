@@ -1,6 +1,6 @@
 package services;
 
-import models.Agency;
+import models.alerts.Agency;
 import play.db.ebean.Transactional;
 
 public class AlertsDatabaseService {

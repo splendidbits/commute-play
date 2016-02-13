@@ -1,7 +1,7 @@
 package appmodels;
 
-import models.Agency;
-import models.Route;
+import models.alerts.Agency;
+import models.alerts.Route;
 
 import java.util.List;
 
