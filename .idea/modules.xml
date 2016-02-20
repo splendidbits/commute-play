@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/commutegcm.iml" filepath="$PROJECT_DIR$/.idea/modules/commutegcm.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/commutegcm-build.iml" filepath="$PROJECT_DIR$/.idea/modules/commutegcm-build.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/splendid-log.iml" filepath="$PROJECT_DIR$/.idea/modules/splendid-log.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/splendidlog.iml" filepath="$PROJECT_DIR$/.idea/modules/splendidlog.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/splendidlog-build.iml" filepath="$PROJECT_DIR$/.idea/modules/splendidlog-build.iml" />
     </modules>
