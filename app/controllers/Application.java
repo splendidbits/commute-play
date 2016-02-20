@@ -22,18 +22,17 @@ public class Application extends Controller {
     public Result addPerson() {
         Form<Person> persons = Form.form(Person.class).bindFromRequest();
         Person person = persons.get();
-        Log.getInstance().d("Saving name: " + person.name);
+        Log.d("Saving name: " + person.name);
         person.save();
         return redirect(routes.Application.index());
     }
 
     @Transactional
     public Result getPersons() {
-        Log log = Log.getInstance();
         List<Person> persons = Person.find.all();
 
         for (Person person : persons) {
-            log.d("Found name: " + person.name);
+            Log.d("Found name: " + person.name);
         }
         return ok(toJson(persons));
     }
