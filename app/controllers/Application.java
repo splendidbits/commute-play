@@ -31,9 +31,15 @@ public class Application extends Controller {
     public Result getPersons() {
         List<Person> persons = Person.find.all();
 
+        /*
         for (Person person : persons) {
             Log.d("Found name: " + person.name);
+            Log.w("Found name: " + person.name);
+            Log.i("Found name: " + person.name);
+            Log.e("Found name: " + person.name);
+            Log.d("Found name: " + person.name);
         }
+        */
         return ok(toJson(persons));
     }
 }
