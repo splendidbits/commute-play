@@ -2,6 +2,7 @@ package models.alerts;
 
 import com.avaje.ebean.Model;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.List;
 

@@ -1,30 +1,34 @@
-# --- Created by Ebean DDL
-# To stop Ebean DDL generation, remove this comment and start using Evolutions
+-- # --- Created by Ebean DDL
+-- # To stop Ebean DDL generation, remove this comment and start using Evolutions
 
-# --- !Ups
+-- # --- !Ups
 
-create table registrations (
-  dev_uuid                  varchar(255) not null,
+create table public.registrations (
+  id                        varchar(255) not null,
   registration_id           varchar(255),
-  time_registered           varchar(255),
-  constraint pk_registrations primary key (dev_uuid))
+  time_registered           timestamp,
+  constraint pk_registrations primary key (id))
 ;
 
-create table subscriptions (
-  devu_id                   varchar(255) not null,
-  registration_dev_uuid     varchar(255),
-  time_subscribed           varchar(255),
-  constraint pk_subscriptions primary key (devu_id))
+create table public.subscriptions (
+  id                        integer not null,
+  registration_id           varchar(255),
+  time_subscribed           timestamp,
+  constraint pk_subscriptions primary key (id))
 ;
 
-alter table subscriptions add constraint fk_subscriptions_registration_1 foreign key (registration_dev_uuid) references registrations (dev_uuid);
-create index ix_subscriptions_registration_1 on subscriptions (registration_dev_uuid);
+create sequence public.subscriptions_id_seq_gen increment by 1;
+
+alter table public.subscriptions add constraint fk_subscriptions_registration_1 foreign key (registration_id) references public.registrations (id);
+create index ix_subscriptions_registration_1 on public.subscriptions (registration_id);
 
 
 
 # --- !Downs
 
-drop table if exists registrations cascade;
+drop table if exists public.registrations cascade;
 
-drop table if exists subscriptions cascade;
+drop table if exists public.subscriptions cascade;
+
+drop sequence if exists public.subscriptions_id_seq_gen;
 

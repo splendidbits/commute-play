@@ -2,24 +2,27 @@ package models.registrations;
 
 import com.avaje.ebean.Model;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "registrations")
+@Table(name = "registrations", schema = "public")
 public class Registration extends Model {
-    public static Finder<String, Registration> find = new Model.Finder<>(String.class, Registration.class);
+    public static Finder<String, Registration> find = new Model.Finder<>("client_registrations", String.class, Registration.class);
 
     @Id
-	public String devUuid;
+    @Column(name = "id")
+	public String deviceId;
 
+    @Column(name = "registration_id")
     public String registrationId;
 
-    public String timeRegistered;
+    @Basic
+    @Column(name="time_registered")
+    @Temporal(TemporalType.TIMESTAMP)
+    public Calendar timeRegistered;
 
-    @OneToMany(mappedBy = "registration")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "registration")
     public List<Subscription> subscriptions;
 }

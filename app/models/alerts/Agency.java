@@ -3,7 +3,9 @@ package models.alerts;
 import com.avaje.ebean.Model;
 import jdk.nashorn.internal.ir.annotations.Reference;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Entity
