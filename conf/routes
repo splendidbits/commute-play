@@ -6,8 +6,8 @@
 GET     /                    controllers.Application.index()
 
 POST    /person              controllers.Application.addPerson()
-GET     /persons             controllers.Application.getPersons()
-GET     /septa               controllers.FetchRouteAlerts.downloadSeptaAlerts()
+GET     /persons             controllers.Application.getPersons
+GET     /septa               controllers.SeptaAlertsDownload.downloadAlerts
 
 # SplendidLog
 ->  /logs                    splendidlog.Routes

@@ -6,18 +6,20 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "routes")
+@Table(name = "routes", schema = "public")
 public class Route extends Model {
     public static Finder<String, Route> find = new Model.Finder<>("route_alerts", String.class, Route.class);
 
     @Id
-	public String routeId;
+    @Column(name = "route_id")
+    public String routeId;
 
+    @Column(name = "route_name")
     public String routeName;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "route")
-    public List<Alert> routeAlerts;
-
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     public Agency agency;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "route")
+    public List<Alert> alerts;
 }

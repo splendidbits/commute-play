@@ -1,7 +1,7 @@
-# --- Created by Ebean DDL
-# To stop Ebean DDL generation, remove this comment and start using Evolutions
+-- # --- Created by Ebean DDL
+-- # To stop Ebean DDL generation, remove this comment and start using Evolutions
 
-# --- !Ups
+-- # --- !Ups
 
 create table logs (
   id                        serial not null,

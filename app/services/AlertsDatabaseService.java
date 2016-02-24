@@ -44,6 +44,7 @@ public class AlertsDatabaseService {
                 mEbeanServer.beginTransaction();
                 mEbeanServer.delete(Agency.class, agencyRouteAlerts.id);
                 mEbeanServer.save(agencyRouteAlerts);
+                mEbeanServer.commitTransaction();
                 return true;
 
             } catch (Exception e) {
