@@ -12,7 +12,8 @@ public class Agency extends Model {
     public static Finder<Integer, Agency> find = new Model.Finder<>("route_alerts", Integer.class, Agency.class);
 
     @Id
-    public Integer id;
+    @Column(name = "id")
+    public Integer agencyId;
 
     @Column(name = "agency_name")
     public String agencyName;

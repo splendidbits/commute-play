@@ -2,7 +2,6 @@ package helpers;
 
 import com.google.gson.*;
 import main.Log;
-import main.RouteAlertsHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -23,9 +22,10 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
 
     public SeptaDeserializer() {
         // The SEPTA alerts feed uses different date formats depending on the field
+
         // last_updated - Feb 20 2016 07:27:42:520PM
-        // detour_%     - 1/14/2016   9:26 AM
         lastUpdatedDateFormat = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+        // detour_%     - 1/14/2016   9:26 AM
         detourDateFormat = new SimpleDateFormat("mm/dd/yyyy hh:mm a", Locale.US);
         lastUpdatedDateFormat.setLenient(true);
         detourDateFormat.setLenient(true);
@@ -82,14 +82,10 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                         alert.lastUpdated = lastUpdateCal;
                     }
 
-                    // Escape non standard SQL chars.
-                    RouteAlertsHelper.escapedAlert(alert);
-
                     // Move the alert to the corresponding value in the map.
                     septaHashMap.put(routeId, routeName, alert);
                 }
             }
-
             Log.d("Finished creating SEPTA route-alert map.");
 
         }catch (IllegalStateException pe){
@@ -113,14 +109,15 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
 
         Agency agency = new Agency();
         agency.agencyName = "SEPTA";
-        agency.id = 1;
+        agency.agencyId = 1;
         agency.routes = agencyRoutesList;
 
         return agency;
     }
 
     /**
-     * Holding object so that we can keep hold of the array of alerts and
+     * Holding object so that we can keep hold of the
+     * array of alerts.
      */
     private class SeptaHashMap extends HashMap<String, List<Alert>>{
         private HashMap<String, String> routeIdNameMap = new HashMap<>();

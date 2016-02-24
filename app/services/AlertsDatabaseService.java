@@ -42,7 +42,7 @@ public class AlertsDatabaseService {
         if (agencyRouteAlerts != null) {
             try {
                 mEbeanServer.beginTransaction();
-                mEbeanServer.delete(Agency.class, agencyRouteAlerts.id);
+                mEbeanServer.delete(Agency.class, agencyRouteAlerts.agencyId);
                 mEbeanServer.save(agencyRouteAlerts);
                 mEbeanServer.commitTransaction();
                 return true;

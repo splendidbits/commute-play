@@ -1,22 +1,10 @@
 package controllers;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import helpers.SeptaDeserializer;
-import main.Constants;
-import main.Log;
-import models.alerts.Agency;
-import play.libs.F;
-import play.libs.ws.WS;
-import play.libs.ws.WSRequest;
-import play.libs.ws.WSResponse;
+import agencies.septa.FetchSeptaAlerts;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.AlertsDatabaseService;
 
 public class SeptaAlertsDownload extends Controller {
-    public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
-    public static final String AGENCY_NAME = "SEPTA";
 
     /**
      * Download SEPTA alerts from the json server and send them to the
@@ -37,31 +25,7 @@ public class SeptaAlertsDownload extends Controller {
      * @return Result.
      */
     public Result downloadAlerts() {
-        WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
-        F.Promise<WSResponse> promiseOfResult = request.get();
-
-        request.setContentType("application/json");
-
-        WSResponse response = promiseOfResult.get(Constants.AGENCY_ALERTS_DOWNLOAD_MS); // is this blocked?
-        if (response.getStatus() != 200) {
-            Log.e("Fetching SEPTA alerts json failed with error " + response.getStatus());
-            return null;
-        }
-
-        Log.d("Completed fetching SEPTA alerts");
-        final GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Agency.class, new SeptaDeserializer());
-        final Gson gson = gsonBuilder.create();
-
-        Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
-        Log.d("Started to parsing SEPTA alerts json body");
-
-        AlertsDatabaseService alertsService = AlertsDatabaseService.getInstance();
-        alertsService.saveRouteAlerts(agencyBundle);
-
-        String jsonData =  response.getBody();
-        Log.d("Finished parsing SEPTA alerts json body");
-
-        return ok("Client:"+jsonData);
+        FetchSeptaAlerts.process();
+        return ok();
     }
 }

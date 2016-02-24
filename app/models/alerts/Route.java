@@ -11,7 +11,7 @@ public class Route extends Model {
     public static Finder<String, Route> find = new Model.Finder<>("route_alerts", String.class, Route.class);
 
     @Id
-    @Column(name = "route_id")
+    @Column(name = "id")
     public String routeId;
 
     @Column(name = "route_name")

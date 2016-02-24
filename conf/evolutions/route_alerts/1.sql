@@ -1,7 +1,7 @@
--- # --- Created by Ebean DDL
--- # To stop Ebean DDL generation, remove this comment and start using Evolutions
+# --- Created by Ebean DDL
+# To stop Ebean DDL generation, remove this comment and start using Evolutions
 
--- # --- !Ups
+# --- !Ups
 
 create table public.agencies (
   id                        serial not null,
@@ -12,7 +12,6 @@ create table public.agencies (
 create table public.alerts (
   id                        integer not null,
   route_id                  varchar(255),
-  route_route_id            varchar(255),
   current_message           TEXT,
   advisory_message          TEXT,
   detour_message            TEXT,
@@ -26,16 +25,16 @@ create table public.alerts (
 ;
 
 create table public.routes (
-  route_id                  varchar(255) not null,
+  id                        varchar(255) not null,
   route_name                varchar(255),
   agency_id                 integer,
-  constraint pk_routes primary key (route_id))
+  constraint pk_routes primary key (id))
 ;
 
 create sequence public.alerts_id_seq_gen increment by 1;
 
-alter table public.alerts add constraint fk_alerts_route_1 foreign key (route_route_id) references public.routes (route_id);
-create index ix_alerts_route_1 on public.alerts (route_route_id);
+alter table public.alerts add constraint fk_alerts_route_1 foreign key (route_id) references public.routes (id);
+create index ix_alerts_route_1 on public.alerts (route_id);
 alter table public.routes add constraint fk_routes_agency_2 foreign key (agency_id) references public.agencies (id);
 create index ix_routes_agency_2 on public.routes (agency_id);
 

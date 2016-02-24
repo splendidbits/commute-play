@@ -11,15 +11,16 @@ public class Alert extends Model{
     public static Finder<Integer, Alert> find = new Model.Finder<>("route_alerts", Integer.class, Alert.class);
 
     @Id
+    @Column(name = "id")
     @SequenceGenerator(name="alerts_id_seq_gen", sequenceName="public.alerts_id_seq", allocationSize=1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "public.alerts_id_seq_gen")
-	public Integer id;
-
-    @Column(name="route_id")
-    public String routeId;
+	public Integer alertId;
 
     @ManyToOne(fetch=FetchType.LAZY)
     public Route route;
+
+    @Transient
+    public String routeId;
 
     @Column(name = "current_message", columnDefinition = "TEXT")
     public String currentMessage;
