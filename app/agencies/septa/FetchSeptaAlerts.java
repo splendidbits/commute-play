@@ -34,7 +34,7 @@ public class FetchSeptaAlerts extends Controller {
      * 6: send data in batches of 1000 to google.
      *
      */
-    public static void process() {
+    public void process() {
         WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
         F.Promise<WSResponse> promiseOfResult = request.get();
 

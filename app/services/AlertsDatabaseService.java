@@ -3,7 +3,6 @@ package services;
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import models.alerts.Agency;
-import play.db.ebean.Transactional;
 
 public class AlertsDatabaseService {
 
@@ -37,7 +36,6 @@ public class AlertsDatabaseService {
      * @param agencyRouteAlerts list of route alerts.
      * @return boolean for success.
      */
-    @Transactional
     public boolean saveRouteAlerts(Agency agencyRouteAlerts) {
         if (agencyRouteAlerts != null) {
             try {

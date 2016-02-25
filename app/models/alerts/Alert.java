@@ -1,9 +1,11 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
+import models.registrations.Subscription;
 
 import javax.persistence.*;
 import java.util.Calendar;
+import java.util.List;
 
 @Entity
 @Table(name = "alerts", schema = "public")
@@ -18,6 +20,12 @@ public class Alert extends Model{
 
     @ManyToOne(fetch=FetchType.LAZY)
     public Route route;
+
+    @ManyToMany
+    @JoinTable(name="alert_subscription",
+            joinColumns=@JoinColumn(name="alert_id",referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name="subscription_id", referencedColumnName="id"))
+    public List<Subscription> subscriptions;
 
     @Transient
     public String routeId;

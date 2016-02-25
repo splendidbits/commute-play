@@ -29,7 +29,7 @@ public class Application extends Controller {
 
     @Transactional
     public Result getPersons() {
-        List<Person> persons = Person.find.all();
+        List<Person> persons = Person.db("persons").find(Person.class).findList();
         return ok(toJson(persons));
     }
 }

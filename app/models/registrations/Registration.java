@@ -9,7 +9,7 @@ import java.util.List;
 @Entity
 @Table(name = "registrations", schema = "public")
 public class Registration extends Model {
-    public static Finder<String, Registration> find = new Model.Finder<>("client_registrations", String.class, Registration.class);
+    public static Finder<String, Registration> find = new Model.Finder<>("route_alerts", String.class, Registration.class);
 
     @Id
     @Column(name = "id")

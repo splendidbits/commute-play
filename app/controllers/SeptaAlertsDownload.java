@@ -1,6 +1,7 @@
 package controllers;
 
 import agencies.septa.FetchSeptaAlerts;
+import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 
@@ -24,8 +25,9 @@ public class SeptaAlertsDownload extends Controller {
      *
      * @return Result.
      */
+    @Transactional
     public Result downloadAlerts() {
-        FetchSeptaAlerts.process();
+        new FetchSeptaAlerts().process();
         return ok();
     }
 }

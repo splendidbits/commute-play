@@ -5,9 +5,9 @@ import com.avaje.ebean.Model;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "persons")
+@Table(name = "persons", schema = "public")
 public class Person extends Model{
-    public static Finder<Integer, Person> find = new Finder<Integer, Person>("persons", Integer.class, Person.class);
+    public static Finder<Integer, Person> find = new Model.Finder<>(Integer.class, Person.class);
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
