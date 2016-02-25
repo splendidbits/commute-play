@@ -3,7 +3,7 @@
 
 # --- !Ups
 
-create table public.persons (
+create table tutorial.persons (
   id                        serial not null,
   name                      varchar(255),
   constraint pk_persons primary key (id))
@@ -14,5 +14,5 @@ create table public.persons (
 
 # --- !Downs
 
-drop table if exists public.persons cascade;
+drop table if exists tutorial.persons cascade;
 

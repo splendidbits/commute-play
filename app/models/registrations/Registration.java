@@ -1,15 +1,25 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
+import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "registrations", schema = "public")
+@Table(name = "registrations", schema = "device_subscriptions")
 public class Registration extends Model {
-    public static Finder<String, Registration> find = new Model.Finder<>("route_alerts", String.class, Registration.class);
+    public static Finder<String, Registration> find = new Model.Finder<>(
+            Constants.COMMUTE_GCM_DB_SERVER, Registration.class);
+
+    public Registration() {
+    }
+
+    public Registration(String deviceId, String registrationId) {
+        this.deviceId = deviceId;
+        this.registrationId = registrationId;
+    }
 
     @Id
     @Column(name = "id")
@@ -23,6 +33,6 @@ public class Registration extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "registration")
+    @OneToMany(mappedBy = "registration")
     public List<Subscription> subscriptions;
 }

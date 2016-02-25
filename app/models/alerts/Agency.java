@@ -1,17 +1,15 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
-import jdk.nashorn.internal.ir.annotations.Reference;
+import main.Constants;
 
-import javax.annotation.Nonnull;
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Entity
-@Table(name = "agencies", schema = "public")
+@Table(name = "agencies", schema = "agency_alerts")
 public class Agency extends Model {
-    public static Finder<Integer, Agency> find = new Model.Finder<>("route_alerts", Integer.class, Agency.class);
+    public static Finder<Integer, Agency> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Agency.class);
 
     @Id
     @Column(name = "id")

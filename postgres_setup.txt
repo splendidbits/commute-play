@@ -1,0 +1,7 @@
+CREATE SCHEMA device_subscriptions;
+CREATE TABLE device_subscriptions.registrations;
+
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA device_subscriptions TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA device_subscriptions TO splendidbits;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA device_subscriptions GRANT ALL ON TABLES TO postgres;

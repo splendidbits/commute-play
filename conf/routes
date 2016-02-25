@@ -7,7 +7,13 @@ GET     /                    controllers.Application.index()
 
 POST    /person              controllers.Application.addPerson()
 GET     /persons             controllers.Application.getPersons
+
+# Agency alerts download
 GET     /septa               controllers.SeptaAlertsDownload.downloadAlerts()
+
+# Public API endpoints
+POST    /register            controllers.RegistrationController.register()
+
 
 # SplendidLog
 ->  /logs                    splendidlog.Routes

@@ -1,32 +1,38 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
-import models.alerts.Alert;
+import main.Constants;
+import models.alerts.Route;
 
 import javax.persistence.*;
 import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "subscriptions", schema = "public")
+@Table(name = "subscriptions", schema = "device_subscriptions")
 public class Subscription extends Model {
-    public static Finder<Integer, Subscription> find = new Model.Finder<>("route_alerts", Integer.class, Subscription.class);
+    public static Finder<Integer, Subscription> find = new Model.Finder<>(
+            Constants.COMMUTE_GCM_DB_SERVER, Subscription.class);
 
     @Id
-    @SequenceGenerator(name="subscriptions_id_seq_gen", sequenceName="public.subscriptions_id_seq", allocationSize=1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "public.subscriptions_id_seq_gen")
+    @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscriptions_id_seq_gen")
     @Column(name = "id")
     public Integer subscriptionId;
 
     @ManyToOne
-    @Column(name = "device_id")
+    @Column(name = "registration_id")
     public Registration registration;
 
-    @ManyToMany(mappedBy = "subscriptions", fetch=FetchType.LAZY)
-    public List<Alert> alerts;
+    @ManyToMany
+    @JoinTable(
+            name="subscription_route",
+            joinColumns=@JoinColumn(name="route_id", referencedColumnName="id", nullable = true, updatable = false),
+            inverseJoinColumns=@JoinColumn(name="subscription_id", referencedColumnName="id", nullable = true, updatable = false))
+    public List<Route> routes;
 
     @Basic
-    @Column(name="time_subscribed")
+    @Column(name = "time_subscribed")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed;
 }

@@ -2,7 +2,10 @@ package services;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
+import main.Constants;
 import models.alerts.Agency;
+
+import javax.annotation.Nonnull;
 
 public class AlertsDatabaseService {
 
@@ -14,7 +17,7 @@ public class AlertsDatabaseService {
      *
      * @return An instance of this logger.
      */
-    public static AlertsDatabaseService getInstance(){
+    public static AlertsDatabaseService getInstance() {
         if (mInstance == null) {
             mInstance = new AlertsDatabaseService();
         }
@@ -24,7 +27,7 @@ public class AlertsDatabaseService {
 
     private AlertsDatabaseService() {
         try {
-            mEbeanServer = Ebean.getServer("route_alerts");
+            mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
 
         } catch (Exception e) {
             play.Logger.debug("Error setting EBean Datasource properties", e);
@@ -33,6 +36,7 @@ public class AlertsDatabaseService {
 
     /**
      * Save a bundle of agency route alerts to the datastore, clearing out the previous set.
+     *
      * @param agencyRouteAlerts list of route alerts.
      * @return boolean for success.
      */
@@ -55,4 +59,13 @@ public class AlertsDatabaseService {
         return false;
     }
 
+    /**
+     * Get an alert for a route Id.
+     *
+     * @param routeId routeId for alert.
+     * @return alert.
+     */
+    public boolean getAlert(@Nonnull String routeId) {
+        return Boolean.parseBoolean(null);
+    }
 }

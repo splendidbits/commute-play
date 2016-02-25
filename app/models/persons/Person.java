@@ -5,7 +5,7 @@ import com.avaje.ebean.Model;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "persons", schema = "public")
+@Table(name = "persons", schema = "tutorial")
 public class Person extends Model{
     public static Finder<Integer, Person> find = new Model.Finder<>(Integer.class, Person.class);
 

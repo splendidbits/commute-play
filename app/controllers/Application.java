@@ -23,7 +23,7 @@ public class Application extends Controller {
         Form<Person> persons = Form.form(Person.class).bindFromRequest();
         Person person = persons.get();
         Log.d("Saving name: " + person.name);
-        person.save();
+        Person.db("tutorial").save(person);
         return redirect(routes.Application.index());
     }
 
