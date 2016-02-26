@@ -5,7 +5,7 @@
       <identifier-quote-string>&quot;</identifier-quote-string>
     </database-info>
     <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact"/>
-    <database-model serializer="dbm" rdbms="POSTGRES" format-version="2.4">
+    <database-model serializer="dbm" rdbms="POSTGRES" format-version="2.5">
       <database id="1" name="commute_gcm"/>
       <schema id="2" parent="1" name="pg_catalog">
         <object-id>11</object-id>
@@ -15,13 +15,13 @@
       </schema>
       <schema id="3" parent="1" name="device_subscriptions">
         <object-id>28660</object-id>
-        <introspection-state-number>4252</introspection-state-number>
-        <introspection-timestamp>2016-02-25.01:31:11.935</introspection-timestamp>
+        <introspection-state-number>4615</introspection-state-number>
+        <introspection-timestamp>2016-02-25.21:25:55.756</introspection-timestamp>
       </schema>
       <schema id="4" parent="1" name="agency_alerts">
         <object-id>28659</object-id>
-        <introspection-state-number>4251</introspection-state-number>
-        <introspection-timestamp>2016-02-25.01:31:11.753</introspection-timestamp>
+        <introspection-state-number>4616</introspection-state-number>
+        <introspection-timestamp>2016-02-25.21:25:55.237</introspection-timestamp>
       </schema>
       <schema id="5" parent="1" name="information_schema">
         <object-id>12349</object-id>
@@ -30,8 +30,8 @@
       </schema>
       <schema id="6" parent="1" name="public">
         <object-id>28957</object-id>
-        <introspection-state-number>4252</introspection-state-number>
-        <introspection-timestamp>2016-02-25.01:31:11.312</introspection-timestamp>
+        <introspection-state-number>4616</introspection-state-number>
+        <introspection-timestamp>2016-02-25.21:25:54.579</introspection-timestamp>
       </schema>
       <table id="7" parent="2" name="pg_aggregate">
         <object-id>2600</object-id>
@@ -20738,28 +20738,28 @@
         <bind-function>bpchariclike(char,text)</bind-function>
       </operator>
       <table id="3694" parent="3" name="registrations">
-        <object-id>28993</object-id>
-        <state-number>4249</state-number>
+        <object-id>29758</object-id>
+        <state-number>4613</state-number>
       </table>
       <table id="3695" parent="3" name="subscriptions">
-        <object-id>29009</object-id>
-        <state-number>4252</state-number>
+        <object-id>29774</object-id>
+        <state-number>4615</state-number>
       </table>
-      <sequence id="3696" parent="4" name="agencies_id_seq">
-        <object-id>28977</object-id>
-        <state-number>4237</state-number>
+      <sequence id="3696" parent="4" name="agencies_agency_id_seq">
+        <object-id>29742</object-id>
+        <state-number>4601</state-number>
       </sequence>
       <table id="3697" parent="4" name="agencies">
-        <object-id>28979</object-id>
-        <state-number>4247</state-number>
+        <object-id>29744</object-id>
+        <state-number>4611</state-number>
       </table>
       <table id="3698" parent="4" name="alerts">
-        <object-id>28985</object-id>
-        <state-number>4245</state-number>
+        <object-id>29750</object-id>
+        <state-number>4609</state-number>
       </table>
       <table id="3699" parent="4" name="routes">
-        <object-id>29001</object-id>
-        <state-number>4251</state-number>
+        <object-id>29766</object-id>
+        <state-number>4616</state-number>
       </table>
       <object-type id="3700" parent="5" name="cardinal_number">
         <object-id>12362</object-id>
@@ -21126,20 +21126,20 @@
         <routine-kind>FUNCTION</routine-kind>
       </routine>
       <sequence id="3784" parent="6" name="alerts_id_seq">
-        <object-id>29019</object-id>
-        <state-number>4243</state-number>
+        <object-id>29784</object-id>
+        <state-number>4607</state-number>
       </sequence>
       <sequence id="3785" parent="6" name="subscriptions_id_seq">
-        <object-id>29021</object-id>
-        <state-number>4244</state-number>
+        <object-id>29786</object-id>
+        <state-number>4608</state-number>
       </sequence>
       <table id="3786" parent="6" name="play_evolutions">
-        <object-id>28969</object-id>
-        <state-number>4235</state-number>
+        <object-id>29567</object-id>
+        <state-number>4436</state-number>
       </table>
-      <table id="3787" parent="6" name="route_subscription">
-        <object-id>29014</object-id>
-        <state-number>4252</state-number>
+      <table id="3787" parent="6" name="subscription_route">
+        <object-id>29779</object-id>
+        <state-number>4616</state-number>
       </table>
       <column id="3788" parent="7" name="aggfnoid">
         <state-number>1</state-number>
@@ -59002,184 +59002,184 @@ umserver</columns>
         <direction>RETURN</direction>
         <data-type>xml[]</data-type>
       </argument>
-      <column id="13083" parent="3694" name="id">
-        <state-number>4239</state-number>
+      <column id="13083" parent="3694" name="device_id">
+        <state-number>4603</state-number>
         <mandatory>1</mandatory>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13084" parent="3694" name="registration_id">
-        <state-number>4239</state-number>
+        <state-number>4603</state-number>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13085" parent="3694" name="time_registered">
-        <state-number>4239</state-number>
+        <state-number>4603</state-number>
         <data-type>timestamp</data-type>
       </column>
       <index id="13086" parent="3694" name="pk_registrations">
-        <object-id>28999</object-id>
-        <columns>id</columns>
+        <object-id>29764</object-id>
+        <columns>device_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
       <key id="13087" parent="3694" name="pk_registrations">
-        <columns>id</columns>
+        <columns>device_id</columns>
         <underlying-index>pk_registrations</underlying-index>
         <primary>1</primary>
       </key>
-      <column id="13088" parent="3695" name="id">
-        <state-number>4241</state-number>
+      <column id="13088" parent="3695" name="subscription_id">
+        <state-number>4605</state-number>
         <mandatory>1</mandatory>
         <data-type>integer</data-type>
       </column>
-      <column id="13089" parent="3695" name="registration_id">
-        <state-number>4241</state-number>
+      <column id="13089" parent="3695" name="registration_device_id">
+        <state-number>4605</state-number>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13090" parent="3695" name="time_subscribed">
-        <state-number>4241</state-number>
+        <state-number>4605</state-number>
         <data-type>timestamp</data-type>
       </column>
       <index id="13091" parent="3695" name="pk_subscriptions">
-        <object-id>29012</object-id>
-        <columns>id</columns>
+        <object-id>29777</object-id>
+        <columns>subscription_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
       <index id="13092" parent="3695" name="ix_subscriptions_registration_3">
-        <object-id>29040</object-id>
-        <columns>registration_id</columns>
+        <object-id>29805</object-id>
+        <columns>registration_device_id</columns>
         <desc-columns></desc-columns>
       </index>
       <key id="13093" parent="3695" name="pk_subscriptions">
-        <columns>id</columns>
+        <columns>subscription_id</columns>
         <underlying-index>pk_subscriptions</underlying-index>
         <primary>1</primary>
       </key>
       <foreign-key id="13094" parent="3695" name="fk_subscriptions_registration_3">
-        <columns>registration_id</columns>
+        <columns>registration_device_id</columns>
         <ref-key>~.registrations.pk_registrations</ref-key>
         <cascade-update-rule>restrict</cascade-update-rule>
         <cascade-delete-rule>restrict</cascade-delete-rule>
       </foreign-key>
-      <column id="13095" parent="3697" name="id">
-        <state-number>4237</state-number>
+      <column id="13095" parent="3697" name="agency_id">
+        <state-number>4601</state-number>
         <mandatory>1</mandatory>
         <data-type>integer</data-type>
-        <default-expression>nextval(&apos;agency_alerts.agencies_id_seq&apos;::regclass)</default-expression>
+        <default-expression>nextval(&apos;agency_alerts.agencies_agency_id_seq&apos;::regclass)</default-expression>
       </column>
       <column id="13096" parent="3697" name="agency_name">
-        <state-number>4237</state-number>
+        <state-number>4601</state-number>
         <data-type>varchar(255)</data-type>
       </column>
       <index id="13097" parent="3697" name="pk_agencies">
-        <object-id>28983</object-id>
-        <columns>id</columns>
+        <object-id>29748</object-id>
+        <columns>agency_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
       <key id="13098" parent="3697" name="pk_agencies">
-        <columns>id</columns>
+        <columns>agency_id</columns>
         <underlying-index>pk_agencies</underlying-index>
         <primary>1</primary>
       </key>
-      <column id="13099" parent="3698" name="id">
-        <state-number>4238</state-number>
+      <column id="13099" parent="3698" name="alert_id">
+        <state-number>4602</state-number>
         <mandatory>1</mandatory>
         <data-type>integer</data-type>
       </column>
-      <column id="13100" parent="3698" name="route_id">
-        <state-number>4238</state-number>
+      <column id="13100" parent="3698" name="route_route_id">
+        <state-number>4602</state-number>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13101" parent="3698" name="current_message">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13102" parent="3698" name="advisory_message">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13103" parent="3698" name="detour_message">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13104" parent="3698" name="detour_start_location">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13105" parent="3698" name="detour_start_date">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>timestamp</data-type>
       </column>
       <column id="13106" parent="3698" name="detour_end_date">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>timestamp</data-type>
       </column>
       <column id="13107" parent="3698" name="detour_reason">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13108" parent="3698" name="is_snow">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>boolean</data-type>
       </column>
       <column id="13109" parent="3698" name="last_updated">
-        <state-number>4238</state-number>
+        <state-number>4602</state-number>
         <data-type>timestamp</data-type>
       </column>
       <index id="13110" parent="3698" name="pk_alerts">
-        <object-id>28991</object-id>
-        <columns>id</columns>
+        <object-id>29756</object-id>
+        <columns>alert_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
       <index id="13111" parent="3698" name="ix_alerts_route_1">
-        <object-id>29028</object-id>
-        <columns>route_id</columns>
+        <object-id>29793</object-id>
+        <columns>route_route_id</columns>
         <desc-columns></desc-columns>
       </index>
       <key id="13112" parent="3698" name="pk_alerts">
-        <columns>id</columns>
+        <columns>alert_id</columns>
         <underlying-index>pk_alerts</underlying-index>
         <primary>1</primary>
       </key>
       <foreign-key id="13113" parent="3698" name="fk_alerts_route_1">
-        <columns>route_id</columns>
+        <columns>route_route_id</columns>
         <ref-key>~.routes.pk_routes</ref-key>
         <cascade-update-rule>restrict</cascade-update-rule>
         <cascade-delete-rule>restrict</cascade-delete-rule>
       </foreign-key>
-      <column id="13114" parent="3699" name="id">
-        <state-number>4240</state-number>
+      <column id="13114" parent="3699" name="route_id">
+        <state-number>4604</state-number>
         <mandatory>1</mandatory>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13115" parent="3699" name="route_name">
-        <state-number>4240</state-number>
+        <state-number>4604</state-number>
         <data-type>varchar(255)</data-type>
       </column>
-      <column id="13116" parent="3699" name="agency_id">
-        <state-number>4240</state-number>
+      <column id="13116" parent="3699" name="agency_agency_id">
+        <state-number>4604</state-number>
         <data-type>integer</data-type>
       </column>
       <index id="13117" parent="3699" name="pk_routes">
-        <object-id>29007</object-id>
-        <columns>id</columns>
+        <object-id>29772</object-id>
+        <columns>route_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
       <index id="13118" parent="3699" name="ix_routes_agency_2">
-        <object-id>29034</object-id>
-        <columns>agency_id</columns>
+        <object-id>29799</object-id>
+        <columns>agency_agency_id</columns>
         <desc-columns></desc-columns>
       </index>
       <key id="13119" parent="3699" name="pk_routes">
-        <columns>id</columns>
+        <columns>route_id</columns>
         <underlying-index>pk_routes</underlying-index>
         <primary>1</primary>
       </key>
       <foreign-key id="13120" parent="3699" name="fk_routes_agency_2">
-        <columns>agency_id</columns>
+        <columns>agency_agency_id</columns>
         <ref-key>~.agencies.pk_agencies</ref-key>
         <cascade-update-rule>restrict</cascade-update-rule>
         <cascade-delete-rule>restrict</cascade-delete-rule>
@@ -62025,38 +62025,38 @@ umserver</columns>
         <data-type>integer</data-type>
       </argument>
       <column id="13831" parent="3786" name="id">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <mandatory>1</mandatory>
         <data-type>integer</data-type>
       </column>
       <column id="13832" parent="3786" name="hash">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <mandatory>1</mandatory>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13833" parent="3786" name="applied_at">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <mandatory>1</mandatory>
         <data-type>timestamp</data-type>
       </column>
       <column id="13834" parent="3786" name="apply_script">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13835" parent="3786" name="revert_script">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <data-type>text</data-type>
       </column>
       <column id="13836" parent="3786" name="state">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <data-type>varchar(255)</data-type>
       </column>
       <column id="13837" parent="3786" name="last_problem">
-        <state-number>4235</state-number>
+        <state-number>4436</state-number>
         <data-type>text</data-type>
       </column>
       <index id="13838" parent="3786" name="play_evolutions_pkey">
-        <object-id>28975</object-id>
+        <object-id>29573</object-id>
         <columns>id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
@@ -62066,36 +62066,36 @@ umserver</columns>
         <underlying-index>play_evolutions_pkey</underlying-index>
         <primary>1</primary>
       </key>
-      <column id="13840" parent="3787" name="route_id">
-        <state-number>4242</state-number>
-        <mandatory>1</mandatory>
-        <data-type>varchar(255)</data-type>
-      </column>
-      <column id="13841" parent="3787" name="subscription_id">
-        <state-number>4242</state-number>
+      <column id="13840" parent="3787" name="subscription_id">
+        <state-number>4606</state-number>
         <mandatory>1</mandatory>
         <data-type>integer</data-type>
       </column>
-      <index id="13842" parent="3787" name="pk_route_subscription">
-        <object-id>29017</object-id>
-        <columns>route_id
-subscription_id</columns>
+      <column id="13841" parent="3787" name="route_id">
+        <state-number>4606</state-number>
+        <mandatory>1</mandatory>
+        <data-type>varchar(255)</data-type>
+      </column>
+      <index id="13842" parent="3787" name="pk_subscription_route">
+        <object-id>29782</object-id>
+        <columns>subscription_id
+route_id</columns>
         <desc-columns></desc-columns>
         <unique>1</unique>
       </index>
-      <key id="13843" parent="3787" name="pk_route_subscription">
-        <columns>route_id
-subscription_id</columns>
-        <underlying-index>pk_route_subscription</underlying-index>
+      <key id="13843" parent="3787" name="pk_subscription_route">
+        <columns>subscription_id
+route_id</columns>
+        <underlying-index>pk_subscription_route</underlying-index>
         <primary>1</primary>
       </key>
-      <foreign-key id="13844" parent="3787" name="fk_route_subscription_agency__01">
-        <columns>route_id</columns>
+      <foreign-key id="13844" parent="3787" name="fk_subscription_route_device__01">
+        <columns>subscription_id</columns>
         <cascade-update-rule>restrict</cascade-update-rule>
         <cascade-delete-rule>restrict</cascade-delete-rule>
       </foreign-key>
-      <foreign-key id="13845" parent="3787" name="fk_route_subscription_device__02">
-        <columns>subscription_id</columns>
+      <foreign-key id="13845" parent="3787" name="fk_subscription_route_agency__02">
+        <columns>route_id</columns>
         <cascade-update-rule>restrict</cascade-update-rule>
         <cascade-delete-rule>restrict</cascade-delete-rule>
       </foreign-key>

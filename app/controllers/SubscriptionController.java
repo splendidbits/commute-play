@@ -25,18 +25,14 @@ public class SubscriptionController extends Controller {
 
     // Response enum.
     private enum SubscriptionResponse {
-        DATA_VALID(),
         RESULT_OK("Success"),
         MISSING_PARAMS_RESULT("Invalid registration parameters in request."),
-        NO_REGISTRATION_RESULT("No registered device found for device.");
+        NO_REGISTRATION_RESULT("No registered device found for device ID.");
 
         private String mValue = null;
 
         SubscriptionResponse(String value) {
             mValue = value;
-        }
-
-        SubscriptionResponse() {
         }
 
         public String getValue() {
@@ -53,7 +49,7 @@ public class SubscriptionController extends Controller {
         Http.RequestBody requestBody = request().body();
         SubscriptionResponse dataValidity = validateInputData(requestBody);
 
-        if (dataValidity.equals(SubscriptionResponse.DATA_VALID)) {
+        if (dataValidity.equals(SubscriptionResponse.RESULT_OK)) {
             Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
 
             String deviceId = formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase();
@@ -111,6 +107,6 @@ public class SubscriptionController extends Controller {
                 return SubscriptionResponse.MISSING_PARAMS_RESULT;
             }
         }
-        return SubscriptionResponse.DATA_VALID;
+        return SubscriptionResponse.RESULT_OK;
     }
 }

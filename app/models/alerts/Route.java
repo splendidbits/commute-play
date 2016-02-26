@@ -19,7 +19,7 @@ public class Route extends Model {
     @Column(name = "route_name")
     public String routeName;
 
-    @ManyToOne(fetch=FetchType.EAGER)
+    @ManyToOne(fetch=FetchType.LAZY)
     public Agency agency;
 
     @ManyToMany(mappedBy="routes")

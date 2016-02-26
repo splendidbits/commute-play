@@ -5,7 +5,6 @@ import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
-import java.util.List;
 
 @Entity
 @Table(name = "registrations", schema = "device_subscriptions")
@@ -33,6 +32,6 @@ public class Registration extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
-    @OneToMany(mappedBy = "registration")
-    public List<Subscription> subscriptions;
+    @OneToOne(mappedBy = "registration")
+    public Subscription subscription;
 }

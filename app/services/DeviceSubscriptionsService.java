@@ -43,6 +43,13 @@ public class DeviceSubscriptionsService {
      */
     public boolean addSubscription(@Nonnull Subscription subscription) {
         try {
+            // Build a query depending on if we have a token, and or device identifier.
+//            Registration existingSubscription = mEbeanServer.createQuery(Subscription.class)
+//                    .where()
+//                    .eq("registration_id", newReg.registrationId)
+//                    .findUnique();
+
+
             mEbeanServer.save(subscription);
             return true;
 

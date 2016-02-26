@@ -20,15 +20,15 @@ public class Subscription extends Model {
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 
-    @ManyToOne
+    @OneToOne
     @Column(name = "registration_id")
     public Registration registration;
 
     @ManyToMany
     @JoinTable(
             name="subscription_route",
-            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = false),
-            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = false))
+            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = true),
+            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = true))
     public List<Route> routes;
 
     @Basic

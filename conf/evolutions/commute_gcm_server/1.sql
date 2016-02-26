@@ -42,6 +42,7 @@ create table device_subscriptions.subscriptions (
   subscription_id           integer not null,
   registration_device_id    varchar(255),
   time_subscribed           timestamp,
+  constraint uq_subscriptions_registration_de unique (registration_device_id),
   constraint pk_subscriptions primary key (subscription_id))
 ;
 
