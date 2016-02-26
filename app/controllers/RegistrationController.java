@@ -3,7 +3,7 @@ package controllers;
 import models.registrations.Registration;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.SubscriptionsDatabaseService;
+import services.DeviceSubscriptionsService;
 
 import java.util.Map;
 
@@ -19,6 +19,12 @@ public class RegistrationController extends Controller {
     private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
     private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
 
+    /**
+     * Register a client with the commute GCM server. Saves important
+     * token information along with a timestamp.
+     *
+     * @return A Result.
+     */
     public Result register() {
         // Grab the header that the client has sent.
         String userAgent = request().getHeader("User-Agent");
@@ -38,7 +44,7 @@ public class RegistrationController extends Controller {
         }
 
         Registration newRegistration = new Registration(deviceId, registrationId);
-        SubscriptionsDatabaseService subscriptionService = new SubscriptionsDatabaseService();
+        DeviceSubscriptionsService subscriptionService = new DeviceSubscriptionsService();
 
         boolean success = subscriptionService.addRegistration(newRegistration);
         return success ? ok() : badRequest();

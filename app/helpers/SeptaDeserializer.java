@@ -16,6 +16,7 @@ import java.util.*;
  * the commute GCM agency alerts bundle models.
  */
 public class SeptaDeserializer implements JsonDeserializer<Agency> {
+    private static final String AGENCY_NAME = "septa";
     private static final TimeZone timezone = TimeZone.getTimeZone("America/New_York");
     private static SimpleDateFormat lastUpdatedDateFormat;
     private static SimpleDateFormat detourDateFormat;
@@ -43,7 +44,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                 for (JsonElement scheduleRow : schedulesArray){
 
                     JsonObject bucket = scheduleRow.getAsJsonObject();
-                    String routeId = bucket.get("route_id").getAsString();
+                    String routeId = bucket.get("route_id").getAsString().toLowerCase();
                     String routeName = bucket.get("route_name").getAsString();
                     String advisoryMessage = bucket.get("advisory_message").getAsString();
                     String currentMessage = bucket.get("current_message").getAsString();
@@ -108,7 +109,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
         }
 
         Agency agency = new Agency();
-        agency.agencyName = "SEPTA";
+        agency.agencyName = AGENCY_NAME;
         agency.agencyId = 1;
         agency.routes = agencyRoutesList;
 

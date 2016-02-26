@@ -3,15 +3,17 @@ package services;
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import main.Constants;
+import main.Log;
 import models.registrations.Registration;
+import models.registrations.Subscription;
 
 import javax.annotation.Nonnull;
 
-public class SubscriptionsDatabaseService {
+public class DeviceSubscriptionsService {
 
     private EbeanServer mEbeanServer;
 
-    public SubscriptionsDatabaseService() {
+    public DeviceSubscriptionsService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
 
@@ -34,6 +36,27 @@ public class SubscriptionsDatabaseService {
     }
 
     /**
+     * Save a device - subscription to the datastore.
+     *
+     * @param subscription subscription to persist.
+     * @return boolean success.
+     */
+    public boolean addSubscription(@Nonnull Subscription subscription) {
+        try {
+            mEbeanServer.save(subscription);
+            return true;
+
+        } catch (Exception e) {
+            Log.e("Error persisting subscription", e);
+
+        } finally {
+            mEbeanServer.endTransaction();
+        }
+        return false;
+    }
+
+
+    /**
      * Save a registration for a device to the database. Will find any previous registrations
      * based on registration id or device id and delete them first (and their subscription decendents).
      *
@@ -48,7 +71,6 @@ public class SubscriptionsDatabaseService {
             Registration existingRegistration = mEbeanServer.createQuery(Registration.class)
                     .where()
                     .eq("registration_id", newReg.registrationId)
-                    .ne("id", newReg.deviceId)
                     .findUnique();
             try {
                 mEbeanServer.beginTransaction();
@@ -60,10 +82,10 @@ public class SubscriptionsDatabaseService {
                             mEbeanServer.currentTransaction());
                 }
 
-                // Save the new registration.
-                mEbeanServer.update(newRegistration);
-                // Commit.
+                // Save the new registration and commit.
+                mEbeanServer.save(newRegistration);
                 mEbeanServer.commitTransaction();
+                return true;
 
             } catch (Exception e) {
                 mEbeanServer.rollbackTransaction();
@@ -71,8 +93,6 @@ public class SubscriptionsDatabaseService {
             } finally {
                 mEbeanServer.endTransaction();
             }
-
-            return true;
         }
         return false;
     }

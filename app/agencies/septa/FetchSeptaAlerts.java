@@ -1,5 +1,6 @@
 package agencies.septa;
 
+import com.avaje.ebean.annotation.Transactional;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import helpers.SeptaDeserializer;
@@ -11,7 +12,7 @@ import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 import play.mvc.Controller;
-import services.AlertsDatabaseService;
+import services.AgencyDatabaseService;
 
 public class FetchSeptaAlerts extends Controller {
     public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
@@ -34,6 +35,7 @@ public class FetchSeptaAlerts extends Controller {
      * 6: send data in batches of 1000 to google.
      *
      */
+    @Transactional
     public void process() {
         WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
         F.Promise<WSResponse> promiseOfResult = request.get();
@@ -54,7 +56,7 @@ public class FetchSeptaAlerts extends Controller {
         Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
         Log.d("Started to parsing SEPTA alerts json body");
 
-        AlertsDatabaseService alertsService = AlertsDatabaseService.getInstance();
+        AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
         alertsService.saveRouteAlerts(agencyBundle);
         Log.d("Finished parsing SEPTA alerts json body");
     }

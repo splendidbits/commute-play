@@ -22,7 +22,7 @@ public class Registration extends Model {
     }
 
     @Id
-    @Column(name = "id")
+    @Column(name = "device_id")
 	public String deviceId;
 
     @Column(name = "registration_id")
@@ -31,7 +31,7 @@ public class Registration extends Model {
     @Basic
     @Column(name="time_registered")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar timeRegistered;
+    public Calendar timeRegistered = Calendar.getInstance();
 
     @OneToMany(mappedBy = "registration")
     public List<Subscription> subscriptions;

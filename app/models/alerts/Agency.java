@@ -12,7 +12,7 @@ public class Agency extends Model {
     public static Finder<Integer, Agency> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Agency.class);
 
     @Id
-    @Column(name = "id")
+    @Column(name = "agency_id")
     public Integer agencyId;
 
     @Column(name = "agency_name")

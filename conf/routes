@@ -13,6 +13,7 @@ GET     /septa               controllers.SeptaAlertsDownload.downloadAlerts()
 
 # Public API endpoints
 POST    /register            controllers.RegistrationController.register()
+POST    /subscribe           controllers.SubscriptionController.subscribe()
 
 
 # SplendidLog

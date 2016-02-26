@@ -17,7 +17,7 @@ public class Subscription extends Model {
     @Id
     @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscriptions_id_seq_gen")
-    @Column(name = "id")
+    @Column(name = "subscription_id")
     public Integer subscriptionId;
 
     @ManyToOne
@@ -27,8 +27,8 @@ public class Subscription extends Model {
     @ManyToMany
     @JoinTable(
             name="subscription_route",
-            joinColumns=@JoinColumn(name="route_id", referencedColumnName="id", nullable = true, updatable = false),
-            inverseJoinColumns=@JoinColumn(name="subscription_id", referencedColumnName="id", nullable = true, updatable = false))
+            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = false),
+            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = false))
     public List<Route> routes;
 
     @Basic

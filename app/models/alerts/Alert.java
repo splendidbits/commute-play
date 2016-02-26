@@ -12,7 +12,7 @@ public class Alert extends Model {
     public static Finder<Integer, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
     @Id
-    @Column(name = "id")
+    @Column(name = "alert_id")
     @SequenceGenerator(name = "alerts_id_seq_gen", sequenceName = "alerts_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
     public Integer alertId;

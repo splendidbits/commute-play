@@ -1,12 +1,18 @@
 package controllers;
 
-import models.alerts.Alert;
-import models.registrations.Registration;
+import models.alerts.Route;
+import models.registrations.*;
+import models.registrations.Subscription;
 import play.mvc.Controller;
+import play.mvc.Http;
 import play.mvc.Result;
-import services.SubscriptionsDatabaseService;
+import services.AgencyDatabaseService;
+import services.DeviceSubscriptionsService;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The public API endpoint controller that handles devices subscribing to agency routes
@@ -15,49 +21,96 @@ import java.util.*;
 public class SubscriptionController extends Controller {
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String ROUTE_LIST_KEY = "routeslist";
+    private static final String AGENCY_NAME_KEY = "agencyname";
 
-    // Return results
-    private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
-    private static final Result NO_REGISTRATION_RESULT = badRequest("No registered device found for device.");
+    // Response enum.
+    private enum SubscriptionResponse {
+        DATA_VALID(),
+        RESULT_OK("Success"),
+        MISSING_PARAMS_RESULT("Invalid registration parameters in request."),
+        NO_REGISTRATION_RESULT("No registered device found for device.");
 
-    public Result subscribe() {
-        // Grab the header that the client has sent.
-        String userAgent = request().getHeader("User-Agent");
-        Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
+        private String mValue = null;
 
-        if (clientRequestBody == null) {
-            return MISSING_PARAMS_RESULT;
+        SubscriptionResponse(String value) {
+            mValue = value;
         }
 
-        String deviceId = clientRequestBody.get(DEVICE_UUID_KEY)[0];
-        String[] routes = clientRequestBody.get(ROUTE_LIST_KEY);
-
-        // Check that there was a valid registration token and device uuid.
-        if ((routes == null) ||
-                (deviceId == null || deviceId.isEmpty())) {
-            return MISSING_PARAMS_RESULT;
+        SubscriptionResponse() {
         }
 
-        SubscriptionsDatabaseService subscriptionService = new SubscriptionsDatabaseService();
-        Registration existingRegistration = subscriptionService.getRegistration(deviceId);
-        if (existingRegistration == null) {
-            return NO_REGISTRATION_RESULT;
+        public String getValue() {
+            return mValue;
         }
-
-        List<String> receivedRoutes = Collections.singletonList(deviceId);
-        List<Alert> alertsToSubscribe = new ArrayList<>();
-
-        for (String routeId : receivedRoutes) {
-            routeId = routeId.trim().toLowerCase();
-
-            if (!routeId.isEmpty()) {
-
-
-            }
-        }
-
-
-        return ok();
     }
 
+    /**
+     * Endpoint for subscribing a deviceId to a route.
+     *
+     * @return A result for if the subscription request succeeded or failed.
+     */
+    public Result subscribe() {
+        Http.RequestBody requestBody = request().body();
+        SubscriptionResponse dataValidity = validateInputData(requestBody);
+
+        if (dataValidity.equals(SubscriptionResponse.DATA_VALID)) {
+            Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
+
+            String deviceId = formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase();
+            String agencyName = formEncodedMap.get(AGENCY_NAME_KEY)[0].trim().toLowerCase();
+            String[] routes = formEncodedMap.get(ROUTE_LIST_KEY);
+
+            // Check that the device is already registered.
+            DeviceSubscriptionsService subscriptionService = new DeviceSubscriptionsService();
+            Registration existingRegistration = subscriptionService.getRegistration(deviceId);
+            if (existingRegistration == null) {
+                return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());
+            }
+
+            AgencyDatabaseService agencyService = AgencyDatabaseService.getInstance();
+
+            // Loop through each route. check that it exists in the agency.
+            // If it does then add the subscription to the registration.
+            List<String> receivedRoutes = Arrays.asList(routes);
+            for (String routeId : receivedRoutes) {
+
+                routeId = routeId.trim().toLowerCase();
+                List<Route> validRoutes = agencyService.getRoutesForAgency(agencyName, routeId);
+
+                if (validRoutes != null && !validRoutes.isEmpty()) {
+                    models.registrations.Subscription subscription = new Subscription();
+                    subscription.registration = existingRegistration;
+                    subscription.routes = validRoutes;
+                    subscription.timeSubscribed = Calendar.getInstance();
+
+                    subscriptionService.addSubscription(subscription);
+                }
+            }
+        }
+        return ok(dataValidity.getValue());
+    }
+
+    /**
+     * Sanity check the data we have received from the client.
+     *
+     * @param requestBody the body of the incoming request.
+     * @return enum success result type.
+     */
+    private SubscriptionResponse validateInputData(Http.RequestBody requestBody) {
+        if (requestBody != null) {
+            Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
+
+            if (clientRequestBody == null) {
+                return SubscriptionResponse.MISSING_PARAMS_RESULT;
+            }
+
+            // Check that there was a valid list of routes and device uuid.
+            if ((!clientRequestBody.containsKey(DEVICE_UUID_KEY)) ||
+                    (!clientRequestBody.containsKey(ROUTE_LIST_KEY)) ||
+                    (!clientRequestBody.containsKey(AGENCY_NAME_KEY))) {
+                return SubscriptionResponse.MISSING_PARAMS_RESULT;
+            }
+        }
+        return SubscriptionResponse.DATA_VALID;
+    }
 }

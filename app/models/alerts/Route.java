@@ -13,13 +13,13 @@ public class Route extends Model {
     public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
 
     @Id
-    @Column(name = "id")
+    @Column(name = "route_id")
     public String routeId;
 
     @Column(name = "route_name")
     public String routeName;
 
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne(fetch=FetchType.EAGER)
     public Agency agency;
 
     @ManyToMany(mappedBy="routes")
