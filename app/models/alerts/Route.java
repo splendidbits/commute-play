@@ -22,7 +22,7 @@ public class Route extends Model implements Comparable<Route> {
     @ManyToOne(fetch = FetchType.LAZY)
     public Agency agency;
 
-    @ManyToMany(mappedBy = "routes")
+    @ManyToMany(mappedBy = "routes", cascade = CascadeType.MERGE)
     public List<Subscription> subscriptions;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "route")

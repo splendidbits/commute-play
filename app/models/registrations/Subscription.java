@@ -20,15 +20,15 @@ public class Subscription extends Model {
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 
-    @OneToOne(cascade = CascadeType.REFRESH)
+    @OneToOne(cascade = CascadeType.MERGE)
     @Column(name = "registration_id")
     public Registration registration;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.MERGE)
     @JoinTable(
             name="subscription_route",
-            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = true),
-            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = true))
+            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = false),
+            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = false))
     public List<Route> routes;
 
     @Basic

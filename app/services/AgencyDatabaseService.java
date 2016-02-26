@@ -44,14 +44,13 @@ public class AgencyDatabaseService {
      * @param agencyRouteAlerts list of route alerts.
      * @return boolean for success.
      */
-    public boolean saveRouteAlerts(Agency agencyRouteAlerts) {
+    public boolean saveAgencyAlerts(Agency agencyRouteAlerts) {
         if (agencyRouteAlerts != null) {
             mEbeanServer.endTransaction();
             mEbeanServer.beginTransaction();
 
             try {
-                mEbeanServer.delete(Agency.class, agencyRouteAlerts.agencyId);
-                mEbeanServer.save(agencyRouteAlerts);
+                mEbeanServer.update(agencyRouteAlerts);
                 mEbeanServer.commitTransaction();
 
             } catch (Exception e) {
@@ -70,7 +69,7 @@ public class AgencyDatabaseService {
      * Get all routes for a set of routeIds and an agency name.
      *
      * @param agencyName Name of agency.
-     * @param routeIds   list of routeIds to retrive.
+     * @param routeIds   list of routeIds to retrieve.
      * @return List of Routes.
      */
     public List<Route> getRoutes(@Nonnull String agencyName, @Nonnull String... routeIds) {

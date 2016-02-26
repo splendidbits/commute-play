@@ -16,7 +16,6 @@ import services.AgencyDatabaseService;
 
 public class FetchSeptaAlerts extends Controller {
     public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
-    public static final String AGENCY_NAME = "SEPTA";
 
     /**
      * Download SEPTA alerts from the json server and send them to the
@@ -57,7 +56,7 @@ public class FetchSeptaAlerts extends Controller {
         Log.d("Started to parsing SEPTA alerts json body");
 
         AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
-        alertsService.saveRouteAlerts(agencyBundle);
+        alertsService.saveAgencyAlerts(agencyBundle);
         Log.d("Finished parsing SEPTA alerts json body");
     }
 }
