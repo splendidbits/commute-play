@@ -8,7 +8,7 @@ import java.util.Calendar;
 
 @Entity
 @Table(name = "alerts", schema = "agency_alerts")
-public class Alert extends Model {
+public class Alert extends Model implements Comparable<Alert> {
     public static Finder<Integer, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
     @Id
@@ -55,4 +55,30 @@ public class Alert extends Model {
     @Column(name = "last_updated")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Alert) {
+            Alert otherAlert = (Alert) obj;
+            return (routeId.equals(otherAlert.routeId) &&
+                    currentMessage.equals(otherAlert.currentMessage) &&
+                    detourMessage.equals(otherAlert.detourMessage) &&
+                    advisoryMessage.equals(otherAlert.advisoryMessage) &&
+                    detourReason.equals(otherAlert.detourReason) &&
+                    detourStartLocation.equals(otherAlert.detourStartLocation) &&
+                    detourStartDate.equals(otherAlert.detourStartDate) &&
+                    detourEndDate.equals(otherAlert.detourEndDate) &&
+                    isSnow == otherAlert.isSnow);
+        }
+        return super.equals(obj);
+    }
+
+    @Override
+    public int compareTo(Alert o) {
+        if (lastUpdated.before(o.lastUpdated)) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
 }

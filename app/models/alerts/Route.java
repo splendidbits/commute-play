@@ -9,7 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
-public class Route extends Model {
+public class Route extends Model implements Comparable<Route> {
     public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
 
     @Id
@@ -19,12 +19,17 @@ public class Route extends Model {
     @Column(name = "route_name")
     public String routeName;
 
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     public Agency agency;
 
-    @ManyToMany(mappedBy="routes")
+    @ManyToMany(mappedBy = "routes")
     public List<Subscription> subscriptions;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "route")
     public List<Alert> alerts;
+
+    @Override
+    public int compareTo(Route o) {
+        return routeId.compareTo(o.routeId);
+    }
 }

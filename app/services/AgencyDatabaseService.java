@@ -8,6 +8,7 @@ import models.alerts.Agency;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,6 @@ public class AgencyDatabaseService {
     private AgencyDatabaseService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
-
         } catch (Exception e) {
             play.Logger.debug("Error setting EBean Datasource properties", e);
         }
@@ -66,42 +66,60 @@ public class AgencyDatabaseService {
         return false;
     }
 
-    public List<Route> getRoutesForAgency(String agencyName, String... routeIds) {
+    /**
+     * Get all routes for a set of routeIds and an agency name.
+     *
+     * @param agencyName Name of agency.
+     * @param routeIds   list of routeIds to retrive.
+     * @return List of Routes.
+     */
+    public List<Route> getRoutes(@Nonnull String agencyName, @Nonnull String... routeIds) {
         List<Route> foundRoutes = new ArrayList<>();
-        if (agencyName != null && !agencyName.isEmpty() && routeIds != null) {
-            agencyName = agencyName.trim().toLowerCase();
+        agencyName = agencyName.trim().toLowerCase();
 
-            // Loop through the string varargs and find each valid route.
-            for (String routeId : routeIds) {
-                routeId = routeId.trim().toLowerCase();
+        // Loop through the string varargs and find each valid route.
+        for (String routeId : routeIds) {
+            routeId = routeId.trim().toLowerCase();
 
-                try {
-                    Agency agency = mEbeanServer.find(Agency.class)
-                            .fetch("routes")
-                            .where()
-                            .eq("agency_name", agencyName.toLowerCase())
-                            .eq("route_id", routeId.toLowerCase())
-                            .findUnique();
+            try {
+                Agency agency = mEbeanServer.find(Agency.class)
+                        .fetch("routes")
+                        .where()
+                        .eq("agency_name", agencyName.toLowerCase())
+                        .eq("route_id", routeId.toLowerCase())
+                        .findUnique();
 
-                    if (agency.routes != null) {
-                        foundRoutes.add(agency.routes.get(0));
-                    }
-
-                } catch (Exception e) {
-                    Log.e("Error getting route for subscription.", e);
+                if (agency.routes != null) {
+                    foundRoutes.add(agency.routes.get(0));
                 }
+
+            } catch (Exception e) {
+                Log.e("Error getting route for routeIds.", e);
             }
         }
         return foundRoutes;
     }
 
     /**
-     * Get an alert for a route Id.
+     * Get a list of saved routes for a given agency.
      *
-     * @param routeId routeId for alert.
-     * @return alert.
+     * @param agencyId id of the agency.
+     * @return list of routes.
      */
-    public boolean getAlert(@Nonnull String routeId) {
-        return Boolean.parseBoolean(null);
+    @Nullable
+    public List<Route> getRoutes(@Nonnull int agencyId) {
+        try {
+            Agency agency = mEbeanServer.find(Agency.class)
+                    .fetch("routes")
+                    .where()
+                    .eq("agency_id", agencyId)
+                    .findUnique();
+
+            return agency.routes;
+
+        } catch (Exception e) {
+            Log.e("Error getting routes for agency.", e);
+        }
+        return null;
     }
 }

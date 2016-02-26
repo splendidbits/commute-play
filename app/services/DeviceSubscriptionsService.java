@@ -10,13 +10,11 @@ import models.registrations.Subscription;
 import javax.annotation.Nonnull;
 
 public class DeviceSubscriptionsService {
-
     private EbeanServer mEbeanServer;
 
     public DeviceSubscriptionsService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
-
         } catch (Exception e) {
             play.Logger.debug("Error setting EBean Datasource properties", e);
         }
