@@ -44,13 +44,16 @@ public class DeviceSubscriptionsService {
     public boolean addSubscription(@Nonnull Subscription subscription) {
         try {
             // Build a query depending on if we have a token, and or device identifier.
-//            Registration existingSubscription = mEbeanServer.createQuery(Subscription.class)
-//                    .where()
-//                    .eq("registration_id", newReg.registrationId)
-//                    .findUnique();
+            Subscription existingSubscription = mEbeanServer.createQuery(Subscription.class)
+                    .fetch("registration")
+                    .where()
+                    .eq("registration_id", subscription.registration.registrationId)
+                    .findUnique();
 
-
-            mEbeanServer.save(subscription);
+            if (existingSubscription != null) {
+                subscription.subscriptionId = existingSubscription.subscriptionId;
+            }
+            mEbeanServer.update(subscription);
             return true;
 
         } catch (Exception e) {
@@ -90,7 +93,7 @@ public class DeviceSubscriptionsService {
                 }
 
                 // Save the new registration and commit.
-                mEbeanServer.save(newRegistration);
+                mEbeanServer.update(newRegistration);
                 mEbeanServer.commitTransaction();
                 return true;
 

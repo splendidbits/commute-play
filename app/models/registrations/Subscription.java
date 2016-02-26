@@ -20,7 +20,7 @@ public class Subscription extends Model {
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REFRESH)
     @Column(name = "registration_id")
     public Registration registration;
 

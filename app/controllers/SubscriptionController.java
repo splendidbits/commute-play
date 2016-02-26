@@ -1,7 +1,7 @@
 package controllers;
 
 import models.alerts.Route;
-import models.registrations.*;
+import models.registrations.Registration;
 import models.registrations.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
@@ -9,7 +9,6 @@ import play.mvc.Result;
 import services.AgencyDatabaseService;
 import services.DeviceSubscriptionsService;
 
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -65,22 +64,16 @@ public class SubscriptionController extends Controller {
 
             AgencyDatabaseService agencyService = AgencyDatabaseService.getInstance();
 
-            // Loop through each route. check that it exists in the agency.
-            // If it does then add the subscription to the registration.
-            List<String> receivedRoutes = Arrays.asList(routes);
-            for (String routeId : receivedRoutes) {
+            // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
+            List<Route> validRoutes = agencyService.getRoutesForAgency(agencyName, routes);
+            if (validRoutes != null && !validRoutes.isEmpty()) {
+                models.registrations.Subscription subscription = new Subscription();
+                subscription.registration = existingRegistration;
+                subscription.routes = validRoutes;
+                subscription.timeSubscribed = Calendar.getInstance();
 
-                routeId = routeId.trim().toLowerCase();
-                List<Route> validRoutes = agencyService.getRoutesForAgency(agencyName, routeId);
-
-                if (validRoutes != null && !validRoutes.isEmpty()) {
-                    models.registrations.Subscription subscription = new Subscription();
-                    subscription.registration = existingRegistration;
-                    subscription.routes = validRoutes;
-                    subscription.timeSubscribed = Calendar.getInstance();
-
-                    subscriptionService.addSubscription(subscription);
-                }
+                // Persist the subscription.
+                subscriptionService.addSubscription(subscription);
             }
         }
         return ok(dataValidity.getValue());
