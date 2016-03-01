@@ -5,6 +5,7 @@ import com.avaje.ebean.EbeanServer;
 import main.Constants;
 import main.Log;
 import models.alerts.Agency;
+import models.alerts.Alert;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
@@ -14,20 +15,19 @@ import java.util.List;
 
 public class AgencyDatabaseService {
 
-    private static EbeanServer mEbeanServer;
-    private static AgencyDatabaseService mInstance;
+    private EbeanServer mEbeanServer;
 
     /**
-     * Get an instance of the main.Log.
+     * Get a THREADSAFE Syncronised instance of the main.Log.
      *
-     * @return An instance of this logger.
+     * @return An instance of the AgencyDatabaseService which contain locks.
      */
-    public static AgencyDatabaseService getInstance() {
-        if (mInstance == null || mEbeanServer == null) {
-            mInstance = new AgencyDatabaseService();
-        }
+    private static class Loader {
+        static final AgencyDatabaseService INSTANCE = new AgencyDatabaseService();
+    }
 
-        return mInstance;
+    public static AgencyDatabaseService getInstance() {
+        return Loader.INSTANCE;
     }
 
     private AgencyDatabaseService() {
@@ -41,26 +41,43 @@ public class AgencyDatabaseService {
     /**
      * Save a bundle of agency route alerts to the datastore, clearing out the previous set.
      *
-     * @param agencyRouteAlerts list of route alerts.
+     * @param agency list of route alerts.
      * @return boolean for success.
      */
-    public boolean saveAgencyAlerts(Agency agencyRouteAlerts) {
-        if (agencyRouteAlerts != null) {
-            mEbeanServer.endTransaction();
-            mEbeanServer.beginTransaction();
+    public boolean saveAgencyAlerts(Agency agency) {
+        if (agency != null) {
+
+            // Delete all alerts for that agency.
+            List<Alert> existingAlerts = mEbeanServer.find(Alert.class)
+                    .fetch("route")
+                    .fetch("route.agency")
+                    .where()
+                    .eq("agency_id", agency.agencyId)
+                    .findList();
+
+            Agency currentAgency = mEbeanServer.find(Agency.class, agency.agencyId);
 
             try {
-                mEbeanServer.update(agencyRouteAlerts);
-                mEbeanServer.commitTransaction();
+                if (currentAgency != null) {
+                    for (Route freshRoute : agency.routes) {
+                        if (!currentAgency.routes.contains(freshRoute)) {
+
+                            Route existingRoute = mEbeanServer.find(Route.class).fetch("agency").where().eq("route_id", freshRoute.routeId).eq("agency_id", agency.agencyId).findUnique();
+                            existingRoute.alerts = freshRoute.alerts;
+                            mEbeanServer.update(existingRoute, null, true);
+                        }
+                    }
+
+
+//                    currentAgency.routes = agency.routes;
+//                    mEbeanServer.saveAssociation(agency.routes, "alerts");
+                } else {
+                    mEbeanServer.save(agency);
+                }
 
             } catch (Exception e) {
-                Log.e("Error saving device registration info. Rolling back.", e);
-                mEbeanServer.rollbackTransaction();
-
-            } finally {
-                mEbeanServer.endTransaction();
+                Log.e(String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
             }
-            return true;
         }
         return false;
     }
@@ -72,7 +89,7 @@ public class AgencyDatabaseService {
      * @param routeIds   list of routeIds to retrieve.
      * @return List of Routes.
      */
-    public List<Route> getRoutes(@Nonnull String agencyName, @Nonnull String... routeIds) {
+    public List<Route> getRouteAlerts(@Nonnull String agencyName, @Nonnull String... routeIds) {
         List<Route> foundRoutes = new ArrayList<>();
         agencyName = agencyName.trim().toLowerCase();
 
@@ -100,25 +117,40 @@ public class AgencyDatabaseService {
     }
 
     /**
-     * Get a list of saved routes for a given agency.
+     * Get a list of saved alerts for a given agency.
      *
      * @param agencyId id of the agency.
-     * @return list of routes.
+     * @return list of alerts for agency. Can be null.
      */
     @Nullable
-    public List<Route> getRoutes(@Nonnull int agencyId) {
+    public List<Alert> getRouteAlerts(@Nonnull int agencyId) {
         try {
-            Agency agency = mEbeanServer.find(Agency.class)
-                    .fetch("routes")
+            List<Alert> existingAlerts = mEbeanServer.find(Alert.class)
+                    .fetch("route")
+                    .fetch("route.agency")
                     .where()
                     .eq("agency_id", agencyId)
-                    .findUnique();
+                    .findList();
 
-            return agency.routes;
+            return existingAlerts;
 
         } catch (Exception e) {
             Log.e("Error getting routes for agency.", e);
         }
         return null;
+    }
+
+    /**
+     * Some ebean query examples.
+     */
+    private void examples() {
+        /*
+        Agency currentAgency = mEbeanServer.find(Agency.class)
+                .where()
+                .eq("agencyId", 1)
+                .findUnique();
+
+        List<Route> routesToUpdate = agency.routes;
+        */
     }
 }

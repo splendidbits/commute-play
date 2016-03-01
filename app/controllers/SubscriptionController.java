@@ -65,7 +65,7 @@ public class SubscriptionController extends Controller {
             AgencyDatabaseService agencyService = AgencyDatabaseService.getInstance();
 
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-            List<Route> validRoutes = agencyService.getRoutes(agencyName, routes);
+            List<Route> validRoutes = agencyService.getRouteAlerts(agencyName, routes);
             if (validRoutes != null && !validRoutes.isEmpty()) {
                 models.registrations.Subscription subscription = new Subscription();
                 subscription.registration = existingRegistration;

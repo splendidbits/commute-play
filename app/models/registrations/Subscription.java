@@ -1,6 +1,8 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import models.alerts.Route;
 
@@ -9,6 +11,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "subscriptions", schema = "device_subscriptions")
 public class Subscription extends Model {
     public static Finder<Integer, Subscription> find = new Model.Finder<>(
@@ -20,15 +23,28 @@ public class Subscription extends Model {
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 
-    @OneToOne(cascade = CascadeType.MERGE)
+    @OneToOne(cascade = CascadeType.REFRESH)
     @Column(name = "registration_id")
     public Registration registration;
 
-    @ManyToMany(cascade = CascadeType.MERGE)
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name="subscription_route",
-            joinColumns=@JoinColumn(name="subscription_id", referencedColumnName="subscription_id", nullable = true, updatable = false),
-            inverseJoinColumns=@JoinColumn(name="route_id", referencedColumnName="route_id", nullable = true, updatable = false))
+            joinColumns=@JoinColumn(
+                    name="subscription_id",
+                    referencedColumnName="subscription_id",
+                    unique = true,
+                    nullable = true,
+                    insertable = false,
+                    updatable = false),
+
+            inverseJoinColumns=@JoinColumn(
+                    name="route_id",
+                    referencedColumnName="route_id",
+                    unique = true,
+                    nullable = true,
+                    insertable = false,
+                    updatable = false))
     public List<Route> routes;
 
     @Basic

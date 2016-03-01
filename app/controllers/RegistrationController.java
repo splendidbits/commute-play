@@ -1,6 +1,7 @@
 package controllers;
 
 import models.registrations.Registration;
+import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.DeviceSubscriptionsService;
@@ -25,9 +26,10 @@ public class RegistrationController extends Controller {
      *
      * @return A Result.
      */
+    @Transactional
     public Result register() {
         // Grab the header that the client has sent.
-        String userAgent = request().getHeader("User-Agent");
+        // String userAgent = request().getHeader("User-Agent");
         Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
 
         if (clientRequestBody == null) {

@@ -42,16 +42,20 @@ public class DeviceSubscriptionsService {
     public boolean addSubscription(@Nonnull Subscription subscription) {
         try {
             // Build a query depending on if we have a token, and or device identifier.
-            Subscription existingSubscription = mEbeanServer.createQuery(Subscription.class)
+            Subscription existingSubscription = mEbeanServer.find(Subscription.class)
                     .fetch("registration")
                     .where()
-                    .eq("registration_id", subscription.registration.registrationId)
+                    .eq("registration.deviceId", subscription.registration.deviceId)
                     .findUnique();
 
             if (existingSubscription != null) {
-                subscription.subscriptionId = existingSubscription.subscriptionId;
+                mEbeanServer.deleteManyToManyAssociations(existingSubscription, "routes");
+                existingSubscription.routes = subscription.routes;
+                mEbeanServer.save(existingSubscription);
+
+            } else {
+                mEbeanServer.save(subscription);
             }
-            mEbeanServer.update(subscription);
             return true;
 
         } catch (Exception e) {
@@ -68,35 +72,38 @@ public class DeviceSubscriptionsService {
      * Save a registration for a device to the database. Will find any previous registrations
      * based on registration id or device id and delete them first (and their subscription decendents).
      *
-     * @param newReg registration to save.
+     * @param newRegistration registration to save.
      * @return success boolean.
      */
-    public boolean addRegistration(@Nonnull Registration newReg) {
-        if (newReg.registrationId != null && newReg.deviceId != null) {
-            Registration newRegistration = new Registration(newReg.deviceId, newReg.registrationId);
+    public boolean addRegistration(@Nonnull Registration newRegistration) {
+        if (newRegistration.registrationId != null && newRegistration.deviceId != null) {
 
             // Build a query depending on if we have a token, and or device identifier.
-            Registration existingRegistration = mEbeanServer.createQuery(Registration.class)
+            Registration existingDevice = mEbeanServer.createQuery(Registration.class)
                     .where()
-                    .eq("registration_id", newReg.registrationId)
+                    .eq("registration_id", newRegistration.registrationId)
                     .findUnique();
-            try {
-                mEbeanServer.beginTransaction();
 
-                // Delete an existing registration if it exists.
-                if (existingRegistration != null) {
-                    mEbeanServer.delete(Registration.class,
-                            existingRegistration.deviceId,
-                            mEbeanServer.currentTransaction());
+            try {
+                mEbeanServer.createTransaction();
+
+                // Update an existing registration if it exists.
+                if (existingDevice != null) {
+                    mEbeanServer.refresh(newRegistration);
+                    mEbeanServer.update(newRegistration);
+
+                } else {
+                    mEbeanServer.save(newRegistration);
                 }
 
-                // Save the new registration and commit.
-                mEbeanServer.update(newRegistration);
+                // Commit the new registration transaction.
                 mEbeanServer.commitTransaction();
                 return true;
 
             } catch (Exception e) {
                 mEbeanServer.rollbackTransaction();
+                Log.e(String.format("Error saving device registration for %s. Rolling back.",
+                        newRegistration.deviceId), e);
 
             } finally {
                 mEbeanServer.endTransaction();

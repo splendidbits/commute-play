@@ -1,12 +1,15 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "registrations", schema = "device_subscriptions")
 public class Registration extends Model {
     public static Finder<String, Registration> find = new Model.Finder<>(

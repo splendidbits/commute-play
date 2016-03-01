@@ -12,10 +12,11 @@ import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 import play.mvc.Controller;
-import services.AgencyDatabaseService;
+import services.AgencyUpdateService;
 
 public class FetchSeptaAlerts extends Controller {
-    public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+    public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:8888/septa_instant/alerts.json";
+//    public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     /**
      * Download SEPTA alerts from the json server and send them to the
@@ -36,12 +37,20 @@ public class FetchSeptaAlerts extends Controller {
      */
     @Transactional
     public void process() {
-        WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
-        F.Promise<WSResponse> promiseOfResult = request.get();
 
-        request.setContentType("application/json");
+        WSResponse response;
+        try {
+            WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
+            request.setContentType("application/json");
 
-        WSResponse response = promiseOfResult.get(Constants.AGENCY_ALERTS_DOWNLOAD_MS); // is this blocked?
+            F.Promise<WSResponse> promiseOfResult = request.get();
+            response = promiseOfResult.get(Constants.AGENCY_ALERTS_DOWNLOAD_MS); // is this blocked?
+
+        } catch (Exception exception) {
+            Log.e("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            return;
+        }
+
         if (response.getStatus() != 200) {
             Log.e("Fetching SEPTA alerts json failed with error " + response.getStatus());
             return;
@@ -55,8 +64,8 @@ public class FetchSeptaAlerts extends Controller {
         Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
         Log.d("Started to parsing SEPTA alerts json body");
 
-        AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
-        alertsService.saveAgencyAlerts(agencyBundle);
-        Log.d("Finished parsing SEPTA alerts json body");
+        Log.d("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+        AgencyUpdateService agencyUpdateService = new AgencyUpdateService();
+        agencyUpdateService.agencyUpdated(agencyBundle);
     }
 }

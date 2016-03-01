@@ -35,7 +35,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        SeptaHashMap septaHashMap = new SeptaHashMap();
+        List<Alert> alertList = new ArrayList<>();
 
         try{
             final JsonArray schedulesArray = json.getAsJsonArray();
@@ -56,8 +56,15 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                     Boolean isSnow = bucket.get("isSnow").getAsBoolean();
                     String lastUpdated = bucket.get("last_updated").getAsString();
 
+                    if (routeId.isEmpty()) {
+                        continue;
+                    }
+
+                    Route route = new Route(routeId);
+                    route.routeName = routeName;
+
                     Alert alert = new Alert();
-                    alert.routeId = routeId;
+                    alert.route = route;
                     alert.advisoryMessage = advisoryMessage;
                     alert.currentMessage = currentMessage;
                     alert.detourMessage = detourMessage;
@@ -84,7 +91,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                     }
 
                     // Move the alert to the corresponding value in the map.
-                    septaHashMap.put(routeId, routeName, alert);
+                    alertList.add(alert);
                 }
             }
             Log.d("Finished creating SEPTA route-alert map.");
@@ -96,16 +103,21 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
             Log.c("Error parsing json date(s) into alert object", e);
         }
 
-        // Loop through each route
-        List<Route> agencyRoutesList = new ArrayList<>();
-        for (List<Alert> alerts : septaHashMap.values()) {
-            String routeId = alerts.get(0).routeId;
+        // Loop through each route and add to a general route map.
+        HashMap<Route, List<Alert>> routeMap = new HashMap<>();
+        for (Alert alert : alertList) {
+            Route route = new Route(alert.route.routeId, alert.route.routeName);
+            List<Alert> alertsForRoute = routeMap.containsKey(route) ? routeMap.get(route) : new ArrayList<>();
 
-            Route route = new Route();
-            route.routeId = routeId;
-            route.routeName = septaHashMap.getRouteName(routeId);
-            route.alerts = alerts;
-            agencyRoutesList.add(route);
+            alertsForRoute.add(alert);
+            routeMap.put(route, alertsForRoute);
+        }
+
+        List<Route> agencyRoutesList = new ArrayList<>();
+        for (Map.Entry<Route, List<Alert>> routePair : routeMap.entrySet()) {
+            Route agencyRoute = routePair.getKey();
+            agencyRoute.alerts = routePair.getValue();
+            agencyRoutesList.add(agencyRoute);
         }
 
         Agency agency = new Agency();
