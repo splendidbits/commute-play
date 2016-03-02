@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class SeptaDeserializer implements JsonDeserializer<Agency> {
     private static final String AGENCY_NAME = "septa";
-    private static final TimeZone timezone = TimeZone.getTimeZone("America/New_York");
+    private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
     private static SimpleDateFormat lastUpdatedDateFormat;
     private static SimpleDateFormat detourDateFormat;
 
@@ -35,7 +35,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        List<Alert> alertList = new ArrayList<>();
+        HashMap<String, Route> routeMap = new HashMap<>();
 
         try{
             final JsonArray schedulesArray = json.getAsJsonArray();
@@ -60,11 +60,7 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                         continue;
                     }
 
-                    Route route = new Route(routeId);
-                    route.routeName = routeName;
-
                     Alert alert = new Alert();
-                    alert.route = route;
                     alert.advisoryMessage = advisoryMessage;
                     alert.currentMessage = currentMessage;
                     alert.detourMessage = detourMessage;
@@ -91,7 +87,18 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                     }
 
                     // Move the alert to the corresponding value in the map.
-                    alertList.add(alert);
+                    Route route;
+                    if (routeMap.containsKey(routeId)) {
+                        route = routeMap.get(routeId);
+                    } else {
+                        route = new Route(routeId, routeName);
+                        route.alerts = new ArrayList<>();
+                    }
+
+                    alert.route = route;
+                    route.alerts.add(alert);
+                    Collections.sort(route.alerts);
+                    routeMap.put(routeId, route);
                 }
             }
             Log.d("Finished creating SEPTA route-alert map.");
@@ -103,62 +110,15 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
             Log.c("Error parsing json date(s) into alert object", e);
         }
 
-        // Loop through each route and add to a general route map.
-        HashMap<Route, List<Alert>> routeMap = new HashMap<>();
-        for (Alert alert : alertList) {
-            Route route = new Route(alert.route.routeId, alert.route.routeName);
-            List<Alert> alertsForRoute = routeMap.containsKey(route) ? routeMap.get(route) : new ArrayList<>();
-
-            alertsForRoute.add(alert);
-            routeMap.put(route, alertsForRoute);
-        }
-
-        List<Route> agencyRoutesList = new ArrayList<>();
-        for (Map.Entry<Route, List<Alert>> routePair : routeMap.entrySet()) {
-            Route agencyRoute = routePair.getKey();
-            agencyRoute.alerts = routePair.getValue();
-            agencyRoutesList.add(agencyRoute);
-        }
-
+        // Create agency.
         Agency agency = new Agency();
         agency.agencyName = AGENCY_NAME;
         agency.agencyId = 1;
-        agency.routes = agencyRoutesList;
+        agency.routes = new ArrayList<>();
+
+        // Iterate through the collection of routes and add the alerts and route to the agency routes.
+        for (Route route : routeMap.values()) agency.routes.add(route);
 
         return agency;
-    }
-
-    /**
-     * Holding object so that we can keep hold of the
-     * array of alerts.
-     */
-    private class SeptaHashMap extends HashMap<String, List<Alert>>{
-        private HashMap<String, String> routeIdNameMap = new HashMap<>();
-
-        private void setRouteName(String routeId, String routeName) {
-            routeIdNameMap.put(routeId, routeName);
-        }
-
-        public String getRouteName(String routeId) {
-            if (routeIdNameMap.containsKey(routeId)) {
-                return routeIdNameMap.get(routeId);
-            } else {
-                return null;
-            }
-        }
-
-        public List<Alert> put(String routeId, String routeName, Alert alert) {
-            setRouteName(routeId, routeName);
-
-            if (containsKey(routeId)) {
-                get(routeId).add(alert);
-                return get(routeId);
-
-            } else {
-                List<Alert> routeAlertList = new ArrayList<>();
-                routeAlertList.add(alert);
-                return put(routeId, routeAlertList);
-            }
-        }
     }
 }

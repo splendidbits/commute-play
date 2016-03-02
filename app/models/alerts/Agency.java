@@ -21,6 +21,6 @@ public class Agency extends Model {
     @Column(name = "agency_name")
     public String agencyName;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "agency", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "agency", fetch = FetchType.LAZY)
     public List<Route> routes;
 }

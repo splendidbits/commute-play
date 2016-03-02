@@ -1,12 +1,16 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import helpers.CompareUtils;
 import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "alerts", schema = "agency_alerts")
 public class Alert extends Model implements Comparable {
     public static Finder<Integer, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
@@ -59,17 +63,18 @@ public class Alert extends Model implements Comparable {
             Alert other = (Alert) obj;
 
             // Match potential routeIds first.
-            boolean bothRouteIdMatch = (other.route != null && route != null) && other.route.routeId == route.routeId;
+            boolean bothRouteIdMatch = (other.route != null && route != null) && other.route.routeId.equals(route.routeId);
 
             // Match on everything else.
-            boolean sameCurrentMessage = currentMessage == other.currentMessage;
-            boolean sameDetourMessage = detourMessage != null && detourMessage == other.detourMessage;
-            boolean sameAdvisoryMessage = advisoryMessage != null && advisoryMessage == other.advisoryMessage;
-            boolean sameDetourReason = detourReason != null && detourReason == other.detourReason;
-            boolean sameDetourStartLocation = detourStartLocation != null && detourStartLocation == other.detourStartLocation;
-            boolean sameDetourStartDate = detourStartDate != null && detourStartDate == other.detourStartDate;
-            boolean sameDetourEndDate = detourEndDate != null && detourEndDate == other.detourEndDate;
+            boolean sameCurrentMessage = currentMessage.equals(other.currentMessage);
+            boolean sameDetourMessage = detourMessage != null && detourMessage.equals(other.detourMessage);
+            boolean sameAdvisoryMessage = advisoryMessage != null && advisoryMessage.equals(other.advisoryMessage);
+            boolean sameDetourReason = detourReason != null && detourReason.equals(other.detourReason);
+            boolean sameDetourStartLocation = detourStartLocation != null && detourStartLocation.equals(other.detourStartLocation);
             boolean sameSnow = isSnow == other.isSnow;
+
+            boolean sameDetourStartDate = CompareUtils.equalsNullSafe(detourStartDate, other.detourStartDate);
+            boolean sameDetourEndDate =  CompareUtils.equalsNullSafe(detourEndDate, other.detourEndDate);
 
             // If there was no possible routeId match, return false.
             if (!bothRouteIdMatch) {
