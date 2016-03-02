@@ -11,6 +11,11 @@ public class CompareUtils {
         }
 
         if (object1 != null && object2 != null) {
+
+//            if (object1 instanceof Calendar && object2 instanceof Calendar) {
+//                return ((Calendar) object1).getTimeInMillis() == ((Calendar) object2).getTimeInMillis();
+//            }
+
             return object1.equals(object2);
         }
 

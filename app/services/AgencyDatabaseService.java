@@ -93,9 +93,11 @@ public class AgencyDatabaseService {
                             }
                         }
                     }
+                } else if (currentAgency != null) {
+                    mEbeanServer.update(agency);
 
                 } else {
-                    mEbeanServer.update(agency);
+                    mEbeanServer.save(agency);
                 }
 
                 // Commit all work.

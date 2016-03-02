@@ -76,13 +76,8 @@ public class Alert extends Model implements Comparable {
             boolean sameDetourStartDate = CompareUtils.equalsNullSafe(detourStartDate, other.detourStartDate);
             boolean sameDetourEndDate =  CompareUtils.equalsNullSafe(detourEndDate, other.detourEndDate);
 
-            // If there was no possible routeId match, return false.
-            if (!bothRouteIdMatch) {
-                return false;
-            }
-
-            // Match everything else.
-            return (sameCurrentMessage && sameDetourMessage &&
+            // Match everything.
+            return (bothRouteIdMatch && sameCurrentMessage && sameDetourMessage &&
                     sameAdvisoryMessage && sameDetourReason && sameDetourStartLocation &&
                     sameDetourStartDate && sameDetourEndDate && sameSnow);
         }

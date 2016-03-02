@@ -1,9 +1,10 @@
-package services;
+package helpers;
 
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.app.ModifiedAlerts;
+import services.AgencyDatabaseService;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -19,15 +20,24 @@ import java.util.List;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-public class AgencyUpdateService {
+public class AgencyUpdateHelper {
 
-    public void agencyUpdated(@Nonnull Agency updatedAgency) {
+    /**
+     * Starts of a chain of things when an agency is passed into this method.
+     * 1) Builds a list of added and removed alerts for the agency, since the last time.
+     * 2) Saves the modified routes in the database.
+     * 3) Passes on the alert information to subscribed GCM clients.
+     * 4) Modifies any registration information based on the response from Google.
+     *
+     * @param updatedAgency
+     */
+    public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
         ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
-        //if (modifiedAlerts.hasModifiedAlerts()) {
+        if (modifiedAlerts.hasModifiedAlerts()) {
             Collections.sort(updatedAgency.routes);
             AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
             alertsService.saveAgencyAlerts(updatedAgency);
-        //}
+        }
     }
 
     /**
@@ -62,7 +72,14 @@ public class AgencyUpdateService {
         // Check if the fresh alert is new (updated properties).
         for (Alert freshAlert : freshAlerts) {
             if (!currentAlerts.contains(freshAlert)) {
+                modifiedAlerts.mAddedRouteAlerts.add(freshAlert);
+            }
+        }
 
+        // Check if a current alert is stale.
+        for (Alert currentAlert : currentAlerts) {
+            if (!freshAlerts.contains(currentAlert)) {
+                modifiedAlerts.mRemovedRouteAlerts.add(currentAlert);
             }
         }
 

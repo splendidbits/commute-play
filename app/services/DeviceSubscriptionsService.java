@@ -8,6 +8,7 @@ import models.registrations.Registration;
 import models.registrations.Subscription;
 
 import javax.annotation.Nonnull;
+import java.util.Calendar;
 
 public class DeviceSubscriptionsService {
     private EbeanServer mEbeanServer;
@@ -81,32 +82,30 @@ public class DeviceSubscriptionsService {
             // Build a query depending on if we have a token, and or device identifier.
             Registration existingDevice = mEbeanServer.createQuery(Registration.class)
                     .where()
+                    .disjunction()
                     .eq("registration_id", newRegistration.registrationId)
+                    .eq("device_id", newRegistration.deviceId)
+                    .endJunction()
                     .findUnique();
 
             try {
-                mEbeanServer.createTransaction();
-
                 // Update an existing registration if it exists.
                 if (existingDevice != null) {
-                    mEbeanServer.refresh(newRegistration);
-                    mEbeanServer.update(newRegistration);
+                    existingDevice.deviceId = newRegistration.deviceId;
+                    existingDevice.registrationId = newRegistration.registrationId;
+                    existingDevice.timeRegistered = Calendar.getInstance(Constants.DEFAULT_TIMEZONE);
+
+                    mEbeanServer.update(existingDevice);
 
                 } else {
                     mEbeanServer.save(newRegistration);
                 }
 
-                // Commit the new registration transaction.
-                mEbeanServer.commitTransaction();
                 return true;
 
             } catch (Exception e) {
-                mEbeanServer.rollbackTransaction();
                 Log.e(String.format("Error saving device registration for %s. Rolling back.",
                         newRegistration.deviceId), e);
-
-            } finally {
-                mEbeanServer.endTransaction();
             }
         }
         return false;
