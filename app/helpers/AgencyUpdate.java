@@ -20,23 +20,31 @@ import java.util.List;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-public class AgencyUpdateHelper {
+public class AgencyUpdate {
 
     /**
-     * Starts of a chain of things when an agency is passed into this method.
+     * Starts of a chain of things when an agency is passed into this method:
+     * <p>
      * 1) Builds a list of added and removed alerts for the agency, since the last time.
      * 2) Saves the modified routes in the database.
      * 3) Passes on the alert information to subscribed GCM clients.
      * 4) Modifies any registration information based on the response from Google.
      *
-     * @param updatedAgency
+     * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
         ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
         if (modifiedAlerts.hasModifiedAlerts()) {
+            // Sort the routes.
             Collections.sort(updatedAgency.routes);
+
+            // Save the agency in the datastore.
             AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
             alertsService.saveAgencyAlerts(updatedAgency);
+
+            // Pass the Alerts on to the GCM Pre-processor.
+            CommuteGcmPreprocessor preprocessor = new CommuteGcmPreprocessor();
+            preprocessor.notifyAlertSubscribers(modifiedAlerts);
         }
     }
 
@@ -65,21 +73,23 @@ public class AgencyUpdateHelper {
 
         // If there are no current alerts, they are all new.
         if (currentAlerts == null || currentAlerts.isEmpty()) {
-            modifiedAlerts.mAddedRouteAlerts = freshAlerts;
+            for (Alert freshAlert : freshAlerts) {
+                modifiedAlerts.addUpdatedRouteAlert(freshAlert, freshAlert.route);
+            }
             return modifiedAlerts;
         }
 
         // Check if the fresh alert is new (updated properties).
         for (Alert freshAlert : freshAlerts) {
             if (!currentAlerts.contains(freshAlert)) {
-                modifiedAlerts.mAddedRouteAlerts.add(freshAlert);
+                modifiedAlerts.addUpdatedRouteAlert(freshAlert, freshAlert.route);
             }
         }
 
         // Check if a current alert is stale.
         for (Alert currentAlert : currentAlerts) {
             if (!freshAlerts.contains(currentAlert)) {
-                modifiedAlerts.mRemovedRouteAlerts.add(currentAlert);
+                modifiedAlerts.addStaleRouteAlert(currentAlert, currentAlert.route);
             }
         }
 

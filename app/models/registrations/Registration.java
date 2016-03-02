@@ -18,9 +18,9 @@ public class Registration extends Model {
     public Registration() {
     }
 
-    public Registration(String deviceId, String registrationId) {
+    public Registration(String deviceId, String registrationToken) {
         this.deviceId = deviceId;
-        this.registrationId = registrationId;
+        this.registrationId = registrationToken;
     }
 
     @Id

@@ -47,22 +47,15 @@ public class AgencyDatabaseService {
     public boolean saveAgencyAlerts(Agency agency) {
         if (agency != null) {
 
-            // Delete all alerts for that agency.
-            List<Alert> existingAlerts = mEbeanServer.find(Alert.class)
-                    .fetch("route")
-                    .fetch("route.agency")
-                    .where()
-                    .eq("agency_id", agency.agencyId)
-                    .findList();
-
+            // Get the current persisted agency alerts.
             Agency currentAgency = mEbeanServer.find(Agency.class)
                     .fetch("routes")
                     .where()
                     .idEq(agency.agencyId)
                     .findUnique();
 
+            mEbeanServer.createTransaction();
             try {
-                mEbeanServer.createTransaction();
                 if (currentAgency != null && currentAgency.routes != null) {
 
                     // Loop through each new route and see if it matches a route already persisted.
@@ -93,6 +86,7 @@ public class AgencyDatabaseService {
                             }
                         }
                     }
+
                 } else if (currentAgency != null) {
                     mEbeanServer.update(agency);
 
@@ -111,6 +105,7 @@ public class AgencyDatabaseService {
                 mEbeanServer.endTransaction();
             }
         }
+
         return false;
     }
 

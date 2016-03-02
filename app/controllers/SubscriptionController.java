@@ -7,7 +7,7 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import services.AgencyDatabaseService;
-import services.DeviceSubscriptionsService;
+import services.SubscriptionsService;
 
 import java.util.Calendar;
 import java.util.List;
@@ -56,7 +56,7 @@ public class SubscriptionController extends Controller {
             String[] routes = formEncodedMap.get(ROUTE_LIST_KEY);
 
             // Check that the device is already registered.
-            DeviceSubscriptionsService subscriptionService = new DeviceSubscriptionsService();
+            SubscriptionsService subscriptionService = new SubscriptionsService();
             Registration existingRegistration = subscriptionService.getRegistration(deviceId);
             if (existingRegistration == null) {
                 return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());

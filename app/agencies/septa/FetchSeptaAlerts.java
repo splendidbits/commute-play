@@ -12,7 +12,7 @@ import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 import play.mvc.Controller;
-import helpers.AgencyUpdateHelper;
+import helpers.AgencyUpdate;
 
 public class FetchSeptaAlerts extends Controller {
     public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:8888/septa_instant/alerts.json";
@@ -65,7 +65,7 @@ public class FetchSeptaAlerts extends Controller {
         Log.d("Started to parsing SEPTA alerts json body");
 
         Log.d("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-        AgencyUpdateHelper agencyUpdateHelper = new AgencyUpdateHelper();
-        agencyUpdateHelper.saveAndNotifyAgencySubscribers(agencyBundle);
+        AgencyUpdate agencyUpdate = new AgencyUpdate();
+        agencyUpdate.saveAndNotifyAgencySubscribers(agencyBundle);
     }
 }

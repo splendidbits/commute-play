@@ -4,16 +4,19 @@ import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import main.Constants;
 import main.Log;
+import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Calendar;
+import java.util.List;
 
-public class DeviceSubscriptionsService {
+public class SubscriptionsService {
     private EbeanServer mEbeanServer;
 
-    public DeviceSubscriptionsService() {
+    public SubscriptionsService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
         } catch (Exception e) {
@@ -32,6 +35,23 @@ public class DeviceSubscriptionsService {
             return Registration.find.byId(deviceId);
         }
         return null;
+    }
+
+    /**
+     * Get a list of subscriber device registrations for a given route.
+     *
+     * @param route properly formed route.
+     * @return list of subscribers.
+     */
+    @Nullable
+    public List<Registration> getSubscribedRegistrations(@Nonnull Route route) {
+        List<Registration> foundRegistrations = mEbeanServer.find(Registration.class)
+                .fetch("subscription")
+                .where()
+                .eq("subscription.route_id", route.routeId)
+                .findList();
+
+        return foundRegistrations;
     }
 
     /**

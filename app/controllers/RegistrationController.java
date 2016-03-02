@@ -4,7 +4,7 @@ import models.registrations.Registration;
 import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.DeviceSubscriptionsService;
+import services.SubscriptionsService;
 
 import java.util.Map;
 
@@ -46,7 +46,7 @@ public class RegistrationController extends Controller {
         }
 
         Registration newRegistration = new Registration(deviceId, registrationId);
-        DeviceSubscriptionsService subscriptionService = new DeviceSubscriptionsService();
+        SubscriptionsService subscriptionService = new SubscriptionsService();
 
         boolean success = subscriptionService.addRegistration(newRegistration);
         return success ? ok() : badRequest();
