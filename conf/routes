@@ -9,12 +9,15 @@ POST    /person              controllers.Application.addPerson()
 GET     /persons             controllers.Application.getPersons
 
 # Agency alerts download
-GET     /septa               controllers.SeptaAlertsDownload.downloadAlerts()
+GET     /septa               controllers.SeptaAlertsController.downloadAlerts()
 
 # Public API endpoints
 POST    /register            controllers.RegistrationController.register()
 POST    /subscribe           controllers.SubscriptionController.subscribe()
 
+# Signup
+GET     /signup              controllers.SignupController.signup()
+POST    /signup/adduser      controllers.SignupController.addUser()
 
 # SplendidLog
 ->  /logs                    splendidlog.Routes

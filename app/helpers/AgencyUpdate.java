@@ -33,18 +33,20 @@ public class AgencyUpdate {
      * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
-        ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
-        if (modifiedAlerts.hasModifiedAlerts()) {
-            // Sort the routes.
-            Collections.sort(updatedAgency.routes);
+        List<Route> agencyRoutes = updatedAgency.routes;
+        if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
+            Collections.sort(agencyRoutes);
 
             // Save the agency in the datastore.
             AgencyDatabaseService alertsService = AgencyDatabaseService.getInstance();
             alertsService.saveAgencyAlerts(updatedAgency);
 
-            // Pass the Alerts on to the GCM Pre-processor.
-            CommuteGcmPreprocessor preprocessor = new CommuteGcmPreprocessor();
-            preprocessor.notifyAlertSubscribers(modifiedAlerts);
+            // Pass the Alert differences on to the GCM Pre-processor.
+            ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
+            if (modifiedAlerts.hasModifiedAlerts()){
+                GcmAlertProcessor preprocessor = new GcmAlertProcessor();
+                preprocessor.notifyAlertSubscribers(modifiedAlerts);
+            }
         }
     }
 
@@ -54,6 +56,7 @@ public class AgencyUpdate {
      * @param updatedAgency the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
+    @Nonnull
     private ModifiedAlerts getUpdatedRoutes(@Nonnull Agency updatedAgency) {
         ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.agencyId);
 

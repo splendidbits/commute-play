@@ -44,68 +44,64 @@ public class AgencyDatabaseService {
      * @param agency list of route alerts.
      * @return boolean for success.
      */
-    public boolean saveAgencyAlerts(Agency agency) {
-        if (agency != null) {
+    public boolean saveAgencyAlerts(@Nonnull Agency agency) {
+        // Get the current persisted agency alerts.
+        Agency currentAgency = mEbeanServer.find(Agency.class)
+                .fetch("routes")
+                .where()
+                .idEq(agency.agencyId)
+                .findUnique();
 
-            // Get the current persisted agency alerts.
-            Agency currentAgency = mEbeanServer.find(Agency.class)
-                    .fetch("routes")
-                    .where()
-                    .idEq(agency.agencyId)
-                    .findUnique();
+        mEbeanServer.createTransaction();
+        try {
+            if (currentAgency != null && currentAgency.routes != null) {
 
-            mEbeanServer.createTransaction();
-            try {
-                if (currentAgency != null && currentAgency.routes != null) {
+                // Loop through each new route and see if it matches a route already persisted.
+                for (Route freshRoute : agency.routes) {
+                    if (!currentAgency.routes.contains(freshRoute)) {
 
-                    // Loop through each new route and see if it matches a route already persisted.
-                    for (Route freshRoute : agency.routes) {
-                        if (!currentAgency.routes.contains(freshRoute)) {
+                        Route existingRoute = mEbeanServer.find(Route.class)
+                                .fetch("agency")
+                                .where()
+                                .eq("route_id", freshRoute.routeId)
+                                .eq("agency_id", agency.agencyId)
+                                .findUnique();
 
-                            Route existingRoute = mEbeanServer.find(Route.class)
-                                    .fetch("agency")
-                                    .where()
-                                    .eq("route_id", freshRoute.routeId)
-                                    .eq("agency_id", agency.agencyId)
-                                    .findUnique();
+                        if (existingRoute != null) {
+                            mEbeanServer.delete(existingRoute.alerts);
 
-                            if (existingRoute != null) {
-                                mEbeanServer.delete(existingRoute.alerts);
+                            // Update the route properties
+                            existingRoute.routeName = freshRoute.routeName;
+                            existingRoute.agency = agency;
+                            existingRoute.alerts = freshRoute.alerts;
 
-                                // Update the route properties
-                                existingRoute.routeName = freshRoute.routeName;
-                                existingRoute.agency = agency;
-                                existingRoute.alerts = freshRoute.alerts;
+                            // Delete the alerts for that route
+                            mEbeanServer.save(existingRoute);
 
-                                // Delete the alerts for that route
-                                mEbeanServer.save(existingRoute);
-
-                            } else {
-                                freshRoute.agency = agency;
-                                mEbeanServer.save(freshRoute);
-                            }
+                        } else {
+                            freshRoute.agency = agency;
+                            mEbeanServer.save(freshRoute);
                         }
                     }
-
-                } else if (currentAgency != null) {
-                    mEbeanServer.update(agency);
-
-                } else {
-                    mEbeanServer.save(agency);
                 }
 
-                // Commit all work.
-                mEbeanServer.commitTransaction();
+            } else if (currentAgency != null) {
+                mEbeanServer.update(agency);
 
-            } catch (Exception e) {
-                Log.e(String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
-                mEbeanServer.rollbackTransaction();
-
-            } finally {
-                mEbeanServer.endTransaction();
+            } else {
+                mEbeanServer.save(agency);
             }
-        }
 
+            // Commit all work.
+            mEbeanServer.commitTransaction();
+
+        } catch (Exception e) {
+            Log.e(String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
+            mEbeanServer.rollbackTransaction();
+
+        } finally {
+            mEbeanServer.endTransaction();
+        }
         return false;
     }
 

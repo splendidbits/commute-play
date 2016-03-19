@@ -4,7 +4,7 @@
     <data-source name="commute-gcm splendidbits" uuid="544be71c-046d-406b-8ded-66e2cc5f2a15">
       <secret-storage>master_key</secret-storage>
       <user-name>splendidbits</user-name>
-      <schema-pattern>commute_gcm.agency_alerts commute_gcm.device_subscriptions commute_gcm.information_schema commute_gcm.pg_catalog commute_gcm.public</schema-pattern>
+      <schema-pattern>commute_gcm.*</schema-pattern>
     </data-source>
   </component>
 </project>

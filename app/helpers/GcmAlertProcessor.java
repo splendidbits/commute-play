@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Sets up things for the GCM Dispatcher.
  */
-public class CommuteGcmPreprocessor implements GoogleGcmDispatcher.GoogleResponseInterface {
+public class GcmAlertProcessor implements GoogleGcmDispatcher.GoogleResponseInterface {
     private static final String GCM_KEY_ROUTE_ID = "route_id";
     private static final String GCM_KEY_ALERT_TYPE = "alert_type";
     private static final String GCM_KEY_ROUTE_NAME = "route_name";
@@ -40,7 +40,7 @@ public class CommuteGcmPreprocessor implements GoogleGcmDispatcher.GoogleRespons
     /**
      * TODO: Migrate this to a polling TaskQueue service.
      *
-     * Notify GCM susbcribers of the modified alerts which have changed.
+     * Notify GCM subscribers of the modified alerts which have changed.
      *
      * @param modifiedAlerts Collection of modified alerts including their routes.
      */

@@ -75,6 +75,10 @@ public class GoogleGcmDispatcher {
     }
 
 
+    /**
+     * Interface callback to allow clients to know the state of a particular
+     * outbound Google GCM message.
+     */
     public interface GoogleResponseInterface {
         void messageRequestSuccess(GoogleResponse googleResponse);
 

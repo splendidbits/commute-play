@@ -1,22 +1,23 @@
-package agencies.septa;
+package controllers;
 
-import com.avaje.ebean.annotation.Transactional;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import helpers.AgencyUpdate;
 import helpers.SeptaDeserializer;
 import main.Constants;
 import main.Log;
 import models.alerts.Agency;
+import play.db.ebean.Transactional;
 import play.libs.F;
 import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 import play.mvc.Controller;
-import helpers.AgencyUpdate;
+import play.mvc.Result;
 
-public class FetchSeptaAlerts extends Controller {
-    public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:8888/septa_instant/alerts.json";
-//    public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+public class SeptaAlertsController extends Controller {
+    public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
+//  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     /**
      * Download SEPTA alerts from the json server and send them to the
@@ -34,10 +35,10 @@ public class FetchSeptaAlerts extends Controller {
      * 5: Get list of subscriptions for route
      * 6: send data in batches of 1000 to google.
      *
+     * @return Result.
      */
     @Transactional
-    public void process() {
-
+    public Result downloadAlerts() {
         WSResponse response;
         try {
             WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
@@ -48,12 +49,12 @@ public class FetchSeptaAlerts extends Controller {
 
         } catch (Exception exception) {
             Log.e("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
-            return;
+            return internalServerError();
         }
 
         if (response.getStatus() != 200) {
             Log.e("Fetching SEPTA alerts json failed with error " + response.getStatus());
-            return;
+            return internalServerError();
         }
 
         Log.d("Completed fetching SEPTA alerts");
@@ -67,5 +68,7 @@ public class FetchSeptaAlerts extends Controller {
         Log.d("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
         AgencyUpdate agencyUpdate = new AgencyUpdate();
         agencyUpdate.saveAndNotifyAgencySubscribers(agencyBundle);
+
+        return ok();
     }
 }

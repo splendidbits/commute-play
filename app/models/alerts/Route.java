@@ -4,6 +4,7 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
+import models.accounts.Message;
 import models.registrations.Subscription;
 
 import javax.persistence.*;
@@ -42,6 +43,9 @@ public class Route extends Model implements Comparable<Route> {
 
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "route", fetch = FetchType.LAZY)
     public List<Alert> alerts;
+
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "route", fetch = FetchType.LAZY)
+    public List<Message> messages;
 
     @Override
     public boolean equals(Object obj) {

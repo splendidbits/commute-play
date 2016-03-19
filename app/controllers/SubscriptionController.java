@@ -52,8 +52,13 @@ public class SubscriptionController extends Controller {
             Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
 
             String deviceId = formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase();
-            String agencyName = formEncodedMap.get(AGENCY_NAME_KEY)[0].trim().toLowerCase();
-            String[] routes = formEncodedMap.get(ROUTE_LIST_KEY);
+            String[] routes = formEncodedMap.get(ROUTE_LIST_KEY) != null
+                    ? formEncodedMap.get(ROUTE_LIST_KEY)[0].trim().split(" ")
+                    : null;
+
+            // Check the agency name. If it's null, it's an older SEPTA Instant client, so add 'septa'.
+            String[] agencyValue = formEncodedMap.get(AGENCY_NAME_KEY);
+            String agencyName = agencyValue != null ? agencyValue[0].trim().toLowerCase() : "septa";
 
             // Check that the device is already registered.
             SubscriptionsService subscriptionService = new SubscriptionsService();
@@ -93,10 +98,11 @@ public class SubscriptionController extends Controller {
                 return SubscriptionResponse.MISSING_PARAMS_RESULT;
             }
 
+            // TODO: Re-add check for agency name when it has been added to the client.
             // Check that there was a valid list of routes and device uuid.
             if ((!clientRequestBody.containsKey(DEVICE_UUID_KEY)) ||
-                    (!clientRequestBody.containsKey(ROUTE_LIST_KEY)) ||
-                    (!clientRequestBody.containsKey(AGENCY_NAME_KEY))) {
+                    //(!clientRequestBody.containsKey(AGENCY_NAME_KEY)) ||
+                    (!clientRequestBody.containsKey(ROUTE_LIST_KEY))) {
                 return SubscriptionResponse.MISSING_PARAMS_RESULT;
             }
         }
