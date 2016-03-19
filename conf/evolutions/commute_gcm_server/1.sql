@@ -58,6 +58,7 @@ create table service_accounts.platform (
 create table service_accounts.platform_account (
   id                        integer not null,
   account_account_id        integer,
+  package_uri               varchar(255),
   client_key                varchar(255),
   platform_platform_name    varchar(255),
   constraint pk_platform_account primary key (id))
@@ -65,7 +66,8 @@ create table service_accounts.platform_account (
 
 create table device_subscriptions.registrations (
   device_id                 varchar(255) not null,
-  registration_id           varchar(255),
+  registration_token        varchar(255),
+  account_account_id        integer,
   time_registered           timestamp,
   constraint pk_registrations primary key (device_id))
 ;
@@ -81,7 +83,6 @@ create table device_subscriptions.subscriptions (
   subscription_id           integer not null,
   registration_device_id    varchar(255),
   time_subscribed           timestamp,
-  constraint uq_subscriptions_registration_de unique (registration_device_id),
   constraint pk_subscriptions primary key (subscription_id))
 ;
 
@@ -111,10 +112,12 @@ alter table service_accounts.platform_account add constraint fk_platform_account
 create index ix_platform_account_account_4 on service_accounts.platform_account (account_account_id);
 alter table service_accounts.platform_account add constraint fk_platform_account_platform_5 foreign key (platform_platform_name) references service_accounts.platform (platform_name);
 create index ix_platform_account_platform_5 on service_accounts.platform_account (platform_platform_name);
-alter table agency_alerts.routes add constraint fk_routes_agency_6 foreign key (agency_agency_id) references agency_alerts.agencies (agency_id);
-create index ix_routes_agency_6 on agency_alerts.routes (agency_agency_id);
-alter table device_subscriptions.subscriptions add constraint fk_subscriptions_registration_7 foreign key (registration_device_id) references device_subscriptions.registrations (device_id);
-create index ix_subscriptions_registration_7 on device_subscriptions.subscriptions (registration_device_id);
+alter table device_subscriptions.registrations add constraint fk_registrations_account_6 foreign key (account_account_id) references service_accounts.account (account_id);
+create index ix_registrations_account_6 on device_subscriptions.registrations (account_account_id);
+alter table agency_alerts.routes add constraint fk_routes_agency_7 foreign key (agency_agency_id) references agency_alerts.agencies (agency_id);
+create index ix_routes_agency_7 on agency_alerts.routes (agency_agency_id);
+alter table device_subscriptions.subscriptions add constraint fk_subscriptions_registration_8 foreign key (registration_device_id) references device_subscriptions.registrations (device_id);
+create index ix_subscriptions_registration_8 on device_subscriptions.subscriptions (registration_device_id);
 
 
 

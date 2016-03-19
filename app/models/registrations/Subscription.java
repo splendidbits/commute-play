@@ -4,6 +4,7 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
+import models.accounts.Message;
 import models.alerts.Route;
 
 import javax.persistence.*;
@@ -23,8 +24,8 @@ public class Subscription extends Model {
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 
-    @OneToOne(cascade = CascadeType.REFRESH)
-    @Column(name = "registration_id")
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
+    @Column(name = "device_id")
     public Registration registration;
 
     @ManyToMany(cascade = CascadeType.ALL)

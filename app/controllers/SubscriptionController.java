@@ -7,7 +7,7 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import services.AgencyDatabaseService;
-import services.SubscriptionsService;
+import services.AccountService;
 
 import java.util.Calendar;
 import java.util.List;
@@ -61,7 +61,7 @@ public class SubscriptionController extends Controller {
             String agencyName = agencyValue != null ? agencyValue[0].trim().toLowerCase() : "septa";
 
             // Check that the device is already registered.
-            SubscriptionsService subscriptionService = new SubscriptionsService();
+            AccountService subscriptionService = new AccountService();
             Registration existingRegistration = subscriptionService.getRegistration(deviceId);
             if (existingRegistration == null) {
                 return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());

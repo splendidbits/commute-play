@@ -4,9 +4,11 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
+import models.accounts.Account;
 
 import javax.persistence.*;
 import java.util.Calendar;
+import java.util.List;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
@@ -20,21 +22,24 @@ public class Registration extends Model {
 
     public Registration(String deviceId, String registrationToken) {
         this.deviceId = deviceId;
-        this.registrationId = registrationToken;
+        this.registrationToken = registrationToken;
     }
 
     @Id
     @Column(name = "device_id")
 	public String deviceId;
 
-    @Column(name = "registration_id")
-    public String registrationId;
+    @Column(name = "registration_token")
+    public String registrationToken;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    public Account account;
 
     @Basic
     @Column(name="time_registered")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
-    @OneToOne(mappedBy = "registration")
-    public Subscription subscription;
+    @OneToMany(mappedBy = "registration", cascade = CascadeType.REMOVE)
+    public List<Subscription> subscriptions;
 }

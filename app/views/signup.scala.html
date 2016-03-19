@@ -16,6 +16,7 @@
         }
         <form method="POST" action="@routes.SignupController.addUser()">
             <div id="mainform">
+
                 <div class="item">
                     <input placeholder="Organization Name" type="text", name="org_name"/>
                     <div class="errors">
@@ -24,6 +25,7 @@
                     }
                     </div>
                 </div>
+
                 <div class="item">
                     <input placeholder="Account Email" type="text", name="email"/>
                     <div class="errors">
@@ -32,6 +34,7 @@
                     }
                     </div>
                 </div>
+
                 <div class="item">
                     <input placeholder="Password", type="password", name="password_1"/>
                     <div class="errors">
@@ -40,9 +43,11 @@
                     }
                     </div>
                 </div>
+
                 <div class="item">
                     <input placeholder="Password", type="password", name="password_2"/>
                 </div>
+
                 <div class="item">
                     <input placeholder="Estimated daily device registrations", type="number", name="estimate_daily_regs"/>
                     <div class="errors">
@@ -51,14 +56,26 @@
                     }
                     </div>
                 </div>
+
                 <div class="item">
                     <input type="checkbox" name="platform_gcm" title="Google (GCM)"/>
                     Google (GCM)
                 </div>
+
                 <div class="item">
                     <input type="checkbox" name="platform_apns" title="Apple (APNs)"/>
                     Apple (APNs)
                 </div>
+
+                <div class="item">
+                    <input placeholder="Package URI/name", type="text", name="package_uri"/>
+                    <div class="errors">
+                    @for(error <- signupForm("package_uri").errors) {
+                        <p>@error.message</p>
+                    }
+                    </div>
+                </div>
+
                 <div id="requestbutton">
                     <button>Request Account</button>
                 </div>

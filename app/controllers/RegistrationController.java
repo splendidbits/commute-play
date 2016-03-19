@@ -1,10 +1,11 @@
 package controllers;
 
+import models.accounts.Account;
 import models.registrations.Registration;
 import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.SubscriptionsService;
+import services.AccountService;
 
 import java.util.Map;
 
@@ -13,12 +14,15 @@ import java.util.Map;
  * with the commute server.
  */
 public class RegistrationController extends Controller {
+    private static final String API_KEY = "api_key";
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
     // Return results
     private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
     private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
+    private static final Result BAD_ACCOUNT = badRequest("No account for api_key");
+    private static final Result OVERDRAWN_ACCOUNT = badRequest("Over quota for account. Email help@splendidbits.co");
 
     /**
      * Register a client with the commute GCM server. Saves important
@@ -28,16 +32,16 @@ public class RegistrationController extends Controller {
      */
     @Transactional
     public Result register() {
-        // Grab the header that the client has sent.
-        // String userAgent = request().getHeader("User-Agent");
-        Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
+        AccountService accountService = new AccountService();
 
+        Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
         if (clientRequestBody == null) {
             return MISSING_PARAMS_RESULT;
         }
 
         String deviceId = clientRequestBody.get(DEVICE_UUID_KEY)[0];
         String registrationId = clientRequestBody.get(REGISTRATION_TOKEN_KEY)[0];
+        String apiKey = clientRequestBody.get(API_KEY) == null ? null : clientRequestBody.get(API_KEY)[0];
 
         // Check that there was a valid registration token and device uuid.
         if ((registrationId == null || registrationId.isEmpty()) ||
@@ -45,11 +49,23 @@ public class RegistrationController extends Controller {
             return MISSING_PARAMS_RESULT;
         }
 
-        Registration newRegistration = new Registration(deviceId, registrationId);
-        SubscriptionsService subscriptionService = new SubscriptionsService();
+        /*
+         * Hack until all the clients have added an API key.
+         * TODO: Remove this when all clients have been upgraded to send API key.
+         */
+        Account account = apiKey != null
+                ? accountService.getAccount(apiKey, null)
+                : accountService.getAccount(null, "daniel@staticfish.com");
 
-        boolean success = subscriptionService.addRegistration(newRegistration);
-        return success ? ok() : badRequest();
+        if (account == null) {
+            return BAD_ACCOUNT;
+        }
+
+        Registration newRegistration = new Registration(deviceId, registrationId);
+        newRegistration.account = account;
+        boolean persistSuccess = accountService.addRegistration(newRegistration);
+
+        return persistSuccess ? ok() : badRequest();
     }
 
 }

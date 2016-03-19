@@ -4,6 +4,8 @@ import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import main.Constants;
 import main.Log;
+import models.accounts.Account;
+import models.accounts.Platform;
 import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
@@ -13,15 +15,40 @@ import javax.annotation.Nullable;
 import java.util.Calendar;
 import java.util.List;
 
-public class SubscriptionsService {
+public class AccountService {
     private EbeanServer mEbeanServer;
 
-    public SubscriptionsService() {
+    public AccountService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
         } catch (Exception e) {
             play.Logger.debug("Error setting EBean Datasource properties", e);
         }
+    }
+
+    /**
+     * Get an Account for an API key.
+     * @param apiKey api key for which account was assigned.
+     * @param email registered email address for account.
+     *
+     * @return an Account object, null if not found.
+     */
+    @Nullable
+    public Account getAccount(String apiKey, String email) {
+        if (apiKey != null || email != null) {
+
+            // Build a query depending on if we have a api key, and or registered email.
+            Account account = mEbeanServer.createQuery(Account.class)
+                    .where()
+                    .disjunction()
+                    .eq("api_key", apiKey)
+                    .eq("email", email)
+                    .endJunction()
+                    .findUnique();
+
+            return account;
+        }
+        return null;
     }
 
     /**
@@ -33,6 +60,20 @@ public class SubscriptionsService {
     public Registration getRegistration(@Nonnull String deviceId) {
         if (!deviceId.isEmpty()) {
             return Registration.find.byId(deviceId);
+        }
+        return null;
+    }
+
+    /**
+     * Get a platform object for name, such as GCM or APNS.
+     * @param platformName name of platform.
+     *
+     * @return Platform. null if not found
+     */
+    @Nullable
+    public Platform getPlatform(@Nonnull String platformName) {
+        if (!platformName.isEmpty()) {
+            return Platform.find.byId(platformName.toLowerCase());
         }
         return null;
     }
@@ -97,13 +138,13 @@ public class SubscriptionsService {
      * @return success boolean.
      */
     public boolean addRegistration(@Nonnull Registration newRegistration) {
-        if (newRegistration.registrationId != null && newRegistration.deviceId != null) {
+        if (newRegistration.registrationToken != null || newRegistration.deviceId != null) {
 
             // Build a query depending on if we have a token, and or device identifier.
             Registration existingDevice = mEbeanServer.createQuery(Registration.class)
                     .where()
                     .disjunction()
-                    .eq("registration_id", newRegistration.registrationId)
+                    .eq("registration_token", newRegistration.registrationToken)
                     .eq("device_id", newRegistration.deviceId)
                     .endJunction()
                     .findUnique();
@@ -112,9 +153,8 @@ public class SubscriptionsService {
                 // Update an existing registration if it exists.
                 if (existingDevice != null) {
                     existingDevice.deviceId = newRegistration.deviceId;
-                    existingDevice.registrationId = newRegistration.registrationId;
+                    existingDevice.registrationToken = newRegistration.registrationToken;
                     existingDevice.timeRegistered = Calendar.getInstance(Constants.DEFAULT_TIMEZONE);
-
                     mEbeanServer.update(existingDevice);
 
                 } else {

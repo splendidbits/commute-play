@@ -8,7 +8,7 @@ import models.app.GoogleResponse;
 import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import services.GoogleGcmDispatcher;
-import services.SubscriptionsService;
+import services.AccountService;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -50,8 +50,9 @@ public class GcmAlertProcessor implements GoogleGcmDispatcher.GoogleResponseInte
         // Iterate through the routes.
         for (Route route : updatedRoutes.keySet()) {
 
-            SubscriptionsService subscriptionsService = new SubscriptionsService();
-            List<Registration> registrations = subscriptionsService.getSubscribedRegistrations(route);
+            // Get all registrations for the subscribed route, plus the sending accounts associated.
+            AccountService accountService = new AccountService();
+            List<Registration> registrations = accountService.getSubscribedRegistrations(route);
 
             if (registrations != null && !registrations.isEmpty()) {
 

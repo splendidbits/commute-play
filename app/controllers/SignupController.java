@@ -3,6 +3,8 @@ package controllers;
 import com.avaje.ebean.Ebean;
 import helpers.ValidationHelper;
 import models.accounts.Account;
+import models.accounts.Platform;
+import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import play.data.DynamicForm;
@@ -14,6 +16,8 @@ import play.mvc.Result;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,6 +54,25 @@ public class SignupController extends Controller {
         String password1 = formData.get("password_1");
         String password2 = formData.get("password_2");
         String estDailyRegistrations = formData.get("estimate_daily_regs");
+        String packageUri = formData.get("package_uri");
+        boolean requiresGcm = formData.get("platform_gcm") != null && formData.get("platform_gcm").equals("on");
+        boolean requiresApns = formData.get("platform_apns") != null && formData.get("platform_apns").equals("on");
+
+        List<PlatformAccount> platformAccounts = new ArrayList<>();
+        if (requiresGcm) {
+            PlatformAccount gcmAccount = new PlatformAccount();
+            gcmAccount.packageUri = packageUri;
+            gcmAccount.clientKey = String.valueOf(00000000);
+            gcmAccount.platform = Platform.find.byId("gcm");
+            platformAccounts.add(gcmAccount);
+        }
+        if (requiresApns) {
+            PlatformAccount apnsAccount = new PlatformAccount();
+            apnsAccount.packageUri = packageUri;
+            apnsAccount.clientKey = String.valueOf(00000000);
+            apnsAccount.platform = Platform.find.byId("apns");
+            platformAccounts.add(apnsAccount);
+        }
 
         Account pendingAccount = new Account();
         pendingAccount.orgName = organisationName;
@@ -59,6 +82,7 @@ public class SignupController extends Controller {
         pendingAccount.estSendLimit = Long.valueOf(estDailyRegistrations);
         pendingAccount.monthlySendLimit = 1000000L;
         pendingAccount.active = false;
+        pendingAccount.platformAccounts = platformAccounts;
         Ebean.save(pendingAccount);
 
         return ok(signup.render("Your API request has been submitted. Mark email from @splendidbits.co as non-spam",
@@ -80,6 +104,7 @@ public class SignupController extends Controller {
             String password1 = formData.get("password_1");
             String password2 = formData.get("password_2");
             String estDailyRegistrations = formData.get("estimate_daily_regs");
+            String packageUri = formData.get("pacakge_uri");
 
             boolean requiresGcm = formData.get("platform_gcm") != null &&
                     formData.get("platform_gcm").equals("on");
@@ -105,6 +130,10 @@ public class SignupController extends Controller {
                     Integer.valueOf(estDailyRegistrations) < 1000000;
 
             boolean platformsGood = requiresApns || requiresGcm;
+
+            if (packageUri == null || packageUri.isEmpty() || !packageUri.contains("com.")) {
+                signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.n.n"));
+            }
 
             if (!passwordGood) {
                 signupForm.reject(new ValidationError("password_1", "Passwords must match and be more than 5 characters."));

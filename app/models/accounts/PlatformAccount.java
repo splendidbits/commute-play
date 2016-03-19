@@ -26,6 +26,9 @@ public class PlatformAccount extends Model {
     @ManyToOne(fetch = FetchType.LAZY)
     public Account account;
 
+    @Column(name = "package_uri")
+    public String packageUri;
+
     @Column(name = "client_key")
     public String clientKey;
 
