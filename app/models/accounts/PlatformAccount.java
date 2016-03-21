@@ -34,9 +34,6 @@ public class PlatformAccount extends Model {
     @Column(name = "auth_token")
     public String authToken;
 
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     public Platform platform;
-
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "account", fetch = FetchType.LAZY)
-    public List<Message> messages;
 }

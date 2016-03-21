@@ -16,7 +16,7 @@ create table splendidlog.logs (
   time                      timestamp,
   level                     varchar(255),
   tag                       varchar(255),
-  originalMessage                   varchar(255),
+  message                   varchar(255),
   constraint pk_logs primary key (id))
 ;
 

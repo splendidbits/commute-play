@@ -89,13 +89,13 @@ public class GoogleGcmDispatcher {
      * @param message add message to outbound gcm account queue.
      */
     private void addOutboundMessage(@Nonnull Message message) {
-        if (message.account != null) {
-            if (mOutboundMessages.containsKey(message.account)) {
-                mOutboundMessages.get(message.account).add(message);
+        if (message.platformAccount != null) {
+            if (mOutboundMessages.containsKey(message.platformAccount)) {
+                mOutboundMessages.get(message.platformAccount).add(message);
             } else {
                 List<Message> accountMessages = new ArrayList<>();
                 accountMessages.add(message);
-                mOutboundMessages.put(message.account, accountMessages);
+                mOutboundMessages.put(message.platformAccount, accountMessages);
             }
         }
     }
@@ -156,7 +156,7 @@ public class GoogleGcmDispatcher {
                 boolean hasCriticalError = false;
 
                 List<Recipient> originalRecipients = mOriginalMessage.recipients;
-                MessageResult originalMessageResult = new MessageResult(totalSuccesses, totalFails);
+                MessageResult originalMessageResult = new MessageResult();
 
                 // Start the registrationCount before all of the message parts so inbound == outbound
                 int overallRegCount = 0;
@@ -212,6 +212,8 @@ public class GoogleGcmDispatcher {
                 }
 
                 // Add the critical flag  into the response if there was one.
+                originalMessageResult.setSuccessCount(totalSuccesses);
+                originalMessageResult.setFailCount(totalFails);
                 originalMessageResult.setHasCriticalErrors(hasCriticalError);
                 originalMessageResult.setOriginalMessage(mOriginalMessage);
 
@@ -239,7 +241,7 @@ public class GoogleGcmDispatcher {
         if (message != null) {
             Message clonedMessage = new Message();
             clonedMessage.messageId = message.messageId;
-            clonedMessage.account = message.account;
+            clonedMessage.platformAccount = message.platformAccount;
             clonedMessage.recipients = new ArrayList<>();
             clonedMessage.payloadData = message.payloadData;
             clonedMessage.collapseKey = message.collapseKey;

@@ -24,8 +24,8 @@ public class Task extends Model {
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
 
-    @Column("retry_multiplier");
-    public String retryMultiplier;
+    @Column(name = "retry_multiplier")
+    public int retryMultiplier;
 
     @Basic
     @Column(name = "first_attempt")

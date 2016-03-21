@@ -18,12 +18,12 @@ public class Recipient extends Model {
     }
 
     @Id
-    @Column("recipient_id")
+    @Column(name = "recipient_id")
     public String recipientId;
 
     @ManyToOne(fetch = FetchType.EAGER)
     public Message message;
 
-    @Column("is_running")
+    @Column(name = "is_running")
     public boolean isRunning;
 }

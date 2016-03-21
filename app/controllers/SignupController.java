@@ -65,19 +65,17 @@ public class SignupController extends Controller {
         if (requiresGcm) {
             PlatformAccount gcmAccount = new PlatformAccount();
             gcmAccount.packageUri = packageUri;
-            gcmAccount.clientKey = String.valueOf(00000000);
             gcmAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_GCM);
             platformAccounts.add(gcmAccount);
         }
         if (requiresApns) {
             PlatformAccount apnsAccount = new PlatformAccount();
             apnsAccount.packageUri = packageUri;
-            apnsAccount.clientKey = String.valueOf(00000000);
             apnsAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_APNS);
             platformAccounts.add(apnsAccount);
         }
 
-        if (platformAccounts.isEmpty()) {
+        if (!platformAccounts.isEmpty()) {
             Account pendingAccount = new Account();
             pendingAccount.orgName = organisationName;
             pendingAccount.email = email;

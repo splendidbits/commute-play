@@ -83,7 +83,7 @@ public class GcmAlertProcessor {
                                      @Nonnull List<Registration> registrations,
                                      @Nonnull PlatformAccount platformAccount) {
         Message gcmMessage = new Message();
-        gcmMessage.account = platformAccount;
+        gcmMessage.platformAccount = platformAccount;
 
         gcmMessage.addData(GCM_KEY_ROUTE_ID, updatedAlert.route.routeId);
         gcmMessage.addData(GCM_KEY_ROUTE_NAME, updatedAlert.route.routeName);

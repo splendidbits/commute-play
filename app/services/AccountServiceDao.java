@@ -99,7 +99,7 @@ public class AccountServiceDao {
                 .where()
                 .eq("registrations.subscriptions.routes.routeId", route.routeId)
                 .where()
-                .eq("registrations.subscriptions.routes.agencyId", agencyId)
+                .eq("registrations.subscriptions.routes.agency.agencyId", agencyId)
                 .findList();
 
         return accounts;

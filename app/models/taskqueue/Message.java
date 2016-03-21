@@ -8,6 +8,7 @@ import models.accounts.PlatformAccount;
 import interfaces.PlatformMessage;
 import models.registrations.Registration;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.*;
 
@@ -25,7 +26,7 @@ public class Message extends Model implements PlatformMessage {
     }
 
     @Id
-    @Column(name = "message_id", updatable = true)
+    @Column(name = "message_id")
     @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Integer messageId;
@@ -39,8 +40,8 @@ public class Message extends Model implements PlatformMessage {
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
     public List<PayloadElement> payloadData;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    public PlatformAccount account;
+    @Transient
+    public PlatformAccount platformAccount;
 
     @Column(name = "collapse_key")
     public String collapseKey;
@@ -72,13 +73,13 @@ public class Message extends Model implements PlatformMessage {
     }
 
     @Transient
-    public void addRegistrationId(String registrationId){
+    public void addRegistrationId(@Nonnull String registrationId){
         Recipient recipient = new Recipient();
         recipient.recipientId = registrationId;
         if (recipients == null) {
             recipients = new ArrayList<>();
-            recipients.add(recipient);
         }
+        recipients.add(recipient);
     }
 
     @Transient

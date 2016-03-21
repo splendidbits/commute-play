@@ -21,7 +21,7 @@
                     <input placeholder="Organization Name" type="text", name="org_name"/>
                     <div class="errors">
                     @for(error <- signupForm("org_name").errors) {
-                        <p>@error.originalMessage</p>
+                        @*<p>@error.originalMessage</p>*@
                     }
                     </div>
                 </div>
@@ -30,7 +30,7 @@
                     <input placeholder="Account Email" type="text", name="email"/>
                     <div class="errors">
                     @for(error <- signupForm("email").errors) {
-                        <p>@error.originalMessage</p>
+                        @*<p>@error.originalMessage</p>*@
                     }
                     </div>
                 </div>
@@ -39,7 +39,7 @@
                     <input placeholder="Password", type="password", name="password_1"/>
                     <div class="errors">
                     @for(error <- signupForm("password_1").errors) {
-                        <p>@error.originalMessage</p>
+                        @*<p>@error.originalMessage</p>*@
                     }
                     </div>
                 </div>
@@ -52,7 +52,7 @@
                     <input placeholder="Estimated daily device registrations", type="number", name="estimate_daily_regs"/>
                     <div class="errors">
                     @for(error <- signupForm("estimate_daily_regs").errors) {
-                        <p>@error.originalMessage</p>
+                        @*<p>@error.originalMessage</p>*@
                     }
                     </div>
                 </div>
@@ -71,7 +71,7 @@
                     <input placeholder="Package URI/name", type="text", name="package_uri"/>
                     <div class="errors">
                     @for(error <- signupForm("package_uri").errors) {
-                        <p>@error.originalMessage</p>
+                        @*<p>@error.originalMessage</p>*@
                     }
                     </div>
                 </div>
@@ -81,7 +81,7 @@
                 </div>
                 <div class="errors">
                 @for(error <- signupForm("platform_gcm").errors) {
-                    <p>@error.originalMessage</p>
+                    @*<p>@error.originalMessage</p>*@
                 }
                 </div>
             </div>

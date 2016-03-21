@@ -12,8 +12,8 @@ import java.util.Map;
  * errors back from any platform provider.
  */
 public class MessageResult{
-    private int mSuccessCount;
-    private int mFailCount;
+    private int mSuccessCount = 0;
+    private int mFailCount = 0;
 
     private Message mOriginalMessage = null;
     private List<String> mStaleRegistrationIds = new ArrayList<>();
@@ -23,9 +23,15 @@ public class MessageResult{
     private Map<String, String> mErrorResultsMap = new HashMap<>();
     private boolean mHasCriticalErrors;
 
-    public MessageResult(int successCount, int failCount) {
-        mSuccessCount = successCount;
+    public MessageResult() {
+    }
+
+    public void setFailCount(int failCount) {
         mFailCount = failCount;
+    }
+
+    public void setSuccessCount(int successCount) {
+        mSuccessCount = successCount;
     }
 
     public boolean isHasCriticalErrors() {
