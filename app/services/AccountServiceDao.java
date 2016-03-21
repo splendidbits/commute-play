@@ -15,10 +15,11 @@ import javax.annotation.Nullable;
 import java.util.Calendar;
 import java.util.List;
 
-public class AccountService {
+public class AccountServiceDao {
+    private static final String TAG = AccountServiceDao.class.getSimpleName();
     private EbeanServer mEbeanServer;
 
-    public AccountService() {
+    public AccountServiceDao() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
         } catch (Exception e) {
@@ -85,14 +86,23 @@ public class AccountService {
      * @return list of subscribers.
      */
     @Nullable
-    public List<Registration> getSubscribedRegistrations(@Nonnull Route route) {
-        List<Registration> foundRegistrations = mEbeanServer.find(Registration.class)
-                .fetch("subscription")
+    public List<Account> getRegistrationAccounts(@Nonnull String platformName,
+                                                 @Nonnull int agencyId,
+                                                 @Nonnull Route route) {
+        List<Account> accounts = mEbeanServer.find(Account.class)
+                .fetch("registrations")
+                .fetch("platformAccounts")
+                .fetch("platformAccounts.platform")
+                .fetch("registrations.subscriptions")
                 .where()
-                .eq("subscription.route_id", route.routeId)
+                .eq("platformAccounts.platform.platformName", platformName)
+                .where()
+                .eq("registrations.subscriptions.routes.routeId", route.routeId)
+                .where()
+                .eq("registrations.subscriptions.routes.agencyId", agencyId)
                 .findList();
 
-        return foundRegistrations;
+        return accounts;
     }
 
     /**
@@ -121,7 +131,7 @@ public class AccountService {
             return true;
 
         } catch (Exception e) {
-            Log.e("Error persisting subscription", e);
+            Log.e(TAG, "Error persisting subscription", e);
 
         } finally {
             mEbeanServer.endTransaction();
@@ -164,7 +174,7 @@ public class AccountService {
                 return true;
 
             } catch (Exception e) {
-                Log.e(String.format("Error saving device registration for %s. Rolling back.",
+                Log.e(TAG, String.format("Error saving device registration for %s. Rolling back.",
                         newRegistration.deviceId), e);
             }
         }

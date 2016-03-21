@@ -2,8 +2,8 @@ package controllers;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import helpers.AgencyUpdate;
-import helpers.SeptaDeserializer;
+import main.AgencyUpdate;
+import helpers.SeptaAlertsDeserializer;
 import main.Constants;
 import main.Log;
 import models.alerts.Agency;
@@ -16,6 +16,8 @@ import play.mvc.Controller;
 import play.mvc.Result;
 
 public class SeptaAlertsController extends Controller {
+    private static final String TAG = Application.class.getSimpleName();
+
     public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
 //  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
@@ -48,24 +50,24 @@ public class SeptaAlertsController extends Controller {
             response = promiseOfResult.get(Constants.AGENCY_ALERTS_DOWNLOAD_MS); // is this blocked?
 
         } catch (Exception exception) {
-            Log.e("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
             return internalServerError();
         }
 
         if (response.getStatus() != 200) {
-            Log.e("Fetching SEPTA alerts json failed with error " + response.getStatus());
+            Log.e(TAG, "Fetching SEPTA alerts json failed with error " + response.getStatus());
             return internalServerError();
         }
 
-        Log.d("Completed fetching SEPTA alerts");
-        final GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Agency.class, new SeptaDeserializer());
-        final Gson gson = gsonBuilder.create();
+        Log.d(TAG, "Completed fetching SEPTA alerts");
+        final Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
+                .create();
 
         Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
-        Log.d("Started to parsing SEPTA alerts json body");
+        Log.d(TAG, "Started to parsing SEPTA alerts json body");
 
-        Log.d("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+        Log.d(TAG, "Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
         AgencyUpdate agencyUpdate = new AgencyUpdate();
         agencyUpdate.saveAndNotifyAgencySubscribers(agencyBundle);
 

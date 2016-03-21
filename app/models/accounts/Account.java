@@ -2,14 +2,10 @@ package models.accounts;
 
 import com.avaje.ebean.Model;
 import main.Constants;
-import models.alerts.Route;
 import models.registrations.Registration;
-import models.registrations.Subscription;
-import play.data.validation.Constraints;
-import play.data.validation.ValidationError;
+import models.taskqueue.Message;
 
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -28,13 +24,10 @@ public class Account extends Model {
     @Column(name = "account_id")
     public Integer accountId;
 
-    @OneToMany(cascade = CascadeType.REFRESH, mappedBy = "account", fetch = FetchType.LAZY)
-    public List<Message> messages;
-
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "account", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
     public List<PlatformAccount> platformAccounts;
 
-    @OneToMany(cascade = CascadeType.REFRESH, mappedBy = "account", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.REFRESH, mappedBy = "account", fetch = FetchType.LAZY)
     public List<Registration> registrations;
 
     @Column(name = "organisation_name")

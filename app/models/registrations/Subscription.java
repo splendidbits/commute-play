@@ -4,7 +4,6 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
-import models.accounts.Message;
 import models.alerts.Route;
 
 import javax.persistence.*;

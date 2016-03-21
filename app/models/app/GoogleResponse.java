@@ -1,33 +1,56 @@
 package models.app;
 
-import models.registrations.Registration;
+import com.google.gson.annotations.SerializedName;
 
-import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
+/**
+ * Response model from Google GCM endpoint (for response status 200).
+ */
 public class GoogleResponse {
-    private Map<Registration, GoogleResponse> mMessageResponses = new HashMap<>();
 
-    public void addResponse(@Nonnull Registration registration, @Nonnull GoogleResponse response) {
-        mMessageResponses.put(registration, response);
-    }
+    public enum ResponseError {
+        ERROR_MISSING_REG_TOKEN("MissingRegistration", false),
+        ERROR_INVALID_REGISTRATION("InvalidRegistration", false),
+        ERROR_NOT_REGISTERED("NotRegistered", false),
+        ERROR_INVALID_PACKAGE_NAME("InvalidPackageName", true),
+        ERROR_MISMATCHED_SENDER_ID("MismatchSenderId", true),
+        ERROR_MESSAGE_TO_BIG("MessageTooBig", true),
+        ERROR_INVALID_DATA("InvalidDataKey", true),
+        ERROR_INVALID_TTL("InvalidTtl", true),
+        ERROR_EXCEEDED_MESSAGE_LIMIT("DeviceMessageRate Exceeded", true);
 
-    public Map<Registration, GoogleResponse> getMessageResponses() {
-        return mMessageResponses;
-    }
-
-    public enum GoogleResponseInfo {
-        OK("OK"),
-        REGISTRATION_ID_UPDATED("Registration identifier has updated for device."),
-        ERROR_INVALID_REGISTRATION("The device registration was not registered with Google."),
-        ERROR_NOT_REGISTERED("The device registration was not registered with Google."),
-        ERROR_UNAVAILABLE("GCM has requested a try again after exponential backoff");
-
-        public String value;
-        GoogleResponseInfo(String value) {
-            this.value = value;
+        public String friendlyError = null;
+        public boolean isCritical = false;
+        ResponseError(String value, boolean critical) {
+            friendlyError = value;
+            isCritical = critical;
         }
     }
 
+    @SerializedName("multicast_id")
+    public String mGcmMessageId;
+
+    @SerializedName("success")
+    public int mSuccessCount;
+
+    @SerializedName("failure")
+    public int mFailCount;
+
+    @SerializedName("canonical_ids")
+    public int mCanonicalIdCount;
+
+    @SerializedName("results")
+    public List<ResultData> mResults;
+
+    public class ResultData {
+        @SerializedName("message_id")
+        public String messageId;
+
+        @SerializedName("registration_id")
+        public String registrationId;
+
+        @SerializedName("error")
+        public String error;
+    }
 }

@@ -2,6 +2,7 @@ package controllers;
 
 import com.avaje.ebean.Ebean;
 import helpers.ValidationHelper;
+import main.Log;
 import models.accounts.Account;
 import models.accounts.Platform;
 import models.accounts.PlatformAccount;
@@ -24,6 +25,8 @@ import java.util.Map;
  * Adds an API user to the system to have access to push services.
  */
 public class SignupController extends Controller {
+    private static final String TAG = SignupController.class.getSimpleName();
+
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
@@ -63,28 +66,32 @@ public class SignupController extends Controller {
             PlatformAccount gcmAccount = new PlatformAccount();
             gcmAccount.packageUri = packageUri;
             gcmAccount.clientKey = String.valueOf(00000000);
-            gcmAccount.platform = Platform.find.byId("gcm");
+            gcmAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_GCM);
             platformAccounts.add(gcmAccount);
         }
         if (requiresApns) {
             PlatformAccount apnsAccount = new PlatformAccount();
             apnsAccount.packageUri = packageUri;
             apnsAccount.clientKey = String.valueOf(00000000);
-            apnsAccount.platform = Platform.find.byId("apns");
+            apnsAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_APNS);
             platformAccounts.add(apnsAccount);
         }
 
-        Account pendingAccount = new Account();
-        pendingAccount.orgName = organisationName;
-        pendingAccount.email = email;
-        pendingAccount.passwordHash = DigestUtils.sha1Hex(password1);
-        pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
-        pendingAccount.estSendLimit = Long.valueOf(estDailyRegistrations);
-        pendingAccount.monthlySendLimit = 1000000L;
-        pendingAccount.active = false;
-        pendingAccount.platformAccounts = platformAccounts;
-        Ebean.save(pendingAccount);
+        if (platformAccounts.isEmpty()) {
+            Account pendingAccount = new Account();
+            pendingAccount.orgName = organisationName;
+            pendingAccount.email = email;
+            pendingAccount.passwordHash = DigestUtils.sha1Hex(password1);
+            pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
+            pendingAccount.estSendLimit = Long.valueOf(estDailyRegistrations);
+            pendingAccount.monthlySendLimit = 1000000L;
+            pendingAccount.active = false;
+            pendingAccount.platformAccounts = platformAccounts;
+            Ebean.save(pendingAccount);
 
+        } else {
+            Log.w(TAG, "No platforms were found for account signup: " + email);
+        }
         return ok(signup.render("Your API request has been submitted. Mark email from @splendidbits.co as non-spam",
                 new DynamicForm()));
     }
@@ -133,10 +140,12 @@ public class SignupController extends Controller {
 
             if (packageUri == null || packageUri.isEmpty() || !packageUri.contains("com.")) {
                 signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.n.n"));
+                Log.i(TAG, "No package_uri found for account signup: " + email);
             }
 
             if (!passwordGood) {
                 signupForm.reject(new ValidationError("password_1", "Passwords must match and be more than 5 characters."));
+                Log.i(TAG, "Account Signup, Signup password requirements not satisfied: " + email);
             }
 
             if (!emailGood) {

@@ -37,7 +37,7 @@ create table agency_alerts.alerts (
   constraint pk_alerts primary key (alert_id))
 ;
 
-create table service_accounts.message (
+create table service_accounts.originalMessage (
   message_id                integer not null,
   route_route_id            varchar(255),
   account_account_id        integer,
@@ -104,10 +104,10 @@ create sequence subscriptions_id_seq increment by 1;
 
 alter table agency_alerts.alerts add constraint fk_alerts_route_1 foreign key (route_route_id) references agency_alerts.routes (route_id);
 create index ix_alerts_route_1 on agency_alerts.alerts (route_route_id);
-alter table service_accounts.message add constraint fk_message_route_2 foreign key (route_route_id) references agency_alerts.routes (route_id);
-create index ix_message_route_2 on service_accounts.message (route_route_id);
-alter table service_accounts.message add constraint fk_message_account_3 foreign key (account_account_id) references service_accounts.account (account_id);
-create index ix_message_account_3 on service_accounts.message (account_account_id);
+alter table service_accounts.originalMessage add constraint fk_message_route_2 foreign key (route_route_id) references agency_alerts.routes (route_id);
+create index ix_message_route_2 on service_accounts.originalMessage (route_route_id);
+alter table service_accounts.originalMessage add constraint fk_message_account_3 foreign key (account_account_id) references service_accounts.account (account_id);
+create index ix_message_account_3 on service_accounts.originalMessage (account_account_id);
 alter table service_accounts.platform_account add constraint fk_platform_account_account_4 foreign key (account_account_id) references service_accounts.account (account_id);
 create index ix_platform_account_account_4 on service_accounts.platform_account (account_account_id);
 alter table service_accounts.platform_account add constraint fk_platform_account_platform_5 foreign key (platform_platform_name) references service_accounts.platform (platform_name);
@@ -133,7 +133,7 @@ drop table if exists agency_alerts.agencies cascade;
 
 drop table if exists agency_alerts.alerts cascade;
 
-drop table if exists service_accounts.message cascade;
+drop table if exists service_accounts.originalMessage cascade;
 
 drop table if exists service_accounts.platform cascade;
 

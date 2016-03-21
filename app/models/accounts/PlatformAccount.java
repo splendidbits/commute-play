@@ -4,6 +4,8 @@ import com.avaje.ebean.Model;
 import main.Constants;
 import models.alerts.Agency;
 import models.registrations.Registration;
+import models.taskqueue.Message;
+import models.taskqueue.Recipient;
 
 import javax.persistence.*;
 import java.util.List;
@@ -29,9 +31,12 @@ public class PlatformAccount extends Model {
     @Column(name = "package_uri")
     public String packageUri;
 
-    @Column(name = "client_key")
-    public String clientKey;
+    @Column(name = "auth_token")
+    public String authToken;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     public Platform platform;
+
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "account", fetch = FetchType.LAZY)
+    public List<Message> messages;
 }

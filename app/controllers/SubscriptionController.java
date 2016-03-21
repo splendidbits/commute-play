@@ -6,8 +6,8 @@ import models.registrations.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.AgencyDatabaseService;
-import services.AccountService;
+import services.AgencyServiceDao;
+import services.AccountServiceDao;
 
 import java.util.Calendar;
 import java.util.List;
@@ -61,13 +61,13 @@ public class SubscriptionController extends Controller {
             String agencyName = agencyValue != null ? agencyValue[0].trim().toLowerCase() : "septa";
 
             // Check that the device is already registered.
-            AccountService subscriptionService = new AccountService();
+            AccountServiceDao subscriptionService = new AccountServiceDao();
             Registration existingRegistration = subscriptionService.getRegistration(deviceId);
             if (existingRegistration == null) {
                 return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());
             }
 
-            AgencyDatabaseService agencyService = AgencyDatabaseService.getInstance();
+            AgencyServiceDao agencyService = AgencyServiceDao.getInstance();
 
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
             List<Route> validRoutes = agencyService.getRouteAlerts(agencyName, routes);

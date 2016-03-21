@@ -13,6 +13,7 @@ import java.util.List;
 import static play.libs.Json.toJson;
 
 public class Application extends Controller {
+    private static final String TAG = Application.class.getSimpleName();
 
     public Result index() {
         return ok(index.render());
@@ -22,7 +23,7 @@ public class Application extends Controller {
     public Result addPerson() {
         Form<Person> persons = Form.form(Person.class).bindFromRequest();
         Person person = persons.get();
-        Log.d("Saving name: " + person.name);
+        Log.d(TAG, "Saving name: " + person.name);
         Person.db("persons").save(person);
         return redirect(routes.Application.index());
     }

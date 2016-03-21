@@ -15,13 +15,15 @@ import java.util.*;
  * Gson SEPTA Alerts Deserializer. Convert the SEPTA www3 alerts feed into
  * the commute GCM agency alerts bundle models.
  */
-public class SeptaDeserializer implements JsonDeserializer<Agency> {
+public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
+    private static final String TAG = SeptaAlertsDeserializer.class.getSimpleName();
+
     private static final String AGENCY_NAME = "septa";
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
     private static SimpleDateFormat lastUpdatedDateFormat;
     private static SimpleDateFormat detourDateFormat;
 
-    public SeptaDeserializer() {
+    public SeptaAlertsDeserializer() {
         // The SEPTA alerts feed uses different date formats depending on the field
 
         // last_updated - Feb 20 2016 07:27:42:520PM
@@ -101,13 +103,13 @@ public class SeptaDeserializer implements JsonDeserializer<Agency> {
                     routeMap.put(routeId, route);
                 }
             }
-            Log.d("Finished creating SEPTA route-alert map.");
+            Log.d(TAG, "Finished creating SEPTA route-alert map.");
 
         }catch (IllegalStateException pe){
-            Log.c("Error parsing json body into alert object", pe);
+            Log.c(TAG, "Error parsing json body into alert object", pe);
 
         } catch (ParseException e) {
-            Log.c("Error parsing json date(s) into alert object", e);
+            Log.c(TAG, "Error parsing json date(s) into alert object", e);
         }
 
         // Create agency.
