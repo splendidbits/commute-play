@@ -1,5 +1,9 @@
-TODO:
+App fixes and Akka Scheduler update support. Left to do:
 
-Log interception
+Finish automatic scheduling.
+Implement TaskQueue task.
+Fix external app logging.
+Fix internal splendidlog logging.
+Solidify URL endpoints.
+Fix quotas / accounts?
 
-CANONICAL IDS google gcm response

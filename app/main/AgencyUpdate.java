@@ -4,8 +4,8 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.app.ModifiedAlerts;
-import services.AgencyServiceDao;
-import services.gcm.GcmAlertProcessor;
+import services.AgencyService;
+import services.PushMessageService;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -33,6 +33,8 @@ public class AgencyUpdate {
      * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
+        PushMessageService pushMessageService = new PushMessageService();
+
         List<Route> agencyRoutes = updatedAgency.routes;
         if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
             Collections.sort(agencyRoutes);
@@ -40,11 +42,10 @@ public class AgencyUpdate {
             // Pass the Alert differences on to the GCM Pre-processor.
             ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
             if (modifiedAlerts.hasModifiedAlerts()){
-                GcmAlertProcessor preprocessor = new GcmAlertProcessor();
-                preprocessor.notifyAlertSubscribers(modifiedAlerts);
+                pushMessageService.notifyAlertSubscribers(modifiedAlerts);
 
                 // Save the agency in the datastore.
-                AgencyServiceDao alertsService = AgencyServiceDao.getInstance();
+                AgencyService alertsService = AgencyService.getInstance();
 //                alertsService.saveAgencyAlerts(updatedAgency);
             }
         }
@@ -59,10 +60,10 @@ public class AgencyUpdate {
     @Nonnull
     private ModifiedAlerts getUpdatedRoutes(@Nonnull Agency updatedAgency) {
         ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.agencyId);
-        AgencyServiceDao agencyServiceDao = AgencyServiceDao.getInstance();
+        AgencyService agencyService = AgencyService.getInstance();
 
         // Get all the current routes that exist for the agency.
-        List<Route> currentRouteAlerts = agencyServiceDao.getRouteAlerts(updatedAgency.agencyId);
+        List<Route> currentRouteAlerts = agencyService.getRouteAlerts(updatedAgency.agencyId);
 
         // Get all the fresh routes that have been parsed.
         List<Route> freshRouteAlerts = updatedAgency.routes;

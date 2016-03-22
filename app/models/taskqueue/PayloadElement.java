@@ -14,9 +14,9 @@ public class PayloadElement extends Model {
     public PayloadElement() {
     }
 
-    public PayloadElement(String value, String name) {
-        this.value = value;
+    public PayloadElement(String name, String value) {
         this.name = name;
+        this.value = value;
     }
 
     @Id

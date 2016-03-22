@@ -5,7 +5,8 @@ import models.registrations.Registration;
 import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.AccountServiceDao;
+import services.AccountService;
+import services.PushMessageService;
 
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class RegistrationController extends Controller {
      */
     @Transactional
     public Result register() {
-        AccountServiceDao accountServiceDao = new AccountServiceDao();
+        AccountService accountService = new AccountService();
 
         Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
         if (clientRequestBody == null) {
@@ -54,8 +55,8 @@ public class RegistrationController extends Controller {
          * TODO: Remove this when all clients have been upgraded to send API key.
          */
         Account account = apiKey != null
-                ? accountServiceDao.getAccount(apiKey, null)
-                : accountServiceDao.getAccount(null, "daniel@staticfish.com");
+                ? accountService.getAccount(apiKey, null)
+                : accountService.getAccount(null, "daniel@staticfish.com");
 
         if (account == null) {
             return BAD_ACCOUNT;
@@ -63,9 +64,15 @@ public class RegistrationController extends Controller {
 
         Registration newRegistration = new Registration(deviceId, registrationId);
         newRegistration.account = account;
-        boolean persistSuccess = accountServiceDao.addRegistration(newRegistration);
+        boolean persistSuccess = accountService.addRegistration(newRegistration);
 
-        return persistSuccess ? ok() : badRequest();
+        if (persistSuccess) {
+            new PushMessageService().sendRegistrationConfirmation(newRegistration, account.platformAccounts);
+            return ok();
+
+        } else {
+            return BAD_CLIENT_RESULT;
+        }
     }
 
 }

@@ -3,9 +3,12 @@ package models.taskqueue;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import interfaces.PlatformMessage;
 import main.Constants;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -41,4 +44,11 @@ public class Task extends Model {
     @Column(name = "next_attempt")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
+
+    public void addMessage(@Nonnull Message platformMessage) {
+        if (messages == null) {
+            messages = new ArrayList<>();
+        }
+        messages.add(platformMessage);
+    }
 }

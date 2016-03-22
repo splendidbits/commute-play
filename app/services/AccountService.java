@@ -15,11 +15,11 @@ import javax.annotation.Nullable;
 import java.util.Calendar;
 import java.util.List;
 
-public class AccountServiceDao {
-    private static final String TAG = AccountServiceDao.class.getSimpleName();
+public class AccountService {
+    private static final String TAG = AccountService.class.getSimpleName();
     private EbeanServer mEbeanServer;
 
-    public AccountServiceDao() {
+    public AccountService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
         } catch (Exception e) {

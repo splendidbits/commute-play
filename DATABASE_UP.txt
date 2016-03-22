@@ -1,0 +1,4 @@
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
+GRANT ALL PRIVILEGES ON schema task_queue TO splendidbits;
+
+

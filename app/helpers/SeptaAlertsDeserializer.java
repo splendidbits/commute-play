@@ -24,6 +24,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static SimpleDateFormat detourDateFormat;
 
     public SeptaAlertsDeserializer() {
+        Log.d(TAG, "Started parsing SEPTA alerts json body");
+
         // The SEPTA alerts feed uses different date formats depending on the field
 
         // last_updated - Feb 20 2016 07:27:42:520PM

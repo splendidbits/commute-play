@@ -12,24 +12,24 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AgencyServiceDao {
-    private static final String TAG = AgencyServiceDao.class.getSimpleName();
+public class AgencyService {
+    private static final String TAG = AgencyService.class.getSimpleName();
     private EbeanServer mEbeanServer;
 
     /**
-     * Get a THREADSAFE Syncronised instance of the main.Log.
+     * Get a THREADSAFE Syncronised instance of the AgencyService.
      *
-     * @return An instance of the AgencyDatabaseService which contain locks.
+     * @return An instance of the AgencyService which contain locks.
      */
     private static class Loader {
-        static final AgencyServiceDao INSTANCE = new AgencyServiceDao();
+        static final AgencyService INSTANCE = new AgencyService();
     }
 
-    public static AgencyServiceDao getInstance() {
+    public static AgencyService getInstance() {
         return Loader.INSTANCE;
     }
 
-    private AgencyServiceDao() {
+    private AgencyService() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
         } catch (Exception e) {

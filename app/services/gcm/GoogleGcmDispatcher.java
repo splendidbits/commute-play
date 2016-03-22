@@ -136,97 +136,92 @@ public class GoogleGcmDispatcher {
      * Parse an incoming response back from a GCM send action.
      *
      * @param requestResponse PlatformMessageResult The WSResponse back from google which
-     *                 should contain a json success / fail map.
+     *                        should contain a json success / fail map.
      * @return MessageResult result from google for gcm message.
      */
     private void parseResponse(@Nonnull WSResponse requestResponse) {
-        try {
-            GoogleResponse response = new Gson().fromJson(requestResponse.getBody(), GoogleResponse.class);
-            mInboundResponses.add(response);
+        GoogleResponse response = new Gson().fromJson(requestResponse.getBody(), GoogleResponse.class);
+        mInboundResponses.add(response);
 
-            Log.d(TAG, String.format("%d canonical ids.", response.mCanonicalIdCount));
-            Log.d(TAG, String.format("%d successful GCM messages.", response.mSuccessCount));
-            Log.d(TAG, String.format("%d failed GCM messages.", response.mFailCount));
+        Log.d(TAG, String.format("%d canonical ids.", response.mCanonicalIdCount));
+        Log.d(TAG, String.format("%d successful GCM messages.", response.mSuccessCount));
+        Log.d(TAG, String.format("%d failed GCM messages.", response.mFailCount));
 
-            // After all the responses have returned, build the app push response model.
-            if (mInboundResponses.size() == mOutboundMessages.size()) {
+        // After all the responses have returned, build the app push response model.
+        if (mInboundResponses.size() == mOutboundMessages.size()) {
 
-                int totalSuccesses = 0;
-                int totalFails = 0;
-                boolean hasCriticalError = false;
+            int totalSuccesses = 0;
+            int totalFails = 0;
+            boolean hasCriticalError = false;
 
-                List<Recipient> originalRecipients = mOriginalMessage.recipients;
-                MessageResult originalMessageResult = new MessageResult();
+            List<Recipient> originalRecipients = mOriginalMessage.recipients;
+            MessageResult originalMessageResult = new MessageResult();
 
-                // Start the registrationCount before all of the message parts so inbound == outbound
-                int overallRegCount = 0;
+            // Start the registrationCount before all of the message parts so inbound == outbound
+            int overallRegCount = 0;
 
-                // Loop through each message response part.
-                for (GoogleResponse googleResponsePart : mInboundResponses) {
-                    totalSuccesses += googleResponsePart.mSuccessCount;
-                    totalFails += googleResponsePart.mFailCount;
+            // Loop through each message response part.
+            for (GoogleResponse googleResponsePart : mInboundResponses) {
+                totalSuccesses += googleResponsePart.mSuccessCount;
+                totalFails += googleResponsePart.mFailCount;
 
-                    // Loop through each response from each registration.
-                    for (int i = 0; i < googleResponsePart.mResults.size(); i++) {
-                        GoogleResponse.ResultData resultData = googleResponsePart.mResults.get(i);
-                        String originalRegToken = originalRecipients.get(overallRegCount).recipientId;
+                // Loop through each response from each registration.
+                for (int i = 0; i < googleResponsePart.mResults.size(); i++) {
+                    GoogleResponse.ResultData resultData = googleResponsePart.mResults.get(i);
+                    String originalRegToken = originalRecipients.get(overallRegCount).recipientId;
 
-                        // A successful message.
-                        if (resultData.messageId != null && !resultData.messageId.isEmpty()) {
-                            originalMessageResult.addSuccessToRegistration(originalRegToken, resultData.messageId);
-                        }
+                    // A successful message.
+                    if (resultData.messageId != null && !resultData.messageId.isEmpty()) {
+                        originalMessageResult.addSuccessToRegistration(originalRegToken, resultData.messageId);
+                    }
 
-                        // Check for changed registration token.
-                        if (resultData.registrationId != null && !resultData.registrationId.isEmpty()) {
-                            originalMessageResult.addUpdatedRegistration(originalRegToken, resultData.registrationId);
-                        }
+                    // Check for changed registration token.
+                    if (resultData.registrationId != null && !resultData.registrationId.isEmpty()) {
+                        originalMessageResult.addUpdatedRegistration(originalRegToken, resultData.registrationId);
+                    }
 
-                        // Check for errors.
-                        if (resultData.error != null && !resultData.error.isEmpty()) {
+                    // Check for errors.
+                    if (resultData.error != null && !resultData.error.isEmpty()) {
 
-                            // Check for a critical error in the response.
-                            for (GoogleResponse.ResponseError error : GoogleResponse.ResponseError.values()) {
+                        // Check for a critical error in the response.
+                        for (GoogleResponse.ResponseError error : GoogleResponse.ResponseError.values()) {
 
-                                // For not registered, add to stale registrations
-                                if (error.equals(GoogleResponse.ResponseError.ERROR_NOT_REGISTERED)) {
-                                    originalMessageResult.addStaleRegistration(originalRegToken);
-                                }
-
-                                // For not invalid registration, add to stale registrations
-                                if (error.equals(GoogleResponse.ResponseError.ERROR_INVALID_REGISTRATION)) {
-                                    originalMessageResult.addStaleRegistration(originalRegToken);
-                                }
-
-                                if (!hasCriticalError && error.isCritical) {
-                                    hasCriticalError = true;
-                                }
+                            // For not registered, add to stale registrations
+                            if (error.equals(GoogleResponse.ResponseError.ERROR_NOT_REGISTERED)) {
+                                originalMessageResult.addStaleRegistration(originalRegToken);
                             }
 
-                            // Add the error for that particular registration
-                            originalMessageResult.addErrorToRegistration(originalRegToken, resultData.error);
+                            // For not invalid registration, add to stale registrations
+                            if (error.equals(GoogleResponse.ResponseError.ERROR_INVALID_REGISTRATION)) {
+                                originalMessageResult.addStaleRegistration(originalRegToken);
+                            }
+
+                            if (!hasCriticalError && error.isCritical) {
+                                hasCriticalError = true;
+                            }
                         }
 
-                        // Bump the master registration counter for all parts.
-                        overallRegCount++;
+                        // Add the error for that particular registration
+                        originalMessageResult.addErrorToRegistration(originalRegToken, resultData.error);
                     }
-                }
 
-                // Add the critical flag  into the response if there was one.
-                originalMessageResult.setSuccessCount(totalSuccesses);
-                originalMessageResult.setFailCount(totalFails);
-                originalMessageResult.setHasCriticalErrors(hasCriticalError);
-                originalMessageResult.setOriginalMessage(mOriginalMessage);
-
-                // Send back to client.
-                if (hasCriticalError) {
-                    mResponseInterface.messageFailed(originalMessageResult);
-                } else {
-                    mResponseInterface.messageSuccess(originalMessageResult);
+                    // Bump the master registration counter for all parts.
+                    overallRegCount++;
                 }
             }
 
-        } catch (Exception exception) {
-            Log.e(TAG, "Commute GCM Dispatch error.", exception);
+            // Add the critical flag  into the response if there was one.
+            originalMessageResult.setSuccessCount(totalSuccesses);
+            originalMessageResult.setFailCount(totalFails);
+            originalMessageResult.setHasCriticalErrors(hasCriticalError);
+            originalMessageResult.setOriginalMessage(mOriginalMessage);
+
+            // Send back to client.
+            if (hasCriticalError) {
+                mResponseInterface.messageFailed(originalMessageResult);
+            } else {
+                mResponseInterface.messageSuccess(originalMessageResult);
+            }
         }
     }
 
