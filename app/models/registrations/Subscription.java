@@ -30,6 +30,7 @@ public class Subscription extends Model {
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name="subscription_route",
+            schema = "device_subscriptions",
             joinColumns=@JoinColumn(
                     name="subscription_id",
                     referencedColumnName="subscription_id",
@@ -48,7 +49,7 @@ public class Subscription extends Model {
     public List<Route> routes;
 
     @Basic
-    @Column(name = "time_subscribed")
+    @Column(name = "time_subscribed", updatable = false, insertable = false)
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed;
 }

@@ -53,7 +53,7 @@ public class Alert extends Model implements Comparable {
     public boolean isSnow;
 
     @Basic
-    @Column(name = "last_updated")
+    @Column(name = "last_updated", updatable = false, insertable = false)
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
 

@@ -91,7 +91,7 @@ public class SignupController extends Controller {
             Log.w(TAG, "No platforms were found for account signup: " + email);
         }
         return ok(signup.render("Your API request has been submitted. Mark email from @splendidbits.co as non-spam",
-                new DynamicForm()));
+                new DynamicForm(formData, signupForm.errors(), null, null, null, null)));
     }
 
     /**

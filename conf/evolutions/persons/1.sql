@@ -4,12 +4,10 @@
 # --- !Ups
 
 create table tutorial.persons (
-  id                        serial not null,
-  name                      varchar(255),
-  constraint pk_persons primary key (id))
-;
-
-
+  id                            serial not null,
+  name                          varchar(255),
+  constraint pk_persons primary key (id)
+);
 
 
 # --- !Downs

@@ -8,7 +8,7 @@ import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Task;
-import services.gcm.GoogleGcmDispatcher;
+import services.gcm.GcmDispatcher;
 import services.gcm.PushResponseReceiver;
 
 import javax.annotation.Nonnull;
@@ -56,7 +56,7 @@ public class PushMessageService {
                         messageTask.addMessage(message);
 
                         // TODO: Remove this in favour of the polling queue.
-                        new GoogleGcmDispatcher(message, new PushResponseReceiver());
+                        new GcmDispatcher(message, new PushResponseReceiver());
                     }
                 }
             }
@@ -86,7 +86,7 @@ public class PushMessageService {
                 messageTask.addMessage(message);
 
                 // TODO: Remove this in favour of the polling queue.
-                new GoogleGcmDispatcher(message, new PushResponseReceiver());
+                new GcmDispatcher(message, new PushResponseReceiver());
             }
         }
     }

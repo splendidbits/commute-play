@@ -52,7 +52,7 @@ public class Account extends Model {
     public boolean active;
 
     @Basic
-    @Column(name = "time_enrolled")
+    @Column(name = "time_enrolled", updatable = false, insertable = false)
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeEnrolled = Calendar.getInstance();
 }

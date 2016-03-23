@@ -4,15 +4,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import helpers.SeptaAlertsDeserializer;
 import main.AgencyUpdate;
-import main.Constants;
 import main.Log;
 import models.alerts.Agency;
 import play.db.ebean.Transactional;
-import play.libs.F;
 import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 import play.mvc.Result;
+
+import java.util.concurrent.CompletionStage;
 
 public class SeptaAlertsController extends AgencyController {
     private static final String TAG = Application.class.getSimpleName();
@@ -40,36 +40,20 @@ public class SeptaAlertsController extends AgencyController {
      */
     @Transactional
     public Result downloadAlerts() {
-        WSResponse response;
         try {
             WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
-            request.setContentType("application/json");
 
-            F.Promise<WSResponse> promiseOfResult = request.get();
-            response = promiseOfResult.get(Constants.AGENCY_ALERTS_DOWNLOAD_MS); // is this blocked?
+            CompletionStage<WSResponse> resultPromise = request.get();
+            resultPromise.thenRun(new Runnable() {
+                @Override
+                public void run() {
+                    updateAgencyData();
+                }
+            });
 
         } catch (Exception exception) {
             Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
-            return internalServerError();
         }
-
-        if (response.getStatus() != 200) {
-            Log.e(TAG, "Fetching SEPTA alerts json failed with error " + response.getStatus());
-            return internalServerError();
-        }
-
-        Log.d(TAG, "Completed fetching SEPTA alerts");
-        final Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
-                .create();
-
-        Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
-        Log.d(TAG, "Started to parsing SEPTA alerts json body");
-
-        Log.d(TAG, "Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-        AgencyUpdate agencyUpdate = new AgencyUpdate();
-        agencyUpdate.saveAndNotifyAgencySubscribers(agencyBundle);
-
         return ok();
     }
 
@@ -78,13 +62,13 @@ public class SeptaAlertsController extends AgencyController {
         try {
             WSRequest request = WS.url(SEPTA_ALERTS_JSON_URL);
 
-            F.Promise<WSResponse> resultPromise = request.get();
-            F.Promise.promise((F.Function0<Void>) () -> {
-                // After the response has come back, send it, and the original message back to the client.
-                updateAgencyData();
-                return null;
+            CompletionStage<WSResponse> resultPromise = request.get();
+            resultPromise.thenRun(new Runnable() {
+                @Override
+                public void run() {
+                    updateAgencyData();
+                }
             });
-
 
         } catch (Exception exception) {
             Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);

@@ -10,14 +10,16 @@ import models.app.GoogleResponse;
 import models.app.MessageResult;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
-import play.libs.F;
 import play.libs.ws.WS;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 
 import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * Sends GCM alerts to a batch of given tokens and data.
@@ -27,8 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * - A collapse_key
  * - The keys and string data to send.
  */
-public class GoogleGcmDispatcher {
-    private static final String TAG = GoogleGcmDispatcher.class.getSimpleName();
+public class GcmDispatcher {
+    private static final String TAG = GcmDispatcher.class.getSimpleName();
     private static final int GCM_REQUEST_TIMEOUT = 5 * 1000; // 5 seconds
 
     private ConcurrentHashMap<PlatformAccount, List<Message>> mOutboundMessages = new ConcurrentHashMap<>();
@@ -43,11 +45,16 @@ public class GoogleGcmDispatcher {
      * @param originalMessage The push originalMessage.
      * @param gcmResponse     Response interface.
      */
-    public GoogleGcmDispatcher(@Nonnull Message originalMessage, @Nonnull IPushResponse gcmResponse) {
+    public GcmDispatcher(@Nonnull Message originalMessage, @Nonnull IPushResponse gcmResponse) {
         mResponseInterface = gcmResponse;
         mOriginalMessage = originalMessage;
         organiseMessage();
         sendMessages();
+
+        // Kick off the jobs asyncronously.
+        CompletionStage<Boolean> organiseMessageStage = organiseMessage();
+        CompletionStage<Void> sendMessageStage = sendMessages();
+        organiseMessageStage.thenCombineAsync(sendMessageStage, null);
     }
 
     /**
@@ -55,7 +62,7 @@ public class GoogleGcmDispatcher {
      * If a message contains more than 1000 registration ids,
      * it'll split that into multiples messages.
      */
-    private void organiseMessage() {
+    private CompletionStage<Boolean> organiseMessage() {
         List<Recipient> allRecipients = mOriginalMessage.recipients;
 
         Message messagePart = cloneMessage(mOriginalMessage);
@@ -81,6 +88,8 @@ public class GoogleGcmDispatcher {
                 addOutboundMessage(messagePart);
             }
         }
+
+        return CompletableFuture.completedFuture(messageRegistrations > 0);
     }
 
     /**
@@ -103,7 +112,9 @@ public class GoogleGcmDispatcher {
     /**
      * Send all message parts in the queue for all accounts.
      */
-    private void sendMessages() {
+    private CompletionStage<Void> sendMessages() {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
         // Loop through each platform listed for the account and look for the GCM.
         Iterator<Map.Entry<PlatformAccount, List<Message>>> platformIterator = mOutboundMessages.entrySet().iterator();
         while (platformIterator.hasNext()) {
@@ -122,14 +133,18 @@ public class GoogleGcmDispatcher {
                         .create()
                         .toJson(message);
 
-                F.Promise<WSResponse> resultPromise = request.post(jsonBody);
-                F.Promise.promise((F.Function0<Void>) () -> {
-                    // After the response has come back, send it, and the original message back to the client.
-                    parseResponse(resultPromise.get(GCM_REQUEST_TIMEOUT));
-                    return null;
+
+                CompletionStage<WSResponse> result = request.post(jsonBody);
+                return result.thenApply(new Function<WSResponse, Void>() {
+                    @Override
+                    public Void apply(WSResponse wsResponse) {
+                        parseResponse(wsResponse);
+                        return null;
+                    }
                 });
             }
         }
+        return null;
     }
 
     /**

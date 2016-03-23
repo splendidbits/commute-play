@@ -36,7 +36,7 @@ public class Registration extends Model {
     public Account account;
 
     @Basic
-    @Column(name="time_registered")
+    @Column(name="time_registered", updatable = false, insertable = false)
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
