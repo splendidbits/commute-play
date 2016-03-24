@@ -13,9 +13,14 @@ import java.util.List;
 import static play.libs.Json.toJson;
 
 public class Application extends Controller {
+
     private static final String TAG = Application.class.getSimpleName();
 
     public Result index() {
+        return ok();
+    }
+
+    public Result personsIndex() {
         return ok(index.render());
     }
 
@@ -25,7 +30,7 @@ public class Application extends Controller {
         Person person = persons.get();
         Log.d(TAG, "Saving name: " + person.name);
         Person.db("persons").save(person);
-        return redirect(routes.Application.index());
+        return redirect(routes.Application.personsIndex());
     }
 
     @Transactional

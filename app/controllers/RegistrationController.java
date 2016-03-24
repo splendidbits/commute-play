@@ -55,10 +55,10 @@ public class RegistrationController extends Controller {
          * TODO: Remove this when all clients have been upgraded to send API key.
          */
         Account account = apiKey != null
-                ? accountService.getAccount(apiKey, null)
-                : accountService.getAccount(null, "daniel@staticfish.com");
+                ? accountService.getAccountByApi(apiKey)
+                : accountService.getAccountByEmail("daniel@staticfish.com");
 
-        if (account == null) {
+        if (account == null || !account.active) {
             return BAD_ACCOUNT;
         }
 

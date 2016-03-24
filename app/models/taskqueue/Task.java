@@ -27,28 +27,42 @@ public class Task extends Model {
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
 
-    @Column(name = "retry_multiplier")
-    public int retryMultiplier;
+    @Column(name = "exponential_multiplier")
+    public int currentExponent;
+
+    @Column(name = "in_process")
+    public boolean inProcess;
+
+    @Basic(optional = false)
+    @Column(name = "task_added")
+    @Temporal(TemporalType.TIMESTAMP)
+    public Calendar taskAdded;
+
+    @Basic()
+    @Column(name = "initial_attempt")
+    @Temporal(TemporalType.TIMESTAMP)
+    public Calendar initialAttempt;
 
     @Basic
-    @Column(name = "first_attempt")
+    @Column(name = "previous_attempt")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar firstAttempt;
+    public Calendar previousAttempt;
 
     @Basic
-    @Column(name = "last_attempt")
+    @Column(name = "upcoming_attempt")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar lastAttempt;
-
-    @Basic
-    @Column(name = "next_attempt")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar nextAttempt;
+    public Calendar upcomingAttempt;
 
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
             messages = new ArrayList<>();
         }
         messages.add(platformMessage);
+    }
+
+    @Override
+    public void insert() {
+        initialAttempt = Calendar.getInstance();
+        super.insert();
     }
 }

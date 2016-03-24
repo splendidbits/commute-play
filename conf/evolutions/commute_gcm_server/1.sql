@@ -9,8 +9,8 @@ create table service_accounts.account (
   account_email                 varchar(255),
   password_hash                 varchar(255),
   api_key                       varchar(255),
-  estimated_limit_pm            bigint,
-  message_limit_pm              bigint,
+  estimated_limit_day           bigint,
+  message_limit_day             bigint,
   active                        boolean default false,
   time_enrolled                 timestamp,
   constraint pk_account primary key (account_id)
@@ -48,7 +48,7 @@ create table task_queue.messages (
   dry_run                       boolean,
   priority                      varchar(255),
   time_to_live                  integer,
-  message_sent_date             timestamp,
+  message_sent                  timestamp,
   constraint pk_messages primary key (message_id)
 );
 create sequence message_id_seq increment by 1;
@@ -81,7 +81,8 @@ create sequence platform_account_id_seq increment by 1;
 create table task_queue.recipients (
   recipient_id                  varchar(255) not null,
   message_message_id            integer,
-  is_running                    boolean,
+  process_state                 varchar(23),
+  constraint ck_recipients_process_state check (process_state in ('COMPLETE','ERROR_WAITING_FOR_RETRY','PERMINANTLY_FAILED','NOT_STARTED','PROCESSING')),
   constraint pk_recipients primary key (recipient_id)
 );
 
@@ -116,10 +117,12 @@ create table device_subscriptions.subscription_route (
 
 create table task_queue.tasks (
   task_id                       integer not null,
-  retry_multiplier              integer,
-  first_attempt                 timestamp,
-  last_attempt                  timestamp,
-  next_attempt                  timestamp,
+  exponential_multiplier        integer,
+  in_process                    boolean,
+  task_added                    timestamp not null,
+  initial_attempt               timestamp,
+  previous_attempt              timestamp,
+  upcoming_attempt              timestamp,
   constraint pk_tasks primary key (task_id)
 );
 create sequence task_id_seq increment by 1;

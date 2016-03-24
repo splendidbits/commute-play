@@ -15,9 +15,6 @@ public class Account extends Model {
     public static Finder<Integer, Account> find = new Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, Account.class);
 
-    public Account() {
-    }
-
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
@@ -42,17 +39,28 @@ public class Account extends Model {
     @Column(name = "api_key")
     public String apiKey;
 
-    @Column(name = "estimated_limit_pm")
-    public Long estSendLimit;
+    @Column(name = "estimated_limit_day")
+    public Long dailyEstLimit;
 
-    @Column(name = "message_limit_pm")
-    public Long monthlySendLimit;
+    @Column(name = "message_limit_day")
+    public Long dailySendLimit;
 
     @Column(name = "active", columnDefinition = "boolean default false")
     public boolean active;
 
     @Basic
-    @Column(name = "time_enrolled", updatable = false, insertable = false)
+    @Column(name = "time_enrolled")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeEnrolled = Calendar.getInstance();
+
+
+    public Account() {
+
+    }
+
+    @Override
+    public void insert() {
+        timeEnrolled = Calendar.getInstance();
+        super.insert();
+    }
 }

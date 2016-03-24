@@ -1,9 +1,10 @@
-App fixes and Akka Scheduler update support. Left to do:
 
+Akka broadcast fixes
 Finish automatic scheduling.
 Implement TaskQueue task.
 Fix external app logging.
 Fix internal splendidlog logging.
-Solidify URL endpoints.
+Solidify URL endpoints. https://api.commuteapp.io/gcm/
 Fix quotas / accounts?
+deploy to war
 

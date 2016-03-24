@@ -11,14 +11,6 @@ import javax.persistence.*;
 @Table(name = "payload_element", schema = "task_queue")
 public class PayloadElement extends Model {
 
-    public PayloadElement() {
-    }
-
-    public PayloadElement(String name, String value) {
-        this.name = name;
-        this.value = value;
-    }
-
     @Id
     @Column(name = "element_id")
     @SequenceGenerator(name = "element_id_seq_gen", sequenceName = "element_id_seq", allocationSize = 1)
@@ -33,4 +25,13 @@ public class PayloadElement extends Model {
 
     @ManyToOne(fetch = FetchType.EAGER)
     public Message message;
+
+    public PayloadElement() {
+
+    }
+
+    public PayloadElement(String name, String value) {
+        this.name = name;
+        this.value = value;
+    }
 }

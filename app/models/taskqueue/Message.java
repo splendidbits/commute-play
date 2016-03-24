@@ -62,7 +62,7 @@ public class Message extends Model implements PlatformMessage {
     public int ttl;
 
     @Basic
-    @Column(name = "message_sent_date")
+    @Column(name = "message_sent")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar messageSent;
 
@@ -86,5 +86,11 @@ public class Message extends Model implements PlatformMessage {
     @Override
     public PlatformType getPlatformType() {
         return PlatformType.PLATFORM_TYPE_GCM;
+    }
+
+    @Override
+    public void insert() {
+        messageSent = Calendar.getInstance();
+        super.insert();
     }
 }

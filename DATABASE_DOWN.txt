@@ -1,0 +1,20 @@
+DROP SCHEMA agency_alerts CASCADE;
+DROP SCHEMA device_subscriptions CASCADE;
+DROP SCHEMA service_accounts CASCADE;
+DROP SCHEMA task_queue CASCADE;
+DROP TABLE play_evolutions CASCADE;
+
+drop sequence if exists account_id_seq;
+drop sequence if exists alerts_id_seq;
+drop sequence if exists message_id_seq;
+drop sequence if exists element_id_seq;
+drop sequence if exists platform_account_id_seq;
+drop sequence if exists subscriptions_id_seq;
+drop sequence if exists task_id_seq;
+-----
+
+DROP SCHEMA splendidlog CASCADE;
+DROP TABLE play_evolutions CASCADE;
+
+drop sequence if exists application_id_seq;
+drop sequence if exists entry_id_seq;

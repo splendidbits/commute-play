@@ -49,7 +49,13 @@ public class Subscription extends Model {
     public List<Route> routes;
 
     @Basic
-    @Column(name = "time_subscribed", updatable = false, insertable = false)
+    @Column(name = "time_subscribed")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed;
+
+    @Override
+    public void insert() {
+        timeSubscribed = Calendar.getInstance();
+        super.insert();
+    }
 }

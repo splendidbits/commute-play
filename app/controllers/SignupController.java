@@ -9,7 +9,7 @@ import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import play.data.DynamicForm;
-import play.data.Form;
+import play.data.FormFactory;
 import play.data.validation.ValidationError;
 import play.db.ebean.Transactional;
 import play.mvc.Controller;
@@ -17,6 +17,7 @@ import play.mvc.Result;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,9 @@ public class SignupController extends Controller {
     private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
     private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
 
+    @Inject
+    private FormFactory mFormFactory;
+
     public Result signup() {
         return ok(signup.render(null, DynamicForm.form()));
     }
@@ -46,12 +50,13 @@ public class SignupController extends Controller {
      */
     @Transactional
     public Result addUser() {
-        DynamicForm signupForm = Form.form().bindFromRequest();
+        DynamicForm signupForm = mFormFactory.form().bindFromRequest();
+
+        Map<String, String> formData = validateSignupData(signupForm).data();
         if (signupForm.hasErrors()) {
             return badRequest(signup.render("There were errors with your application", signupForm));
         }
 
-        Map<String, String> formData = validateSignupData(signupForm).data();
         String organisationName = formData.get("org_name");
         String email = formData.get("email");
         String password1 = formData.get("password_1");
@@ -81,8 +86,8 @@ public class SignupController extends Controller {
             pendingAccount.email = email;
             pendingAccount.passwordHash = DigestUtils.sha1Hex(password1);
             pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
-            pendingAccount.estSendLimit = Long.valueOf(estDailyRegistrations);
-            pendingAccount.monthlySendLimit = 1000000L;
+            pendingAccount.dailyEstLimit = Long.valueOf(estDailyRegistrations);
+            pendingAccount.dailySendLimit = 1000000L;
             pendingAccount.active = false;
             pendingAccount.platformAccounts = platformAccounts;
             Ebean.save(pendingAccount);

@@ -17,14 +17,6 @@ public class Registration extends Model {
     public static Finder<String, Registration> find = new Model.Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, Registration.class);
 
-    public Registration() {
-    }
-
-    public Registration(String deviceId, String registrationToken) {
-        this.deviceId = deviceId;
-        this.registrationToken = registrationToken;
-    }
-
     @Id
     @Column(name = "device_id")
 	public String deviceId;
@@ -35,11 +27,26 @@ public class Registration extends Model {
     @ManyToOne(fetch = FetchType.EAGER)
     public Account account;
 
+    @OneToMany(mappedBy = "registration", cascade = CascadeType.REMOVE)
+    public List<Subscription> subscriptions;
+
     @Basic
-    @Column(name="time_registered", updatable = false, insertable = false)
+    @Column(name = "time_registered")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
-    @OneToMany(mappedBy = "registration", cascade = CascadeType.REMOVE)
-    public List<Subscription> subscriptions;
+    public Registration() {
+        
+    }
+
+    public Registration(String deviceId, String registrationToken) {
+        this.deviceId = deviceId;
+        this.registrationToken = registrationToken;
+    }
+
+    @Override
+    public void insert() {
+        timeRegistered = Calendar.getInstance();
+        super.insert();
+    }
 }

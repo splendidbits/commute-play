@@ -1,19 +1,54 @@
+
+CREATE USER splendidbits;
+CREATE DATABASE commute_gcm;
+GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
+
+CREATE SCHEMA agency_alerts;
+CREATE SCHEMA device_subscriptions;
+CREATE SCHEMA service_accounts;
+CREATE SCHEMA task_queue;
+
+GRANT USAGE ON SCHEMA agency_alerts TO splendidbits;
+GRANT USAGE ON SCHEMA device_subscriptions TO splendidbits;
+GRANT USAGE ON SCHEMA service_accounts TO splendidbits;
+GRANT USAGE ON SCHEMA task_queue TO splendidbits;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA device_subscriptions TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA service_accounts TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
+
 ALTER DEFAULT PRIVILEGES IN SCHEMA agency_alerts GRANT ALL ON TABLES TO postgres;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA agency_alerts to splendidbits;
+GRANT ALL ON SCHEMA agency_alerts TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA agency_alerts to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA device_subscriptions GRANT ALL ON TABLES TO postgres;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA device_subscriptions to splendidbits;
+GRANT ALL ON SCHEMA device_subscriptions TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA device_subscriptions to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA device_subscriptions TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA service_accounts GRANT ALL ON TABLES TO postgres;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA service_accounts to splendidbits;
+GRANT ALL ON SCHEMA service_accounts TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA service_accounts to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA service_accounts TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA task_queue GRANT ALL ON TABLES TO postgres;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
+GRANT ALL ON SCHEMA task_queue TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
 
+-----
+
+CREATE USER splendidlog;
+CREATE DATABASE splendidlog;
+GRANT ALL PRIVILEGES ON DATABASE splendidlog to splendidlog;
+
+CREATE SCHEMA splendidlog;
+GRANT USAGE ON SCHEMA splendidlog TO splendidlog;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA splendidlog TO splendidlog;
+
 ALTER DEFAULT PRIVILEGES IN SCHEMA splendidlog GRANT ALL ON TABLES TO postgres;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA splendidlog to splendidlog;
+GRANT ALL ON SCHEMA splendidlog TO splendidlog;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA splendidlog to splendidlog;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA splendidlog TO splendidlog;

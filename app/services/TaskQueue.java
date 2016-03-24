@@ -2,11 +2,16 @@ package services;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
+import interfaces.IPushResponse;
 import main.Constants;
 import main.Log;
+import models.app.MessageResult;
 import models.taskqueue.Task;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The singleton class that handles all GCM task jobs.
@@ -14,6 +19,7 @@ import javax.annotation.Nonnull;
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
     private EbeanServer mEbeanServer;
+    private List<Task> mPendingTasks = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * Get a THREADSAFE Syncronised instance of the TaskQueue
@@ -31,9 +37,29 @@ public class TaskQueue {
     private TaskQueue() {
         try {
             mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
-
+            if (mEbeanServer != null) {
+                clearPendingTasks();
+            }
         } catch (Exception e) {
             play.Logger.debug("Error setting EBean Datasource properties", e);
+        }
+    }
+
+    /**
+     * Set each task that is currently in rotation to not be.
+     */
+    private void clearPendingTasks() {
+        List<Task> tasks = mEbeanServer.find(Task.class)
+                .where()
+                .eq("inProcess", true)
+                .findList();
+
+        // Save
+        if (tasks != null) {
+            for (Task task : tasks) {
+                task.inProcess = false;
+                task.save();
+            }
         }
     }
 
@@ -50,6 +76,29 @@ public class TaskQueue {
      * @param task
      */
     public void addTask(@Nonnull Task task) {
+        mPendingTasks.add(task);
+    }
 
+    /**
+     * Call before shutting down application server.
+     */
+    public void shutdown(){
+        clearPendingTasks();
+    }
+
+    /**
+     * Results from individual tasks
+     */
+    private class GcmResponse implements IPushResponse{
+
+        @Override
+        public void messageSuccess(MessageResult result) {
+
+        }
+
+        @Override
+        public void messageFailed(MessageResult result) {
+
+        }
     }
 }

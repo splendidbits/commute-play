@@ -28,28 +28,36 @@ public class AccountService {
     }
 
     /**
-     * Get an Account for an API key.
-     * @param apiKey api key for which account was assigned.
+     * Get a API service Account.
      * @param email registered email address for account.
      *
      * @return an Account object, null if not found.
      */
     @Nullable
-    public Account getAccount(String apiKey, String email) {
-        if (apiKey != null || email != null) {
+    public Account getAccountByEmail(@Nonnull String email) {
+        // Build a query depending on if we have a api key, and or registered email.
+        Account account = mEbeanServer.createQuery(Account.class)
+                .where()
+                .eq("email", email)
+                .findUnique();
 
-            // Build a query depending on if we have a api key, and or registered email.
-            Account account = mEbeanServer.createQuery(Account.class)
-                    .where()
-                    .disjunction()
-                    .eq("api_key", apiKey)
-                    .eq("email", email)
-                    .endJunction()
-                    .findUnique();
+        return account;
+    }
 
-            return account;
-        }
-        return null;
+    /**
+     * Get a API service Account.
+     * @param apiKey api key for which account was assigned.
+     *
+     * @return an Account object, null if not found.
+     */
+    @Nullable
+    public Account getAccountByApi(@Nonnull String apiKey) {
+        // Build a query depending on if we have a api key, and or registered email.
+        Account account = mEbeanServer.createQuery(Account.class)
+                .where()
+                .eq("api_key", apiKey)
+                .findUnique();
+        return account;
     }
 
     /**

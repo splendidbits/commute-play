@@ -51,7 +51,7 @@ public class GcmDispatcher {
         organiseMessage();
         sendMessages();
 
-        // Kick off the jobs asyncronously.
+        // Kick off the jobs asynchronously.
         CompletionStage<Boolean> organiseMessageStage = organiseMessage();
         CompletionStage<Void> sendMessageStage = sendMessages();
         organiseMessageStage.thenCombineAsync(sendMessageStage, null);
@@ -134,7 +134,10 @@ public class GcmDispatcher {
                         .toJson(message);
 
 
-                CompletionStage<WSResponse> result = request.post(jsonBody);
+                CompletionStage<WSResponse> result = request
+                        .setRequestTimeout(GCM_REQUEST_TIMEOUT)
+                        .post(jsonBody);
+
                 return result.thenApply(new Function<WSResponse, Void>() {
                     @Override
                     public Void apply(WSResponse wsResponse) {

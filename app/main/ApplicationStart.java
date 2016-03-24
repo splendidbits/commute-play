@@ -15,14 +15,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * Runs on application startup.
  */
-public class StartupInitializer extends play.GlobalSettings {
+public class ApplicationStart extends play.GlobalSettings {
     private static final int TASK_QUEUE_INITIAL_DELAY_SECONDS = 60;
     private static final int TASK_QUEUE_INTERVAL_SECONDS = 15;
 
     private static final int AGENCY_UPDATE_INITIAL_DELAY_SECONDS = 60;
     private static final int AGENCY_UPDATE_INTERVAL_SECONDS = 60;
 
-    private static final String TAG = StartupInitializer.class.getSimpleName();
+    private static final String TAG = ApplicationStart.class.getSimpleName();
     private static TaskQueue mTaskQueue = null;
 
     private static final String AGENCY_UPDATE_ACTOR_NAME = "agency-update-actor";
@@ -41,6 +41,7 @@ public class StartupInitializer extends play.GlobalSettings {
     @Override
     public void onStop(Application app) {
         super.onStop(app);
+        mTaskQueue.shutdown();
         mActorSystem.shutdown();
     }
 
