@@ -46,7 +46,7 @@ public class AgencyUpdate {
 
                 // Save the agency in the datastore.
                 AgencyService alertsService = AgencyService.getInstance();
-//                alertsService.saveAgencyAlerts(updatedAgency);
+                alertsService.saveAgencyAlerts(updatedAgency);
             }
         }
     }

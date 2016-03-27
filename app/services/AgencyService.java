@@ -5,6 +5,7 @@ import com.avaje.ebean.EbeanServer;
 import main.Constants;
 import main.Log;
 import models.alerts.Agency;
+import models.alerts.Alert;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
@@ -45,14 +46,14 @@ public class AgencyService {
      */
     public boolean saveAgencyAlerts(@Nonnull Agency agency) {
         // Get the current persisted agency alerts.
-        Agency currentAgency = mEbeanServer.find(Agency.class)
+        Agency existingAgency = mEbeanServer.find(Agency.class)
                 .where()
                 .eq("agencyId", agency.agencyId)
                 .findUnique();
 
         mEbeanServer.createTransaction();
         try {
-            if (currentAgency != null && currentAgency.routes != null) {
+            if (existingAgency != null && existingAgency.routes != null) {
 
                 // Loop through each new route and persist.
                 for (Route freshRoute : agency.routes) {
@@ -63,8 +64,12 @@ public class AgencyService {
                             .eq("agency_id", agency.agencyId)
                             .findUnique();
 
-                    if (existingRoute != null) {
-                        mEbeanServer.delete(existingRoute.alerts);
+                    if (existingRoute != null && existingRoute.routeId.equals(freshRoute.routeId)) {
+
+                        // Delete all old alerts.
+                        for (Alert oldAlert : existingRoute.alerts){
+                            mEbeanServer.delete(oldAlert);
+                        }
 
                         // Update the route properties
                         existingRoute.routeName = freshRoute.routeName;
@@ -80,7 +85,7 @@ public class AgencyService {
                     }
                 }
 
-            } else if (currentAgency != null) {
+            } else if (existingAgency != null) {
                 mEbeanServer.update(agency);
 
             } else {

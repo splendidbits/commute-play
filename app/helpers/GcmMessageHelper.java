@@ -104,7 +104,7 @@ public class GcmMessageHelper {
         boolean noSnow = !updatedAlert.isSnow;
 
         if (messageDataEmpty && datesEmpty && noSnow) {
-            // If all of the above in the alert was empty, send a cancel alert message.
+            // If all of the above in the alert was empty, send a cancel alert logMessage.
             gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CANCEL.value);
 
         } else if (!datesEmpty || !CompareUtils.isEmptyNullSafe(

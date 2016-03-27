@@ -68,6 +68,9 @@ public class Message extends Model implements PlatformMessage {
 
     @Transient
     public void addData(String key, String value){
+        if (payloadData == null) {
+            payloadData = new ArrayList<>();
+        }
         PayloadElement payloadElement = new PayloadElement(key, value);
         payloadData.add(payloadElement);
     }

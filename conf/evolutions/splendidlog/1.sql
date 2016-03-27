@@ -15,9 +15,9 @@ create table splendidlog.logs (
   id                            integer not null,
   application_id                integer,
   log_time                      timestamp,
-  level                         varchar(255),
-  tag                           varchar(255),
-  message                       TEXT,
+  log_level                     varchar(255),
+  log_tag                       varchar(255),
+  log_message                   TEXT,
   constraint pk_logs primary key (id)
 );
 create sequence entry_id_seq increment by 1;

@@ -10,7 +10,8 @@ import models.app.GoogleResponse;
 import models.app.MessageResult;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
-import play.libs.ws.WS;
+import play.api.Play;
+import play.libs.ws.WSClient;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 
@@ -39,6 +40,8 @@ public class GcmDispatcher {
     private IPushResponse mResponseInterface = null;
     private Message mOriginalMessage = null;
 
+    private WSClient mWsClient = Play.current().injector().instanceOf(WSClient.class);
+
     /**
      * Send a originalMessage to Google.
      *
@@ -48,13 +51,15 @@ public class GcmDispatcher {
     public GcmDispatcher(@Nonnull Message originalMessage, @Nonnull IPushResponse gcmResponse) {
         mResponseInterface = gcmResponse;
         mOriginalMessage = originalMessage;
-        organiseMessage();
-        sendMessages();
 
         // Kick off the jobs asynchronously.
-        CompletionStage<Boolean> organiseMessageStage = organiseMessage();
-        CompletionStage<Void> sendMessageStage = sendMessages();
-        organiseMessageStage.thenCombineAsync(sendMessageStage, null);
+        organiseMessage().thenApplyAsync(new Function<Boolean, Void>() {
+            @Override
+            public Void apply(Boolean aBoolean) {
+                sendMessages();
+                return null;
+            }
+        });
     }
 
     /**
@@ -69,23 +74,25 @@ public class GcmDispatcher {
         int messageRegistrations = 0;
 
         // Add each registration_id to the message in batches of 1000.
-        for (int regCount = 0; regCount < allRecipients.size(); regCount++) {
+        if (allRecipients != null) {
+            for (int regCount = 0; regCount < allRecipients.size(); regCount++) {
 
-            // If there's ~1000 registrations, add the message to the pending messages
-            if (messageRegistrations == 1000) {
-                addOutboundMessage(messagePart);
+                // If there's ~1000 registrations, add the message to the pending messages
+                if (messageRegistrations == 1000) {
+                    addOutboundMessage(messagePart);
 
-                messagePart = cloneMessage(mOriginalMessage);
-                messageRegistrations = 0;
-            }
+                    messagePart = cloneMessage(mOriginalMessage);
+                    messageRegistrations = 0;
+                }
 
-            // Add the registration to the new message.
-            messagePart.recipients.add(allRecipients.get(regCount));
-            messageRegistrations++;
+                // Add the registration to the new message.
+                messagePart.recipients.add(allRecipients.get(regCount));
+                messageRegistrations++;
 
-            // Final registration in iteration? Start processing the batches
-            if (regCount == (allRecipients.size() - 1) && messageRegistrations > 0) {
-                addOutboundMessage(messagePart);
+                // Final registration in iteration? Start processing the batches
+                if (regCount == (allRecipients.size() - 1) && messageRegistrations > 0) {
+                    addOutboundMessage(messagePart);
+                }
             }
         }
 
@@ -101,6 +108,7 @@ public class GcmDispatcher {
         if (message.platformAccount != null) {
             if (mOutboundMessages.containsKey(message.platformAccount)) {
                 mOutboundMessages.get(message.platformAccount).add(message);
+
             } else {
                 List<Message> accountMessages = new ArrayList<>();
                 accountMessages.add(message);
@@ -113,8 +121,6 @@ public class GcmDispatcher {
      * Send all message parts in the queue for all accounts.
      */
     private CompletionStage<Void> sendMessages() {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-
         // Loop through each platform listed for the account and look for the GCM.
         Iterator<Map.Entry<PlatformAccount, List<Message>>> platformIterator = mOutboundMessages.entrySet().iterator();
         while (platformIterator.hasNext()) {
@@ -124,18 +130,19 @@ public class GcmDispatcher {
             List<Message> platformMessages = platformValues.getValue();
 
             for (Message message : platformMessages) {
-                WSRequest request = WS.url(platformAccount.platform.endpointUrl);
-                request.setContentType("application/json");
-                request.setHeader("Authorization", String.format("key=%s", platformAccount.authToken));
-
                 String jsonBody = new GsonBuilder()
                         .registerTypeAdapter(Message.class, new GcmMessageSerializer())
                         .create()
                         .toJson(message);
 
+                WSRequest request = mWsClient
+                        .url(platformAccount.platform.endpointUrl)
+                        .setFollowRedirects(true)
+                        .setContentType("application/json")
+                        .setRequestTimeout(GCM_REQUEST_TIMEOUT)
+                        .setHeader("Authorization", String.format("key=%s", platformAccount.authToken));
 
                 CompletionStage<WSResponse> result = request
-                        .setRequestTimeout(GCM_REQUEST_TIMEOUT)
                         .post(jsonBody);
 
                 return result.thenApply(new Function<WSResponse, Void>() {
@@ -147,7 +154,7 @@ public class GcmDispatcher {
                 });
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     /**

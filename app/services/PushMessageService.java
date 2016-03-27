@@ -14,6 +14,8 @@ import services.gcm.PushResponseReceiver;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static helpers.GcmMessageHelper.buildAlertMessage;
 import static models.accounts.Platform.PLATFORM_NAME_GCM;
@@ -47,7 +49,7 @@ public class PushMessageService {
             // Loop through each sending API account.
             if (accounts != null && !accounts.isEmpty()) {
 
-                // Create a new task and send a message per platform account.
+                // Create a new task and send a logMessage per platform account.
                 Task messageTask = new Task();
                 for (Account account : accounts) {
 
@@ -70,12 +72,10 @@ public class PushMessageService {
      * @param registration registration for newly registered device.
      * @param platformAccounts list of the platform account owner.
      */
-    public void sendRegistrationConfirmation(@Nonnull Registration registration,
+    public CompletionStage<Boolean> sendRegistrationConfirmation(@Nonnull Registration registration,
                                              @Nonnull List<PlatformAccount> platformAccounts) {
-
         // Create a new task and send a message per platform account.
         Task messageTask = new Task();
-
         for (PlatformAccount platformAccount : platformAccounts) {
 
             // Loop through each sending API account.
@@ -83,12 +83,14 @@ public class PushMessageService {
 
                 List<Message> taskMessages = new ArrayList<>();
                 Message message = GcmMessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
+                message.addRegistrationId(registration.registrationToken);
                 messageTask.addMessage(message);
 
                 // TODO: Remove this in favour of the polling queue.
                 new GcmDispatcher(message, new PushResponseReceiver());
             }
         }
+        return CompletableFuture.completedFuture(true);
     }
 
 }

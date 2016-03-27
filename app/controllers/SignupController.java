@@ -114,7 +114,7 @@ public class SignupController extends Controller {
             String password1 = formData.get("password_1");
             String password2 = formData.get("password_2");
             String estDailyRegistrations = formData.get("estimate_daily_regs");
-            String packageUri = formData.get("pacakge_uri");
+            String packageUri = formData.get("package_uri");
 
             boolean requiresGcm = formData.get("platform_gcm") != null &&
                     formData.get("platform_gcm").equals("on");
@@ -141,8 +141,8 @@ public class SignupController extends Controller {
 
             boolean platformsGood = requiresApns || requiresGcm;
 
-            if (packageUri == null || packageUri.isEmpty() || !packageUri.contains("com.")) {
-                signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.n.n"));
+            if (packageUri == null || packageUri.isEmpty() || !packageUri.contains(".")) {
+                signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.company.app"));
                 Log.i(TAG, "No package_uri found for account signup: " + email);
             }
 

@@ -37,10 +37,10 @@ public class Route extends Model implements Comparable<Route> {
     @ManyToOne(fetch = FetchType.EAGER)
     public Agency agency;
 
-    @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH)
+    @ManyToMany(mappedBy = "routes", cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     public List<Subscription> subscriptions;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "route", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     public List<Alert> alerts;
 
     @Override

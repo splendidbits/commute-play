@@ -20,7 +20,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-play-enhancer" % "1.1.0")
 // Play enhancer, regardless of whether the line above is commented out or not.
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-play-ebean" % "3.0.0")
-//addSbtPlugin("com.typesafe.sbt" % "sbt-play-ebean" % "1.0.0")
 
 
 resolvers ++= Seq(
@@ -31,7 +30,6 @@ resolvers ++= Seq(
   "Public SBT repo" at "https://dl.bintray.com/sbt/sbt-plugin-releases/",
   "sbt-idea-repo" at "http://mpeltonen.github.com/maven/",
   "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
-
 )
 
 addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "latest.integration")

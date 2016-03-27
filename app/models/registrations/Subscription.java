@@ -27,7 +27,7 @@ public class Subscription extends Model {
     @Column(name = "device_id")
     public Registration registration;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = CascadeType.REFRESH)
     @JoinTable(
             name="subscription_route",
             schema = "device_subscriptions",

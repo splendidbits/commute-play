@@ -37,6 +37,8 @@ public class AccountService {
     public Account getAccountByEmail(@Nonnull String email) {
         // Build a query depending on if we have a api key, and or registered email.
         Account account = mEbeanServer.createQuery(Account.class)
+                .fetch("platformAccounts")
+                .fetch("platformAccounts.platform")
                 .where()
                 .eq("email", email)
                 .findUnique();
