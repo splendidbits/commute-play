@@ -136,7 +136,7 @@ public class AgencyService {
                         .eq("route_id", routeId.toLowerCase())
                         .findUnique();
 
-                if (agency.routes != null) {
+                if (agency != null && agency.routes != null) {
                     foundRoutes.add(agency.routes.get(0));
                 }
 
@@ -156,30 +156,14 @@ public class AgencyService {
     @Nullable
     public List<Route> getRouteAlerts(@Nonnull int agencyId) {
         try {
-            List<Route> existingAlerts = mEbeanServer.find(Route.class)
+            return mEbeanServer.find(Route.class)
                     .where()
                     .eq("agency.agencyId", 1)
                     .findList();
-
-            return existingAlerts;
 
         } catch (Exception e) {
             mLog.e(TAG, "Error getting routes for agency.", e);
         }
         return null;
-    }
-
-    /**
-     * Some ebean query examples.
-     */
-    private void examples() {
-        /*
-        Agency currentAgency = mEbeanServer.find(Agency.class)
-                .where()
-                .eq("agencyId", 1)
-                .findUnique();
-
-        List<Route> routesToUpdate = agency.routes;
-        */
     }
 }

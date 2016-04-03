@@ -32,7 +32,7 @@ public class TaskQueue {
     private Log mLog;
 
     @Inject
-    public TaskQueue(EbeanServer ebeanServer, Log log, GcmDispatcher gcmDispatcher) {
+    public TaskQueue(EbeanServer ebeanServer, Log log) {
         mEbeanServer = ebeanServer;
         mLog = log;
     }

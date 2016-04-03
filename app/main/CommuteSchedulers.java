@@ -15,17 +15,16 @@ import java.util.concurrent.TimeUnit;
  * Runs on application startup.
  */
 @Singleton
-public class StartSchedulers {
+public class CommuteSchedulers {
     private static final String TAG = CommuteServerStartModule.class.getSimpleName();
 
     private static final int TASK_QUEUE_INITIAL_DELAY_SECONDS = 60;
     private static final int TASK_QUEUE_INTERVAL_SECONDS = 15;
     private static final int AGENCY_UPDATE_INITIAL_DELAY_SECONDS = 60;
     private static final int AGENCY_UPDATE_INTERVAL_SECONDS = 60;
+    private static final String ACTOR_SYSTEM_NAME = "commute_actor_system";
 
-    private final ActorRef mAgencyUpdateActor;
-
-    @Inject
+    private ActorRef mAgencyUpdateActor;
     private ActorSystem mActorSystem;
 
     @Inject
@@ -35,9 +34,19 @@ public class StartSchedulers {
     private TaskQueue mTaskQueue;
 
     @Inject
-    public StartSchedulers(ActorSystem system) {
-        mActorSystem = system;
-        mAgencyUpdateActor = system.actorOf(AgencyUpdateActor.props);
+    public CommuteSchedulers(Log log, TaskQueue taskQueue) {
+        mLog = log;
+        mTaskQueue = taskQueue;
+
+        startSchedulers();
+    }
+
+    /**
+     * Dispatch the periodic schedulers.
+     */
+    private void startSchedulers() {
+        mActorSystem = ActorSystem.create(ACTOR_SYSTEM_NAME);
+        mAgencyUpdateActor = mActorSystem.actorOf(AgencyUpdateActor.props);
 
         startAgencyUpdateSchedule();
         startTaskQueueSchedule();

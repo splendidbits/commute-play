@@ -17,10 +17,6 @@ public class AgencyUpdateActor extends UntypedActor {
     @Inject
     private SeptaAlertsController mSeptaAlertsController;
 
-    @Inject
-    public AgencyUpdateActor() {
-    }
-
     @Override
     public void onReceive(Object msg) throws Exception {
         if (msg != null && msg instanceof AgencyUpdateProtocol) {

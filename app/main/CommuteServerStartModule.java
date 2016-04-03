@@ -14,6 +14,6 @@ public class CommuteServerStartModule extends AbstractModule implements AkkaGuic
                 .toProvider(CommuteEbeanServerProvider.class)
                 .asEagerSingleton();
 
-        bind(StartSchedulers.class).asEagerSingleton();
+        bind(CommuteSchedulers.class).asEagerSingleton();
     }
 }
