@@ -44,9 +44,8 @@ public class Registration extends Model {
         this.registrationToken = registrationToken;
     }
 
-    @Override
-    public void insert() {
+    @PrePersist
+    public void initialValues() {
         timeRegistered = Calendar.getInstance();
-        super.insert();
     }
 }

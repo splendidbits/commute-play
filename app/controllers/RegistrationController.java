@@ -8,6 +8,7 @@ import play.mvc.Result;
 import services.AccountService;
 import services.PushMessageService;
 
+import javax.inject.Inject;
 import java.util.Map;
 
 /**
@@ -25,6 +26,9 @@ public class RegistrationController extends Controller {
     private static final Result BAD_ACCOUNT = badRequest("No account for api_key");
     private static final Result OVERDRAWN_ACCOUNT = badRequest("Over quota for account. Email help@splendidbits.co");
 
+    @Inject
+    private AccountService mAccountService;
+
     /**
      * Register a client with the commute GCM server. Saves important
      * token information along with a timestamp.
@@ -33,8 +37,6 @@ public class RegistrationController extends Controller {
      */
     @Transactional
     public Result register() {
-        AccountService accountService = new AccountService();
-
         Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
         if (clientRequestBody == null) {
             return MISSING_PARAMS_RESULT;
@@ -55,8 +57,8 @@ public class RegistrationController extends Controller {
          * TODO: Remove this when all clients have been upgraded to send API key.
          */
         Account account = apiKey != null
-                ? accountService.getAccountByApi(apiKey)
-                : accountService.getAccountByEmail("daniel@staticfish.com");
+                ? mAccountService.getAccountByApi(apiKey)
+                : mAccountService.getAccountByEmail("daniel@staticfish.com");
 
         if (account == null || !account.active) {
             return BAD_ACCOUNT;
@@ -64,7 +66,7 @@ public class RegistrationController extends Controller {
 
         Registration newRegistration = new Registration(deviceId, registrationId);
         newRegistration.account = account;
-        boolean persistSuccess = accountService.addRegistration(newRegistration);
+        boolean persistSuccess = mAccountService.addRegistration(newRegistration);
 
         if (persistSuccess) {
             PushMessageService pushService = new PushMessageService();

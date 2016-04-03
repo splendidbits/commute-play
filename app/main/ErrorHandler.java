@@ -5,6 +5,7 @@ import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
 
+import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -18,10 +19,17 @@ import java.util.concurrent.CompletionStage;
 public class ErrorHandler implements HttpErrorHandler{
     private static final String TAG = ErrorHandler.class.getSimpleName();
 
+    @Inject
+    private Log mLog;
+
+    @Inject
+    public ErrorHandler() {
+    }
+
     public CompletionStage<Result> onClientError(Http.RequestHeader request, int statusCode, String message) {
         String logMessage = message != null ? message : "Exception was triggered";
         String tag = request.method() != null ? request.method() : TAG;
-        Log.e(tag, logMessage);
+        mLog.e(tag, logMessage);
 
         return CompletableFuture.completedFuture(
                 Results.status(statusCode, "A client error occurred: " + message)
@@ -31,7 +39,7 @@ public class ErrorHandler implements HttpErrorHandler{
     public CompletionStage<Result> onServerError(Http.RequestHeader request, Throwable exception) {
         String logMessage = "Exception was triggered";
         String tag = request.method() != null ? request.method() : TAG;
-        Log.c(tag, logMessage, exception);
+        mLog.c(tag, logMessage, exception);
 
         return CompletableFuture.completedFuture(
                 Results.internalServerError("A server error occurred")

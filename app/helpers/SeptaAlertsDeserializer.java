@@ -6,6 +6,7 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 
+import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,8 +24,11 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static SimpleDateFormat lastUpdatedDateFormat;
     private static SimpleDateFormat detourDateFormat;
 
+    @Inject
+    private Log mLog;
+
     public SeptaAlertsDeserializer() {
-        Log.d(TAG, "Started parsing SEPTA alerts json body");
+        mLog.d(TAG, "Started parsing SEPTA alerts json body");
 
         // The SEPTA alerts feed uses different date formats depending on the field
 
@@ -105,13 +109,13 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                     routeMap.put(routeId, route);
                 }
             }
-            Log.d(TAG, "Finished creating SEPTA route-alert map.");
+            mLog.d(TAG, "Finished creating SEPTA route-alert map.");
 
         }catch (IllegalStateException pe){
-            Log.c(TAG, "Error parsing json body into alert object", pe);
+            mLog.c(TAG, "Error parsing json body into alert object", pe);
 
         } catch (ParseException e) {
-            Log.c(TAG, "Error parsing json date(s) into alert object", e);
+            mLog.c(TAG, "Error parsing json date(s) into alert object", e);
         }
 
         // Create agency.

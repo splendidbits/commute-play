@@ -41,6 +41,7 @@ public class GcmDispatcher {
     private Message mOriginalMessage = null;
 
     private WSClient mWsClient = Play.current().injector().instanceOf(WSClient.class);
+    private Log mLog = Play.current().injector().instanceOf(Log.class);
 
     /**
      * Send a originalMessage to Google.
@@ -168,9 +169,9 @@ public class GcmDispatcher {
         GoogleResponse response = new Gson().fromJson(requestResponse.getBody(), GoogleResponse.class);
         mInboundResponses.add(response);
 
-        Log.d(TAG, String.format("%d canonical ids.", response.mCanonicalIdCount));
-        Log.d(TAG, String.format("%d successful GCM messages.", response.mSuccessCount));
-        Log.d(TAG, String.format("%d failed GCM messages.", response.mFailCount));
+        mLog.d(TAG, String.format("%d canonical ids.", response.mCanonicalIdCount));
+        mLog.d(TAG, String.format("%d successful GCM messages.", response.mSuccessCount));
+        mLog.d(TAG, String.format("%d failed GCM messages.", response.mFailCount));
 
         // After all the responses have returned, build the app push response model.
         if (mInboundResponses.size() == mOutboundMessages.size()) {
@@ -271,7 +272,7 @@ public class GcmDispatcher {
             clonedMessage.isDelayWhileIdle = message.isDelayWhileIdle;
             clonedMessage.priority = message.priority;
             clonedMessage.task = message.task;
-            clonedMessage.messageSent = message.messageSent;
+            clonedMessage.sentTime = message.sentTime;
 
             return clonedMessage;
         }

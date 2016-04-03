@@ -1,6 +1,9 @@
 package actors;
 
+import akka.actor.Props;
 import akka.actor.UntypedActor;
+import controllers.SeptaAlertsController;
+import models.app.AgencyUpdateType;
 
 import javax.inject.Inject;
 
@@ -9,12 +12,26 @@ import javax.inject.Inject;
  * providers to update.
  */
 public class AgencyUpdateActor extends UntypedActor {
+    public static Props props = Props.create(AgencyUpdateActor.class);
+
+    @Inject
+    private SeptaAlertsController mSeptaAlertsController;
+
     @Inject
     public AgencyUpdateActor() {
     }
 
     @Override
-    public void onReceive(Object message) throws Exception {
+    public void onReceive(Object msg) throws Exception {
+        if (msg != null && msg instanceof AgencyUpdateProtocol) {
+            AgencyUpdateProtocol message = (AgencyUpdateProtocol) msg;
 
+            if (message.getAgencyType().equals(AgencyUpdateType.TYPE_ALL)) {
+                mSeptaAlertsController.updateAgency();
+
+            } else if (message.getAgencyType().equals(AgencyUpdateType.TYPE_SEPTA)){
+                mSeptaAlertsController.updateAgency();
+            }
+        }
     }
 }

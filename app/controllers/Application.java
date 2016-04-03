@@ -8,6 +8,7 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import views.html.index;
 
+import javax.inject.Inject;
 import java.util.List;
 
 import static play.libs.Json.toJson;
@@ -15,6 +16,9 @@ import static play.libs.Json.toJson;
 public class Application extends Controller {
 
     private static final String TAG = Application.class.getSimpleName();
+
+    @Inject
+    private Log mLog;
 
     public Result index() {
         return ok();
@@ -28,7 +32,7 @@ public class Application extends Controller {
     public Result addPerson() {
         Form<Person> persons = Form.form(Person.class).bindFromRequest();
         Person person = persons.get();
-        Log.d(TAG, "Saving name: " + person.name);
+        mLog.d(TAG, "Saving name: " + person.name);
         Person.db("persons").save(person);
         return redirect(routes.Application.personsIndex());
     }

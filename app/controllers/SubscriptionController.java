@@ -9,6 +9,7 @@ import play.mvc.Result;
 import services.AgencyService;
 import services.AccountService;
 
+import javax.inject.Inject;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,12 @@ public class SubscriptionController extends Controller {
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String ROUTE_LIST_KEY = "routeslist";
     private static final String AGENCY_NAME_KEY = "agencyname";
+
+    @Inject
+    private AgencyService mAgencyService;
+
+    @Inject
+    private AccountService mAccountService;
 
     // Response enum.
     private enum SubscriptionResponse {
@@ -61,16 +68,13 @@ public class SubscriptionController extends Controller {
             String agencyName = agencyValue != null ? agencyValue[0].trim().toLowerCase() : "septa";
 
             // Check that the device is already registered.
-            AccountService subscriptionService = new AccountService();
-            Registration existingRegistration = subscriptionService.getRegistration(deviceId);
+            Registration existingRegistration = mAccountService.getRegistration(deviceId);
             if (existingRegistration == null) {
                 return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());
             }
 
-            AgencyService agencyService = AgencyService.getInstance();
-
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-            List<Route> validRoutes = agencyService.getRouteAlerts(agencyName, routes);
+            List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyName, routes);
             if (validRoutes != null) {
                 models.registrations.Subscription subscription = new Subscription();
                 subscription.registration = existingRegistration;
@@ -78,7 +82,7 @@ public class SubscriptionController extends Controller {
                 subscription.timeSubscribed = Calendar.getInstance();
 
                 // Persist the subscription.
-                subscriptionService.addSubscription(subscription);
+                mAccountService.addSubscription(subscription);
             }
         }
         return ok(dataValidity.getValue());

@@ -38,6 +38,9 @@ public class SignupController extends Controller {
     @Inject
     private FormFactory mFormFactory;
 
+    @Inject
+    private Log mLog;
+
     public Result signup() {
         return ok(signup.render(null, DynamicForm.form()));
     }
@@ -93,7 +96,7 @@ public class SignupController extends Controller {
             Ebean.save(pendingAccount);
 
         } else {
-            Log.w(TAG, "No platforms were found for account signup: " + email);
+            mLog.w(TAG, "No platforms were found for account signup: " + email);
         }
         return ok(signup.render("Your API request has been submitted. Mark email from @splendidbits.co as non-spam",
                 new DynamicForm(formData, signupForm.errors(), null, null, null, null)));
@@ -143,12 +146,12 @@ public class SignupController extends Controller {
 
             if (packageUri == null || packageUri.isEmpty() || !packageUri.contains(".")) {
                 signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.company.app"));
-                Log.i(TAG, "No package_uri found for account signup: " + email);
+                mLog.i(TAG, "No package_uri found for account signup: " + email);
             }
 
             if (!passwordGood) {
                 signupForm.reject(new ValidationError("password_1", "Passwords must match and be more than 5 characters."));
-                Log.i(TAG, "Account Signup, Signup password requirements not satisfied: " + email);
+                mLog.i(TAG, "Account Signup, Signup password requirements not satisfied: " + email);
             }
 
             if (!emailGood) {

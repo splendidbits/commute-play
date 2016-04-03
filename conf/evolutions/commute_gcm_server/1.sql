@@ -48,7 +48,7 @@ create table task_queue.messages (
   dry_run                       boolean,
   priority                      varchar(255),
   time_to_live                  integer,
-  message_sent                  timestamp,
+  sent_time                     timestamp,
   constraint pk_messages primary key (message_id)
 );
 create sequence message_id_seq increment by 1;
@@ -81,8 +81,7 @@ create sequence platform_account_id_seq increment by 1;
 create table task_queue.recipients (
   recipient_id                  varchar(255) not null,
   message_message_id            integer,
-  process_state                 varchar(23),
-  constraint ck_recipients_process_state check (process_state in ('COMPLETE','ERROR_WAITING_FOR_RETRY','PERMINANTLY_FAILED','NOT_STARTED','PROCESSING')),
+  last_attempt                  timestamp,
   constraint pk_recipients primary key (recipient_id)
 );
 
@@ -118,11 +117,11 @@ create table device_subscriptions.subscription_route (
 create table task_queue.tasks (
   task_id                       integer not null,
   exponential_multiplier        integer,
-  in_process                    boolean,
-  task_added                    timestamp not null,
-  initial_attempt               timestamp,
+  process_state                 varchar(18),
+  task_added                    timestamp,
   previous_attempt              timestamp,
   upcoming_attempt              timestamp,
+  constraint ck_tasks_process_state check (process_state in ('COMPLETE','SOFT_ERROR','PERMANENTLY_FAILED','NOT_STARTED','PARTIALLY_COMPLETE','PROCESSING')),
   constraint pk_tasks primary key (task_id)
 );
 create sequence task_id_seq increment by 1;

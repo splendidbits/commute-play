@@ -1,6 +1,5 @@
 package services;
 
-import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import main.Constants;
 import main.Log;
@@ -12,19 +11,29 @@ import models.registrations.Subscription;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.util.Calendar;
 import java.util.List;
 
+/**
+ * A DAO class for both device registration / subscription actions and
+ * platform + API account functions.
+ *
+ * TODO: Split this up into two separate services.
+ */
 public class AccountService {
     private static final String TAG = AccountService.class.getSimpleName();
+
+    @Inject
     private EbeanServer mEbeanServer;
 
-    public AccountService() {
-        try {
-            mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
-        } catch (Exception e) {
-            play.Logger.debug("Error setting EBean Datasource properties", e);
-        }
+    @Inject
+    private Log mLog;
+
+    @Inject
+    public AccountService(EbeanServer ebeanServer, Log log) {
+        mEbeanServer = ebeanServer;
+        mLog = log;
     }
 
     /**
@@ -141,7 +150,7 @@ public class AccountService {
             return true;
 
         } catch (Exception e) {
-            Log.e(TAG, "Error persisting subscription", e);
+            mLog.e(TAG, "Error persisting subscription", e);
 
         } finally {
             mEbeanServer.endTransaction();
@@ -184,7 +193,7 @@ public class AccountService {
                 return true;
 
             } catch (Exception e) {
-                Log.e(TAG, String.format("Error saving device registration for %s. Rolling back.",
+                mLog.e(TAG, String.format("Error saving device registration for %s. Rolling back.",
                         newRegistration.deviceId), e);
             }
         }

@@ -15,18 +15,6 @@ import java.util.List;
 public class Route extends Model implements Comparable<Route> {
     public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
 
-    public Route() {
-    }
-
-    public Route(String routeId) {
-        this.routeId = routeId;
-    }
-
-    public Route(String routeId, String routeName) {
-        this.routeId = routeId;
-        this.routeName = routeName;
-    }
-
     @Id
     @Column(name = "route_id")
     public String routeId;
@@ -70,5 +58,17 @@ public class Route extends Model implements Comparable<Route> {
     @Override
     public int compareTo(Route o) {
         return routeId.compareTo(o.routeId);
+    }
+
+    public Route() {
+    }
+
+    public Route(String routeId) {
+        this.routeId = routeId;
+    }
+
+    public Route(String routeId, String routeName) {
+        this.routeId = routeId;
+        this.routeName = routeName;
     }
 }

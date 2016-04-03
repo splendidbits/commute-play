@@ -1,6 +1,7 @@
 package services;
 
 import helpers.GcmMessageHelper;
+import main.Log;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Alert;
@@ -8,11 +9,9 @@ import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Task;
-import services.gcm.GcmDispatcher;
-import services.gcm.PushResponseReceiver;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -23,10 +22,18 @@ import static models.accounts.Platform.PLATFORM_NAME_GCM;
 /**
  * Application-wide service for sending information through the
  * platform push channels.
- *
- * TODO: Migrate these methods to use the polling TaskQueue service.
  */
 public class PushMessageService {
+    private static final String TAG = PushMessageService.class.getSimpleName();
+
+    @Inject
+    private AccountService mAccountService;
+
+    @Inject
+    private Log mLog;
+
+    @Inject
+    private TaskQueue mTaskQueue;
 
     /**
      * Notify GCM subscribers of the modified alerts which have changed.
@@ -40,8 +47,7 @@ public class PushMessageService {
         for (Alert alert : updatedAlerts) {
 
             // Get all accounts for the registrations subscribed to that route.
-            AccountService accountService = new AccountService();
-            List<Account> accounts = accountService.getRegistrationAccounts(
+            List<Account> accounts = mAccountService.getRegistrationAccounts(
                     PLATFORM_NAME_GCM,
                     modifiedAlerts.getAgencyId(),
                     alert.route);
@@ -54,12 +60,19 @@ public class PushMessageService {
                 for (Account account : accounts) {
 
                     for (PlatformAccount platformAccount : account.platformAccounts) {
-                        Message message = buildAlertMessage(alert, account.registrations, platformAccount);
-                        messageTask.addMessage(message);
+                        if (account.registrations != null && !account.registrations.isEmpty()) {
+                            Message message = buildAlertMessage(alert, account.registrations, platformAccount);
+                            messageTask.addMessage(message);
 
-                        // TODO: Remove this in favour of the polling queue.
-                        new GcmDispatcher(message, new PushResponseReceiver());
+                        } else {
+                            mLog.i(TAG, "Outbound message not build as there were 0 recipients");
+                        }
                     }
+                }
+
+                // Add the message task to the taskqueue.
+                if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
+                    mTaskQueue.addTask(messageTask);
                 }
             }
         }
@@ -74,20 +87,23 @@ public class PushMessageService {
      */
     public CompletionStage<Boolean> sendRegistrationConfirmation(@Nonnull Registration registration,
                                              @Nonnull List<PlatformAccount> platformAccounts) {
-        // Create a new task and send a message per platform account.
-        Task messageTask = new Task();
-        for (PlatformAccount platformAccount : platformAccounts) {
+        if (!platformAccounts.isEmpty()) {
+            // Create a new task and send a message per platform account.
+            Task messageTask = new Task();
+            for (PlatformAccount platformAccount : platformAccounts) {
 
-            // Loop through each sending API account.
-            if (platformAccount.platform.platformName.equals(PLATFORM_NAME_GCM)) {
+                // Loop through each sending API account.
+                if (platformAccount.platform.platformName.equals(PLATFORM_NAME_GCM)) {
 
-                List<Message> taskMessages = new ArrayList<>();
-                Message message = GcmMessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
-                message.addRegistrationId(registration.registrationToken);
-                messageTask.addMessage(message);
+                    Message message = GcmMessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
+                    message.addRegistrationId(registration.registrationToken);
+                    messageTask.addMessage(message);
+                }
+            }
 
-                // TODO: Remove this in favour of the polling queue.
-                new GcmDispatcher(message, new PushResponseReceiver());
+            // Add the message task to the taskqueue.
+            if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
+                mTaskQueue.addTask(messageTask);
             }
         }
         return CompletableFuture.completedFuture(true);

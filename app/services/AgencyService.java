@@ -1,8 +1,6 @@
 package services;
 
-import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
-import main.Constants;
 import main.Log;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -10,32 +8,25 @@ import models.alerts.Route;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
+@Singleton
 public class AgencyService {
     private static final String TAG = AgencyService.class.getSimpleName();
+
+    @Inject
     private EbeanServer mEbeanServer;
 
-    /**
-     * Get a THREADSAFE Syncronised instance of the AgencyService.
-     *
-     * @return An instance of the AgencyService which contain locks.
-     */
-    private static class Loader {
-        static final AgencyService INSTANCE = new AgencyService();
-    }
+    @Inject
+    private Log mLog;
 
-    public static AgencyService getInstance() {
-        return Loader.INSTANCE;
-    }
-
-    private AgencyService() {
-        try {
-            mEbeanServer = Ebean.getServer(Constants.COMMUTE_GCM_DB_SERVER);
-        } catch (Exception e) {
-            play.Logger.debug("Error setting EBean Datasource properties", e);
-        }
+    @Inject
+    public AgencyService(EbeanServer ebeanServer, Log log) {
+        mEbeanServer = ebeanServer;
+        mLog = log;
     }
 
     /**
@@ -46,12 +37,14 @@ public class AgencyService {
      */
     public boolean saveAgencyAlerts(@Nonnull Agency agency) {
         // Get the current persisted agency alerts.
+        mLog.d(TAG, "Persisting agency routes in database.");
         Agency existingAgency = mEbeanServer.find(Agency.class)
                 .where()
                 .eq("agencyId", agency.agencyId)
                 .findUnique();
 
         mEbeanServer.createTransaction();
+
         try {
             if (existingAgency != null && existingAgency.routes != null) {
 
@@ -64,31 +57,46 @@ public class AgencyService {
                             .eq("agency_id", agency.agencyId)
                             .findUnique();
 
-                    if (existingRoute != null && existingRoute.routeId.equals(freshRoute.routeId)) {
+                    if (existingRoute != null) {
+                        mLog.d(TAG, String.format("Found $1%d existing routes for $2%s",
+                                existingAgency.routes.size(), existingAgency.agencyName));
 
-                        // Delete all old alerts.
-                        for (Alert oldAlert : existingRoute.alerts){
-                            mEbeanServer.delete(oldAlert);
+                        if (existingRoute.routeId.equals(freshRoute.routeId)) {
+                            // Delete all old alerts.
+                            mLog.d(TAG, String.format("Found $1%d existing alerts for $2%s .",
+                                    existingRoute.alerts.size(), existingRoute.routeName));
+
+                            for (Alert oldAlert : existingRoute.alerts) {
+                                mEbeanServer.delete(oldAlert);
+                            }
+
+                            // Update the route properties
+                            existingRoute.routeName = freshRoute.routeName;
+                            existingRoute.agency = agency;
+                            existingRoute.alerts = freshRoute.alerts;
+
+                            // Delete the alerts for that route
+                            mLog.d(TAG, String.format("Saving $1%d alerts for $2%s .",
+                                    freshRoute.alerts.size(), existingRoute.routeName));
+                            mEbeanServer.save(existingRoute);
                         }
 
-                        // Update the route properties
-                        existingRoute.routeName = freshRoute.routeName;
-                        existingRoute.agency = agency;
-                        existingRoute.alerts = freshRoute.alerts;
-
-                        // Delete the alerts for that route
-                        mEbeanServer.save(existingRoute);
-
                     } else {
+                        mLog.i(TAG, String.format("Route $1%s for $2%s doesn't exist. Saving new route.",
+                                freshRoute.routeName,
+                                freshRoute.agency.agencyName));
+
                         freshRoute.agency = agency;
                         mEbeanServer.save(freshRoute);
                     }
                 }
 
             } else if (existingAgency != null) {
+                mLog.i(TAG, String.format("Agency $1%s exists with no routes. Saving all routes.", agency.agencyName));
                 mEbeanServer.update(agency);
 
             } else {
+                mLog.i(TAG, String.format("Agency $1%s doesn't exist. Inserting all alerts.", agency.agencyName));
                 mEbeanServer.save(agency);
             }
 
@@ -96,7 +104,7 @@ public class AgencyService {
             mEbeanServer.commitTransaction();
 
         } catch (Exception e) {
-            Log.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
+            mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
             mEbeanServer.rollbackTransaction();
 
         } finally {
@@ -133,7 +141,7 @@ public class AgencyService {
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "Error getting route for routeIds.", e);
+                mLog.e(TAG, "Error getting route for routeIds.", e);
             }
         }
         return foundRoutes;
@@ -156,7 +164,7 @@ public class AgencyService {
             return existingAlerts;
 
         } catch (Exception e) {
-            Log.e(TAG, "Error getting routes for agency.", e);
+            mLog.e(TAG, "Error getting routes for agency.", e);
         }
         return null;
     }

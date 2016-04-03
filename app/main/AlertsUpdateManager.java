@@ -8,6 +8,7 @@ import services.AgencyService;
 import services.PushMessageService;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,7 +21,20 @@ import java.util.List;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-public class AgencyUpdate {
+public class AlertsUpdateManager {
+
+    private static final String TAG = AlertsUpdateManager.class.getSimpleName();
+
+    @Inject
+    private AgencyService mAgencyService;
+
+    @Inject Log mLog;
+
+    @Inject
+    public AlertsUpdateManager(Log log, AgencyService agencyService) {
+        mAgencyService = agencyService;
+        mLog = log;
+    }
 
     /**
      * Starts of a chain of things when an agency is passed into this method:
@@ -37,16 +51,17 @@ public class AgencyUpdate {
 
         List<Route> agencyRoutes = updatedAgency.routes;
         if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
+            mLog.d(TAG, "Found routes and alerts for agency.");
             Collections.sort(agencyRoutes);
 
             // Pass the Alert differences on to the GCM Pre-processor.
             ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
             if (modifiedAlerts.hasModifiedAlerts()){
+                mLog.d(TAG, "Found new alerts agency routes.");
                 pushMessageService.notifyAlertSubscribers(modifiedAlerts);
 
                 // Save the agency in the datastore.
-                AgencyService alertsService = AgencyService.getInstance();
-                alertsService.saveAgencyAlerts(updatedAgency);
+                mAgencyService.saveAgencyAlerts(updatedAgency);
             }
         }
     }
@@ -60,10 +75,9 @@ public class AgencyUpdate {
     @Nonnull
     private ModifiedAlerts getUpdatedRoutes(@Nonnull Agency updatedAgency) {
         ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.agencyId);
-        AgencyService agencyService = AgencyService.getInstance();
 
         // Get all the current routes that exist for the agency.
-        List<Route> currentRouteAlerts = agencyService.getRouteAlerts(updatedAgency.agencyId);
+        List<Route> currentRouteAlerts = mAgencyService.getRouteAlerts(updatedAgency.agencyId);
 
         // Get all the fresh routes that have been parsed.
         List<Route> freshRouteAlerts = updatedAgency.routes;

@@ -58,9 +58,8 @@ public class Account extends Model {
 
     }
 
-    @Override
-    public void insert() {
+    @PrePersist
+    public void initialValues() {
         timeEnrolled = Calendar.getInstance();
-        super.insert();
     }
 }

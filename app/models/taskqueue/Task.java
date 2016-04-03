@@ -3,6 +3,7 @@ package models.taskqueue;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.avaje.ebean.annotation.EnumValue;
 import interfaces.PlatformMessage;
 import main.Constants;
 
@@ -18,6 +19,21 @@ import java.util.List;
 public class Task extends Model {
     public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
+    public enum ProcessState {
+        @EnumValue("NOT_STARTED")
+        STATE_NOT_STARTED,
+        @EnumValue("PROCESSING")
+        STATE_PROCESSING,
+        @EnumValue("SOFT_ERROR")
+        STATE_SOFT_ERROR,
+        @EnumValue("PARTIALLY_COMPLETE")
+        STATE_PARTIALLY_COMPLETE,
+        @EnumValue("PERMANENTLY_FAILED")
+        STATE_PERMANENTLY_FAILED,
+        @EnumValue("COMPLETE")
+        STATE_COMPLETE,
+    }
+
     @Id
     @Column(name = "task_id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
@@ -30,18 +46,13 @@ public class Task extends Model {
     @Column(name = "exponential_multiplier")
     public int currentExponent;
 
-    @Column(name = "in_process")
-    public boolean inProcess;
+    @Column(name = "process_state")
+    public ProcessState processState;
 
-    @Basic(optional = false)
+    @Basic
     @Column(name = "task_added")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar taskAdded;
-
-    @Basic()
-    @Column(name = "initial_attempt")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar initialAttempt;
 
     @Basic
     @Column(name = "previous_attempt")
@@ -53,6 +64,10 @@ public class Task extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar upcomingAttempt;
 
+    public Task() {
+        processState = ProcessState.STATE_NOT_STARTED;
+    }
+
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
             messages = new ArrayList<>();
@@ -60,9 +75,9 @@ public class Task extends Model {
         messages.add(platformMessage);
     }
 
-    @Override
-    public void insert() {
-        initialAttempt = Calendar.getInstance();
-        super.insert();
+    @PrePersist
+    public void initialValues() {
+        taskAdded = Calendar.getInstance();
+        currentExponent = 1;
     }
 }

@@ -53,9 +53,8 @@ public class Subscription extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed;
 
-    @Override
-    public void insert() {
+    @PrePersist
+    public void initialValues() {
         timeSubscribed = Calendar.getInstance();
-        super.insert();
     }
 }

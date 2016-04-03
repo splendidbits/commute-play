@@ -31,5 +31,3 @@ resolvers ++= Seq(
   "sbt-idea-repo" at "http://mpeltonen.github.com/maven/",
   "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
 )
-
-addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "latest.integration")

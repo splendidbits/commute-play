@@ -3,7 +3,7 @@ package controllers;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import helpers.SeptaAlertsDeserializer;
-import main.AgencyUpdate;
+import main.AlertsUpdateManager;
 import main.Log;
 import models.alerts.Agency;
 import play.db.ebean.Transactional;
@@ -24,7 +24,21 @@ public class SeptaAlertsController extends AgencyController {
     public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
 //  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
-    @Inject WSClient mWsClient;
+    @Inject
+    private WSClient mWsClient;
+
+    @Inject
+    private Log mLog;
+
+    @Inject
+    private AlertsUpdateManager mAlertsUpdateManager;
+
+    @Inject
+    public SeptaAlertsController(WSClient wsClient, Log log, AlertsUpdateManager alertsUpdateManager) {
+        mWsClient = wsClient;
+        mLog = log;
+        mAlertsUpdateManager = alertsUpdateManager;
+    }
 
     /**
      * Download SEPTA alerts from the json server and send them to the
@@ -57,7 +71,7 @@ public class SeptaAlertsController extends AgencyController {
                 @Override
                 public void accept(WSResponse response, Throwable throwable) {
                     if (throwable != null) {
-                        Log.e(TAG, "Error fetching SEPTA alerts resource", throwable);
+                        mLog.e(TAG, "Error fetching SEPTA alerts resource", throwable);
                     } else {
                         updateAgencyData(response);
                     }
@@ -65,7 +79,7 @@ public class SeptaAlertsController extends AgencyController {
             });
 
         } catch (Exception exception) {
-            Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
         return ok();
     }
@@ -73,6 +87,7 @@ public class SeptaAlertsController extends AgencyController {
     @Override
     public void updateAgency() {
         try {
+            mLog.d(TAG, "Starting download of SEPTA agency alert data.");
             WSRequest request = mWsClient
                     .url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
@@ -83,7 +98,7 @@ public class SeptaAlertsController extends AgencyController {
                 @Override
                 public void accept(WSResponse response, Throwable throwable) {
                     if (throwable != null) {
-                        Log.e(TAG, "Error fetching SEPTA alerts resource", throwable);
+                        mLog.e(TAG, "Error fetching SEPTA alerts resource", throwable);
                     } else {
                         updateAgencyData(response);
                     }
@@ -91,7 +106,7 @@ public class SeptaAlertsController extends AgencyController {
             });
 
         } catch (Exception exception) {
-            Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
     }
 
@@ -99,27 +114,24 @@ public class SeptaAlertsController extends AgencyController {
      * Updates all septa agency data from the septa endpoint.
      */
     private CompletionStage<Boolean> updateAgencyData(@Nonnull WSResponse response) {
-        Log.d(TAG, "Downloading SEPTA alerts");
-
         try {
-            Log.d(TAG, "Downloaded SEPTA alerts");
+            mLog.d(TAG, "Downloaded SEPTA alerts");
             final Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
                     .create();
 
             Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
-            Log.d(TAG, "Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+            mLog.d(TAG, "Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
 
-            AgencyUpdate agencyUpdate = new AgencyUpdate();
-            agencyUpdate.saveAndNotifyAgencySubscribers(agencyBundle);
+            mAlertsUpdateManager.saveAndNotifyAgencySubscribers(agencyBundle);
             return CompletableFuture.completedFuture(true);
 
         } catch (Exception exception) {
-            Log.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
 
         if (response.getStatus() != 200) {
-            Log.c(TAG, "Response from SEPTA alerts json was null");
+            mLog.c(TAG, "Response from SEPTA alerts json was null");
             return CompletableFuture.completedFuture(false);
         }
         return CompletableFuture.completedFuture(true);

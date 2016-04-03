@@ -34,7 +34,7 @@ public class MessageResult{
         mSuccessCount = successCount;
     }
 
-    public boolean isHasCriticalErrors() {
+    public boolean hasCriticalErrors() {
         return mHasCriticalErrors;
     }
 

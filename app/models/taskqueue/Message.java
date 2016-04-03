@@ -6,13 +6,10 @@ import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import models.accounts.PlatformAccount;
 import interfaces.PlatformMessage;
-import models.registrations.Registration;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.*;
-
-import static com.sun.corba.se.spi.activation.IIOP_CLEAR_TEXT.value;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
@@ -62,9 +59,9 @@ public class Message extends Model implements PlatformMessage {
     public int ttl;
 
     @Basic
-    @Column(name = "message_sent")
+    @Column(name = "sent_time")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar messageSent;
+    public Calendar sentTime;
 
     @Transient
     public void addData(String key, String value){
@@ -91,9 +88,8 @@ public class Message extends Model implements PlatformMessage {
         return PlatformType.PLATFORM_TYPE_GCM;
     }
 
-    @Override
-    public void insert() {
-        messageSent = Calendar.getInstance();
-        super.insert();
+    @PrePersist
+    public void initialValues() {
+        sentTime = Calendar.getInstance();
     }
 }
