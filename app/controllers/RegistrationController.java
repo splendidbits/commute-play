@@ -69,7 +69,7 @@ public class RegistrationController extends Controller {
         boolean persistSuccess = mAccountService.addRegistration(newRegistration);
 
         if (persistSuccess) {
-            PushMessageService pushService = new PushMessageService();
+            PushMessageService pushService = new PushMessageService(mAccountService);
             pushService.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
             return ok();
 

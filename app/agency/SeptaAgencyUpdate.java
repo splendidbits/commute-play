@@ -1,7 +1,8 @@
-package controllers;
+package agency;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import controllers.Application;
 import helpers.SeptaAlertsDeserializer;
 import main.AlertsUpdateManager;
 import main.Log;
@@ -14,11 +15,34 @@ import play.mvc.Result;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
-public class SeptaAlertsController extends AgencyController {
+import static play.mvc.Results.ok;
+
+/**
+ * Download SEPTA alerts from the json server and send them to the
+ * dispatch processes.
+ * <p>
+ * Download current alerts.
+ * 1: Download agency alerts.
+ * 2: Bundle into standard format.
+ * <p>
+ * Send to GCM processor
+ * <p>
+ * 2.5: Go through each Route > Alert bundle and find any differences
+ * 3: Collect the new alerts
+ * 4: Persist new data
+ * 5: Get list of subscriptions for route
+ * 6: send data in batches of 1000 to google.
+ *
+ * @return Result.
+ */
+@Singleton
+public class SeptaAgencyUpdate implements AgencyUpdate {
+
     private static final String TAG = Application.class.getSimpleName();
 
     public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
@@ -34,30 +58,12 @@ public class SeptaAlertsController extends AgencyController {
     private AlertsUpdateManager mAlertsUpdateManager;
 
     @Inject
-    public SeptaAlertsController(WSClient wsClient, Log log, AlertsUpdateManager alertsUpdateManager) {
+    public SeptaAgencyUpdate(WSClient wsClient, Log log, AlertsUpdateManager alertsUpdateManager) {
         mWsClient = wsClient;
         mLog = log;
         mAlertsUpdateManager = alertsUpdateManager;
     }
 
-    /**
-     * Download SEPTA alerts from the json server and send them to the
-     * dispatch processes.
-     * <p>
-     * Download current alerts.
-     * 1: Download agency alerts.
-     * 2: Bundle into standard format.
-     * <p>
-     * Send to GCM processor
-     * <p>
-     * 2.5: Go through each Route > Alert bundle and find any differences
-     * 3: Collect the new alerts
-     * 4: Persist new data
-     * 5: Get list of subscriptions for route
-     * 6: send data in batches of 1000 to google.
-     *
-     * @return Result.
-     */
     @Transactional
     public Result downloadAlerts() {
         try {
@@ -117,7 +123,7 @@ public class SeptaAlertsController extends AgencyController {
         try {
             mLog.d(TAG, "Downloaded SEPTA alerts");
             final Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
+                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(mLog))
                     .create();
 
             Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
@@ -134,6 +140,7 @@ public class SeptaAlertsController extends AgencyController {
             mLog.c(TAG, "Response from SEPTA alerts json was null");
             return CompletableFuture.completedFuture(false);
         }
+
         return CompletableFuture.completedFuture(true);
     }
 }

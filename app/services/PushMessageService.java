@@ -9,9 +9,9 @@ import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Task;
+import play.api.Play;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -26,14 +26,13 @@ import static models.accounts.Platform.PLATFORM_NAME_GCM;
 public class PushMessageService {
     private static final String TAG = PushMessageService.class.getSimpleName();
 
-    @Inject
     private AccountService mAccountService;
+    private Log mLog = Play.current().injector().instanceOf(Log.class);
+    private TaskQueue mTaskQueue = Play.current().injector().instanceOf(TaskQueue.class);
 
-    @Inject
-    private Log mLog;
-
-    @Inject
-    private TaskQueue mTaskQueue;
+    public PushMessageService(AccountService accountService) {
+        mAccountService = accountService;
+    }
 
     /**
      * Notify GCM subscribers of the modified alerts which have changed.
@@ -70,7 +69,7 @@ public class PushMessageService {
                     }
                 }
 
-                // Add the message task to the taskqueue.
+                // Add the message task to the TaskQueue.
                 if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
                     mTaskQueue.addTask(messageTask);
                 }

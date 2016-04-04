@@ -7,10 +7,10 @@ import models.app.AgencyUpdateType;
  * (This means you can use it as you wish, host and share modifications.)
  * Copyright 3/28/16 Splendid Bits.
  */
-public class SeptaUpdateMessage implements AgencyUpdateProtocol {
+public class AgencyUpdateMessage implements AgencyUpdateProtocol {
 
     @Override
     public AgencyUpdateType getAgencyType() {
-        return AgencyUpdateType.TYPE_SEPTA;
+        return AgencyUpdateType.TYPE_ALL;
     }
 }

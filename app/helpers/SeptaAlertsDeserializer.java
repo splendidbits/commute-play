@@ -6,7 +6,6 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 
-import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,30 +20,27 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
     private static final String AGENCY_NAME = "septa";
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
-    private static SimpleDateFormat lastUpdatedDateFormat;
-    private static SimpleDateFormat detourDateFormat;
 
-    @Inject
     private Log mLog;
-
-    public SeptaAlertsDeserializer() {
-        mLog.d(TAG, "Started parsing SEPTA alerts json body");
-
-        // The SEPTA alerts feed uses different date formats depending on the field
-
-        // last_updated - Feb 20 2016 07:27:42:520PM
-        lastUpdatedDateFormat = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
-        // detour_%     - 1/14/2016   9:26 AM
-        detourDateFormat = new SimpleDateFormat("mm/dd/yyyy hh:mm a", Locale.US);
-        lastUpdatedDateFormat.setLenient(true);
-        detourDateFormat.setLenient(true);
+    public SeptaAlertsDeserializer(Log log) {
+        mLog = log;
     }
 
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        HashMap<String, Route> routeMap = new HashMap<>();
+        mLog.d(TAG, "Started parsing SEPTA alerts json body");
 
+        // The SEPTA alerts feed uses different date formats depending on the field
+        // last_updated - Feb 20 2016 07:27:42:520PM
+        SimpleDateFormat lastUpdatedDateFormat = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+        lastUpdatedDateFormat.setLenient(true);
+
+        // detour_%     - 1/14/2016   9:26 AM
+        SimpleDateFormat detourDateFormat = new SimpleDateFormat("mm/dd/yyyy hh:mm a", Locale.US);
+        detourDateFormat.setLenient(true);
+
+        HashMap<String, Route> routeMap = new HashMap<>();
         try{
             final JsonArray schedulesArray = json.getAsJsonArray();
 

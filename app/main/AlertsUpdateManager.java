@@ -4,11 +4,13 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.app.ModifiedAlerts;
+import services.AccountService;
 import services.AgencyService;
 import services.PushMessageService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,18 +23,19 @@ import java.util.List;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
+@Singleton
 public class AlertsUpdateManager {
 
     private static final String TAG = AlertsUpdateManager.class.getSimpleName();
 
-    @Inject
     private AgencyService mAgencyService;
-
-    @Inject Log mLog;
+    private AccountService mAccountService;
+    private Log mLog;
 
     @Inject
-    public AlertsUpdateManager(Log log, AgencyService agencyService) {
+    public AlertsUpdateManager(Log log, AgencyService agencyService, AccountService accountService) {
         mAgencyService = agencyService;
+        mAccountService = accountService;
         mLog = log;
     }
 
@@ -47,7 +50,7 @@ public class AlertsUpdateManager {
      * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
-        PushMessageService pushMessageService = new PushMessageService();
+        PushMessageService pushMessageService = new PushMessageService(mAccountService);
 
         List<Route> agencyRoutes = updatedAgency.routes;
         if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
@@ -56,7 +59,7 @@ public class AlertsUpdateManager {
 
             // Pass the Alert differences on to the GCM Pre-processor.
             ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
-            if (modifiedAlerts.hasModifiedAlerts()){
+            if (modifiedAlerts.hasModifiedAlerts()) {
                 mLog.d(TAG, "Found new alerts agency routes.");
                 pushMessageService.notifyAlertSubscribers(modifiedAlerts);
 

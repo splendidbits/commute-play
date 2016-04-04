@@ -1,33 +1,31 @@
 package actors;
 
-import akka.actor.Props;
+import agency.SeptaAgencyUpdate;
 import akka.actor.UntypedActor;
-import controllers.SeptaAlertsController;
-import models.app.AgencyUpdateType;
-
-import javax.inject.Inject;
+import com.google.inject.Inject;
 
 /**
  * Agency Update Broadcast bean which notifies all agency controller
  * providers to update.
  */
 public class AgencyUpdateActor extends UntypedActor {
-    public static Props props = Props.create(AgencyUpdateActor.class);
+    public static final String ACTOR_NAME = "agency-update-actor";
 
     @Inject
-    private SeptaAlertsController mSeptaAlertsController;
+    private SeptaAgencyUpdate mSeptaAgencyUpdate;
+
+    @Inject
+    public AgencyUpdateActor(SeptaAgencyUpdate septaAgencyUpdate) {
+        mSeptaAgencyUpdate = septaAgencyUpdate;
+    }
 
     @Override
     public void onReceive(Object msg) throws Exception {
         if (msg != null && msg instanceof AgencyUpdateProtocol) {
-            AgencyUpdateProtocol message = (AgencyUpdateProtocol) msg;
+            AgencyUpdateProtocol agencyUpdateMessage = (AgencyUpdateProtocol) msg;
+            sender().tell("Actor fired for Agency type: " + agencyUpdateMessage.getAgencyType(), self());
 
-            if (message.getAgencyType().equals(AgencyUpdateType.TYPE_ALL)) {
-                mSeptaAlertsController.updateAgency();
-
-            } else if (message.getAgencyType().equals(AgencyUpdateType.TYPE_SEPTA)){
-                mSeptaAlertsController.updateAgency();
-            }
+            mSeptaAgencyUpdate.updateAgency();
         }
     }
 }
