@@ -7,11 +7,9 @@ import helpers.SeptaAlertsDeserializer;
 import main.AlertsUpdateManager;
 import main.Log;
 import models.alerts.Agency;
-import play.db.ebean.Transactional;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
-import play.mvc.Result;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -19,8 +17,6 @@ import javax.inject.Singleton;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
-
-import static play.mvc.Results.ok;
 
 /**
  * Download SEPTA alerts from the json server and send them to the
@@ -64,32 +60,6 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
         mAlertsUpdateManager = alertsUpdateManager;
     }
 
-    @Transactional
-    public Result downloadAlerts() {
-        try {
-            WSRequest request = mWsClient
-                    .url(SEPTA_ALERTS_JSON_URL)
-                    .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
-                    .setFollowRedirects(true);
-
-            CompletionStage<WSResponse> resultPromise = request.get();
-            resultPromise.whenComplete(new BiConsumer<WSResponse, Throwable>() {
-                @Override
-                public void accept(WSResponse response, Throwable throwable) {
-                    if (throwable != null) {
-                        mLog.e(TAG, "Error fetching SEPTA alerts resource", throwable);
-                    } else {
-                        updateAgencyData(response);
-                    }
-                }
-            });
-
-        } catch (Exception exception) {
-            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
-        }
-        return ok();
-    }
-
     @Override
     public void updateAgency() {
         try {
@@ -101,6 +71,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
 
             CompletionStage<WSResponse> resultPromise = request.get();
             resultPromise.whenComplete(new BiConsumer<WSResponse, Throwable>() {
+
                 @Override
                 public void accept(WSResponse response, Throwable throwable) {
                     if (throwable != null) {

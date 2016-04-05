@@ -1,5 +1,5 @@
 /.idea/libraries
-*.iml
+#*.iml
 *.lock
 *.komodoproject
 .DS_Store
@@ -12,7 +12,7 @@
 .target/
 RUNNING_PID
 project/boot/
-workspace/
+#workspace/
 repository/
 monitoring/
 target/
@@ -29,4 +29,4 @@ project/.sbtserver
 build.sbt
 project/sbt-ui.sbt
 project/play-fork-run.sbt
-workspace.xml
+#workspace.xml

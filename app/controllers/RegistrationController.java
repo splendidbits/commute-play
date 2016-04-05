@@ -2,7 +2,6 @@ package controllers;
 
 import models.accounts.Account;
 import models.registrations.Registration;
-import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.AccountService;
@@ -10,6 +9,9 @@ import services.PushMessageService;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * The public API endpoint controller that handles devices registering
@@ -20,11 +22,19 @@ public class RegistrationController extends Controller {
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
-    // Return results
-    private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
-    private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
-    private static final Result BAD_ACCOUNT = badRequest("No account for api_key");
-    private static final Result OVERDRAWN_ACCOUNT = badRequest("Over quota for account. Email help@splendidbits.co");
+    // Return results enum
+    public enum RegistrationResult {
+        OK(ok("Registration success.")),
+        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
+        BAD_CLIENT_RESULT(badRequest("Calling client is invalid.")),
+        BAD_ACCOUNT(badRequest("No account for api_key")),
+        OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co"));
+
+        public Result mResultValue;
+        RegistrationResult(play.mvc.Result resultValue) {
+            mResultValue = resultValue;
+        }
+    }
 
     @Inject
     private AccountService mAccountService;
@@ -35,11 +45,26 @@ public class RegistrationController extends Controller {
      *
      * @return A Result.
      */
-    @Transactional
-    public Result register() {
+    public CompletionStage<Result> register() {
+        CompletionStage<RegistrationResult> promiseOfRegistration = initiateRegistration();
+
+        return promiseOfRegistration.thenApplyAsync(new Function<RegistrationResult, Result>() {
+            @Override
+            public Result apply(RegistrationResult registrationResult) {
+                return registrationResult.mResultValue;
+            }
+        });
+    }
+
+    /**
+     * Perform registration action for new device.
+     *
+     * @return CompletionStage<RegistrationResult> result of registration action.
+     */
+    private CompletionStage<RegistrationResult> initiateRegistration() {
         Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
         if (clientRequestBody == null) {
-            return MISSING_PARAMS_RESULT;
+            return CompletableFuture.completedFuture(RegistrationResult.MISSING_PARAMS_RESULT);
         }
 
         String deviceId = clientRequestBody.get(DEVICE_UUID_KEY)[0];
@@ -49,7 +74,7 @@ public class RegistrationController extends Controller {
         // Check that there was a valid registration token and device uuid.
         if ((registrationId == null || registrationId.isEmpty()) ||
                 (deviceId == null || deviceId.isEmpty())) {
-            return MISSING_PARAMS_RESULT;
+            return CompletableFuture.completedFuture(RegistrationResult.MISSING_PARAMS_RESULT);
         }
 
         /*
@@ -61,7 +86,7 @@ public class RegistrationController extends Controller {
                 : mAccountService.getAccountByEmail("daniel@staticfish.com");
 
         if (account == null || !account.active) {
-            return BAD_ACCOUNT;
+            return CompletableFuture.completedFuture(RegistrationResult.BAD_ACCOUNT);
         }
 
         Registration newRegistration = new Registration(deviceId, registrationId);
@@ -71,11 +96,10 @@ public class RegistrationController extends Controller {
         if (persistSuccess) {
             PushMessageService pushService = new PushMessageService(mAccountService);
             pushService.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
-            return ok();
+            return CompletableFuture.completedFuture(RegistrationResult.OK);
 
         } else {
-            return BAD_CLIENT_RESULT;
+            return CompletableFuture.completedFuture(RegistrationResult.BAD_CLIENT_RESULT);
         }
     }
-
 }

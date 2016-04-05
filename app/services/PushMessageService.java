@@ -100,7 +100,7 @@ public class PushMessageService {
                 }
             }
 
-            // Add the message task to the taskqueue.
+            // Add the message task to the TaskQueue.
             if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
                 mTaskQueue.addTask(messageTask);
             }

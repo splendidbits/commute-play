@@ -102,23 +102,19 @@ public class TaskQueue {
      *
      * @param task task to save and add to TaskQueue.
      */
-    public void addTask(@Nonnull Task task) {
+    public boolean addTask(@Nonnull Task task) {
         mLog.d(TAG, "Saving new task to database");
-        mEbeanServer.createTransaction();
         try {
             mEbeanServer.insert(task);
-            mEbeanServer.commitTransaction();
             task.refresh();
 
         } catch (Exception exception) {
             mLog.e(TAG, "Error saving new task to database", exception);
-
-        } finally {
-            mEbeanServer.endTransaction();
+            return false;
         }
-
         mLog.d(TAG, "Adding new task to queue");
         mPendingTasks.add(task);
+        return true;
     }
 
     /**

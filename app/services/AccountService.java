@@ -178,6 +178,8 @@ public class AccountService {
                     .endJunction()
                     .findUnique();
 
+            mEbeanServer.beginTransaction();
+
             try {
                 // Update an existing registration if it exists.
                 if (existingDevice != null) {
@@ -187,15 +189,20 @@ public class AccountService {
                     mEbeanServer.update(existingDevice);
 
                 } else {
-                    mEbeanServer.save(newRegistration);
+                    mEbeanServer.insert(newRegistration);
                 }
-
-                return true;
+                mEbeanServer.commitTransaction();
 
             } catch (Exception e) {
                 mLog.e(TAG, String.format("Error saving device registration for %s. Rolling back.",
                         newRegistration.deviceId), e);
+                mEbeanServer.rollbackTransaction();
+                return false;
+
+            } finally {
+                mEbeanServer.commitTransaction();
             }
+            return true;
         }
         return false;
     }
