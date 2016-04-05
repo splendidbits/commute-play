@@ -1,13 +1,14 @@
 package controllers;
 
+import models.accounts.Account;
 import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.AgencyService;
 import services.AccountService;
+import services.AgencyService;
 
 import javax.inject.Inject;
 import java.util.Calendar;
@@ -22,21 +23,10 @@ import java.util.function.Function;
  * with the commute server.
  */
 public class SubscriptionController extends Controller {
+    private static final String API_KEY = "api_key";
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String ROUTE_LIST_KEY = "routeslist";
     private static final String AGENCY_NAME_KEY = "agencyname";
-
-    // Return results enum
-    private enum SubscriptionResult {
-        OK(ok("Success")),
-        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
-        NO_REGISTRATION_RESULT(badRequest("No registered device found for device ID."));
-
-        public Result mResultValue;
-        SubscriptionResult(play.mvc.Result resultValue) {
-            mResultValue = resultValue;
-        }
-    }
 
     @Inject
     private AgencyService mAgencyService;
@@ -44,11 +34,27 @@ public class SubscriptionController extends Controller {
     @Inject
     private AccountService mAccountService;
 
+    // Return results enum
+    private enum SubscriptionResult {
+        OK(ok("Success")),
+        BAD_REQUEST(badRequest("Unknown error")),
+        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
+        BAD_ACCOUNT(badRequest("No account for api_key")),
+        NO_REGISTRATION_RESULT(badRequest("No registered device found for device ID."));
+
+        public Result mResultValue;
+
+        SubscriptionResult(play.mvc.Result resultValue) {
+            mResultValue = resultValue;
+        }
+    }
+
     /**
      * Endpoint for subscribing a deviceId to a route.
      *
      * @return A result for if the subscription request succeeded or failed.
      */
+    @SuppressWarnings("Convert2Lambda")
     public CompletionStage<Result> subscribe() {
         CompletionStage<SubscriptionResult> promiseOfSubscription = initiateSubscription();
 
@@ -87,6 +93,19 @@ public class SubscriptionController extends Controller {
                 return CompletableFuture.completedFuture(SubscriptionResult.NO_REGISTRATION_RESULT);
             }
 
+            /*
+            * For now, get the default commute account for all requests.
+            * TODO: Remove this when all clients have been upgraded to send API key.
+            */
+            String apiKey = formEncodedMap.get(API_KEY) == null ? null : formEncodedMap.get(API_KEY)[0];
+            Account account = apiKey != null
+                    ? mAccountService.getAccountByApi(apiKey)
+                    : mAccountService.getAccountByEmail("daniel@staticfish.com");
+
+            if (account == null || !account.active) {
+                return CompletableFuture.completedFuture(SubscriptionResult.BAD_ACCOUNT);
+            }
+
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
             List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyName, routes);
             if (validRoutes != null) {
@@ -96,7 +115,9 @@ public class SubscriptionController extends Controller {
                 subscription.timeSubscribed = Calendar.getInstance();
 
                 // Persist the subscription.
-                mAccountService.addSubscription(subscription);
+                subscriptionResult = mAccountService.addSubscription(subscription)
+                        ? SubscriptionResult.OK
+                        : SubscriptionResult.BAD_REQUEST;
             }
         }
         return CompletableFuture.completedFuture(subscriptionResult);

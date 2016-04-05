@@ -1,6 +1,7 @@
 package interfaces;
 
 import models.app.MessageResult;
+import models.taskqueue.Message;
 
 import javax.annotation.Nonnull;
 
@@ -9,6 +10,15 @@ import javax.annotation.Nonnull;
  * outbound Google GCM or APNS push message.
  */
 public interface IPushResponse {
-    void messageSuccess(@Nonnull MessageResult result);
-    void messageFailed(@Nonnull MessageResult result);
+    public enum HardFailCause {
+        ENDPOINT_NOT_FOUND,
+        ENDPOINT_TIMEOUT,
+        AUTH_ERROR,
+        GCM_MESSAGE_JSON_ERROR,
+        MISSING_RECIPIENTS,
+        UNKNOWN_ERROR
+    }
+
+    void messageResult(@Nonnull MessageResult result);
+    void messageFailed(@Nonnull Message message, HardFailCause failCause);
 }

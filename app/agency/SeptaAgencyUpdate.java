@@ -13,10 +13,9 @@ import play.libs.ws.WSResponse;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Download SEPTA alerts from the json server and send them to the
@@ -33,15 +32,11 @@ import java.util.function.BiConsumer;
  * 4: Persist new data
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
- *
- * @return Result.
  */
-@Singleton
 public class SeptaAgencyUpdate implements AgencyUpdate {
 
     private static final String TAG = Application.class.getSimpleName();
-
-    public static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
+    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
 //  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     @Inject
@@ -60,6 +55,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
         mAlertsUpdateManager = alertsUpdateManager;
     }
 
+    @SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef"})
     @Override
     public void updateAgency() {
         try {
@@ -70,15 +66,10 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
                     .setFollowRedirects(true);
 
             CompletionStage<WSResponse> resultPromise = request.get();
-            resultPromise.whenComplete(new BiConsumer<WSResponse, Throwable>() {
-
+            resultPromise.thenAccept(new Consumer<WSResponse>() {
                 @Override
-                public void accept(WSResponse response, Throwable throwable) {
-                    if (throwable != null) {
-                        mLog.e(TAG, "Error fetching SEPTA alerts resource", throwable);
-                    } else {
-                        updateAgencyData(response);
-                    }
+                public void accept(WSResponse response) {
+                    updateAgencyData(response);
                 }
             });
 

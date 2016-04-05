@@ -3,6 +3,7 @@ package models.taskqueue;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.avaje.ebean.annotation.EnumValue;
 import main.Constants;
 import models.accounts.PlatformAccount;
 import interfaces.PlatformMessage;
@@ -31,10 +32,10 @@ public class Message extends Model implements PlatformMessage {
     @ManyToOne(fetch = FetchType.EAGER)
     public Task task;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
     public List<Recipient> recipients;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
     public List<PayloadElement> payloadData;
 
     @Transient

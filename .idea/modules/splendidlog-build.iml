@@ -6,7 +6,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../modules/splendidlog/project">
       <sourceFolder url="file://$MODULE_DIR$/../../modules/splendidlog/project" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/splendidlog/project/project/target" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/splendidlog/project/project/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/splendidlog/project/target" />
     </content>

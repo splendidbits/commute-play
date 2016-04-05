@@ -43,7 +43,7 @@ public class AgencyService {
                 .eq("agencyId", agency.agencyId)
                 .findUnique();
 
-        mEbeanServer.createTransaction();
+        mEbeanServer.beginTransaction();
 
         try {
             if (existingAgency != null && existingAgency.routes != null) {
@@ -106,11 +106,13 @@ public class AgencyService {
         } catch (Exception e) {
             mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
             mEbeanServer.rollbackTransaction();
+            return false;
 
         } finally {
             mEbeanServer.endTransaction();
         }
-        return false;
+
+        return true;
     }
 
     /**
@@ -120,28 +122,30 @@ public class AgencyService {
      * @param routeIds   list of routeIds to retrieve.
      * @return List of Routes.
      */
-    public List<Route> getRouteAlerts(@Nonnull String agencyName, @Nonnull String... routeIds) {
+    public List<Route> getRouteAlerts(@Nonnull String agencyName, String... routeIds) {
         List<Route> foundRoutes = new ArrayList<>();
-        agencyName = agencyName.trim().toLowerCase();
+        if (routeIds != null) {
+            agencyName = agencyName.trim().toLowerCase();
 
-        // Loop through the string varargs and find each valid route.
-        for (String routeId : routeIds) {
-            routeId = routeId.trim().toLowerCase();
+            // Loop through the string varargs and find each valid route.
+            for (String routeId : routeIds) {
+                routeId = routeId.trim().toLowerCase();
 
-            try {
-                Agency agency = mEbeanServer.find(Agency.class)
-                        .fetch("routes")
-                        .where()
-                        .eq("agency_name", agencyName.toLowerCase())
-                        .eq("route_id", routeId.toLowerCase())
-                        .findUnique();
+                try {
+                    Agency agency = mEbeanServer.find(Agency.class)
+                            .fetch("routes")
+                            .where()
+                            .eq("agency_name", agencyName.toLowerCase())
+                            .eq("route_id", routeId.toLowerCase())
+                            .findUnique();
 
-                if (agency != null && agency.routes != null) {
-                    foundRoutes.add(agency.routes.get(0));
+                    if (agency != null && agency.routes != null) {
+                        foundRoutes.add(agency.routes.get(0));
+                    }
+
+                } catch (Exception e) {
+                    mLog.e(TAG, "Error getting route for routeIds.", e);
                 }
-
-            } catch (Exception e) {
-                mLog.e(TAG, "Error getting route for routeIds.", e);
             }
         }
         return foundRoutes;

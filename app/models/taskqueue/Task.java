@@ -4,7 +4,6 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.avaje.ebean.annotation.EnumValue;
-import interfaces.PlatformMessage;
 import main.Constants;
 
 import javax.annotation.Nonnull;
@@ -19,13 +18,11 @@ import java.util.List;
 public class Task extends Model {
     public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
-    public enum ProcessState {
+    public enum TaskProcessState {
         @EnumValue("NOT_STARTED")
         STATE_NOT_STARTED,
         @EnumValue("PROCESSING")
         STATE_PROCESSING,
-        @EnumValue("SOFT_ERROR")
-        STATE_SOFT_ERROR,
         @EnumValue("PARTIALLY_COMPLETE")
         STATE_PARTIALLY_COMPLETE,
         @EnumValue("PERMANENTLY_FAILED")
@@ -40,14 +37,14 @@ public class Task extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Integer taskId;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
 
     @Column(name = "exponential_multiplier")
     public int currentExponent;
 
     @Column(name = "process_state")
-    public ProcessState processState;
+    public TaskProcessState mTaskProcessState;
 
     @Basic
     @Column(name = "task_added")
@@ -65,7 +62,7 @@ public class Task extends Model {
     public Calendar upcomingAttempt;
 
     public Task() {
-        processState = ProcessState.STATE_NOT_STARTED;
+        mTaskProcessState = TaskProcessState.STATE_NOT_STARTED;
     }
 
     public void addMessage(@Nonnull Message platformMessage) {

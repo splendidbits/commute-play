@@ -45,14 +45,12 @@ public class AccountService {
     @Nullable
     public Account getAccountByEmail(@Nonnull String email) {
         // Build a query depending on if we have a api key, and or registered email.
-        Account account = mEbeanServer.createQuery(Account.class)
+        return mEbeanServer.createQuery(Account.class)
                 .fetch("platformAccounts")
                 .fetch("platformAccounts.platform")
                 .where()
                 .eq("email", email)
                 .findUnique();
-
-        return account;
     }
 
     /**
@@ -64,11 +62,10 @@ public class AccountService {
     @Nullable
     public Account getAccountByApi(@Nonnull String apiKey) {
         // Build a query depending on if we have a api key, and or registered email.
-        Account account = mEbeanServer.createQuery(Account.class)
+        return mEbeanServer.createQuery(Account.class)
                 .where()
                 .eq("api_key", apiKey)
                 .findUnique();
-        return account;
     }
 
     /**
@@ -106,9 +103,9 @@ public class AccountService {
      */
     @Nullable
     public List<Account> getRegistrationAccounts(@Nonnull String platformName,
-                                                 @Nonnull int agencyId,
+                                                 int agencyId,
                                                  @Nonnull Route route) {
-        List<Account> accounts = mEbeanServer.find(Account.class)
+        return mEbeanServer.find(Account.class)
                 .fetch("registrations")
                 .fetch("platformAccounts")
                 .fetch("platformAccounts.platform")
@@ -120,8 +117,6 @@ public class AccountService {
                 .where()
                 .eq("registrations.subscriptions.routes.agency.agencyId", agencyId)
                 .findList();
-
-        return accounts;
     }
 
     /**

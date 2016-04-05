@@ -22,6 +22,9 @@ public class RegistrationController extends Controller {
     private static final String DEVICE_UUID_KEY = "devuuid";
     private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
+    @Inject
+    private AccountService mAccountService;
+
     // Return results enum
     private enum RegistrationResult {
         OK(ok("Success")),
@@ -31,13 +34,11 @@ public class RegistrationController extends Controller {
         OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co"));
 
         public Result mResultValue;
+
         RegistrationResult(play.mvc.Result resultValue) {
             mResultValue = resultValue;
         }
     }
-
-    @Inject
-    private AccountService mAccountService;
 
     /**
      * Register a client with the commute GCM server. Saves important
@@ -45,6 +46,7 @@ public class RegistrationController extends Controller {
      *
      * @return A Result.
      */
+    @SuppressWarnings("Convert2Lambda")
     public CompletionStage<Result> register() {
         CompletionStage<RegistrationResult> promiseOfRegistration = initiateRegistration();
 
@@ -69,7 +71,6 @@ public class RegistrationController extends Controller {
 
         String deviceId = clientRequestBody.get(DEVICE_UUID_KEY)[0];
         String registrationId = clientRequestBody.get(REGISTRATION_TOKEN_KEY)[0];
-        String apiKey = clientRequestBody.get(API_KEY) == null ? null : clientRequestBody.get(API_KEY)[0];
 
         // Check that there was a valid registration token and device uuid.
         if ((registrationId == null || registrationId.isEmpty()) ||
@@ -78,9 +79,10 @@ public class RegistrationController extends Controller {
         }
 
         /*
-         * Hack until all the clients have added an API key.
+         * For now, get the default commute account for all requests.
          * TODO: Remove this when all clients have been upgraded to send API key.
          */
+        String apiKey = clientRequestBody.get(API_KEY) == null ? null : clientRequestBody.get(API_KEY)[0];
         Account account = apiKey != null
                 ? mAccountService.getAccountByApi(apiKey)
                 : mAccountService.getAccountByEmail("daniel@staticfish.com");

@@ -5,36 +5,40 @@ import interfaces.IPushResponse;
 import main.Log;
 import models.app.MessageResult;
 import models.taskqueue.Message;
+import models.taskqueue.Recipient;
 import models.taskqueue.Task;
-import services.gcm.GcmDispatcher;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 /**
  * The singleton class that handles all GCM task jobs.
+ *
+ * TODO: Move database related functions to a DAO.
  */
 @Singleton
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
-    private boolean mQueueRunning = false;
+    private static boolean mQueueRunning = false;
     private List<Task> mPendingTasks = Collections.synchronizedList(new ArrayList<>());
 
-    @Inject
+    private GcmDispatcher mGcmDispatcher;
     private EbeanServer mEbeanServer;
-
-    @Inject
     private Log mLog;
 
     @Inject
-    public TaskQueue(EbeanServer ebeanServer, Log log) {
+    public TaskQueue(EbeanServer ebeanServer, Log log, GcmDispatcher gcmDispatcher) {
         mEbeanServer = ebeanServer;
         mLog = log;
+        mGcmDispatcher = gcmDispatcher;
+
+        // Fetch any tasks that are partially or incomplete.
+        fetchPendingTasks();
     }
 
     /**
@@ -43,22 +47,25 @@ public class TaskQueue {
      */
     private synchronized void runQueue() {
         if (!mQueueRunning) {
+            mQueueRunning = true;
+
             try {
                 List<Task> currentTaskList = new ArrayList<>(mPendingTasks);
+                if (!currentTaskList.isEmpty()) {
 
-                mQueueRunning = true;
-                while (currentTaskList.iterator().hasNext()) {
-                    Task task = currentTaskList.iterator().next();
+                    // Do not use the tasks which are running or have failed.
+                    for (Task taskToProcess : currentTaskList) {
+                        if (isTaskReady(taskToProcess)) {
 
-                    // Do not use the task if it is running or complete or failed.
-                    if (!task.processState.equals(Task.ProcessState.STATE_COMPLETE) &&
-                            !task.processState.equals(Task.ProcessState.STATE_PERMANENTLY_FAILED) &&
-                            !task.processState.equals(Task.ProcessState.STATE_PROCESSING)) {
+                            // Create a single response class for each separate message in the task.
+                            DispatchResponse taskDispatchResponse = new DispatchResponse(taskToProcess);
+                            for (Message message : taskToProcess.messages) {
 
-                        // Create a single response class for each separate message in the task.
-                        DispatchResponse taskDispatchResponse = new DispatchResponse(task);
-                        for (Message taskMessage : task.messages) {
-                            new GcmDispatcher(taskMessage, taskDispatchResponse);
+                                // Dispatch the message.
+                                mGcmDispatcher.dispatchMessageAsync(message,
+                                        taskDispatchResponse,
+                                        message.platformAccount);
+                            }
                         }
                     }
                 }
@@ -72,12 +79,37 @@ public class TaskQueue {
     }
 
     /**
-     * Set each task that is currently in rotation to not be.
+     * Is the task ready to be dispatched (not waiting for next interval and hasn't
+     * failed or isn't currently processing)
+     *
+     * @param task The task to start work on.
+     * @return true or false, duh.
+     */
+    private boolean isTaskReady(@Nonnull Task task) {
+        if (!task.mTaskProcessState.equals(Task.TaskProcessState.STATE_COMPLETE) &&
+                !task.mTaskProcessState.equals(Task.TaskProcessState.STATE_PERMANENTLY_FAILED)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get all tasks from the database which have not yet completed fully.
      */
     private void fetchPendingTasks() {
         List<Task> tasks = mEbeanServer.find(Task.class)
+                .fetch("recipients")
                 .where()
-                .ne("processState", Task.ProcessState.STATE_COMPLETE)
+                .disjunction()
+                .eq("processState", Task.TaskProcessState.STATE_NOT_STARTED)
+                .eq("processState", Task.TaskProcessState.STATE_PARTIALLY_COMPLETE)
+                .eq("processState", Task.TaskProcessState.STATE_PROCESSING)
+                .endJunction()
+                .where()
+                .disjunction()
+                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_NOT_STARTED)
+                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_PROCESSING)
+                .endJunction()
                 .findList();
 
         // Add the saved pending tasks back into the queue
@@ -102,18 +134,28 @@ public class TaskQueue {
      *
      * @param task task to save and add to TaskQueue.
      */
+    @SuppressWarnings("WeakerAccess")
     public boolean addTask(@Nonnull Task task) {
         mLog.d(TAG, "Saving new task to database");
+        mEbeanServer.beginTransaction();
+
         try {
             mEbeanServer.insert(task);
-            task.refresh();
+            mEbeanServer.commitTransaction();
 
         } catch (Exception exception) {
             mLog.e(TAG, "Error saving new task to database", exception);
+            mEbeanServer.rollbackTransaction();
+
             return false;
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
+
         mLog.d(TAG, "Adding new task to queue");
         mPendingTasks.add(task);
+
         return true;
     }
 
@@ -123,18 +165,16 @@ public class TaskQueue {
      * @param task  the task within queue
      * @param state the new pending state.
      */
-    private void updateTaskState(@Nonnull Task task, @Nonnull Task.ProcessState state) {
-        Iterator<Task> pendingTaskIterator = mPendingTasks.iterator();
+    private void updateTaskState(@Nonnull Task task, @Nonnull Task.TaskProcessState state) {
 
         // Fetch the sent task out of the pending queue.
-        while (pendingTaskIterator.hasNext()) {
-            Task foundTask = pendingTaskIterator.next();
+        for (Task foundTask : mPendingTasks) {
             if (foundTask.taskId.equals(task.taskId)) {
-                foundTask.processState = state;
+                foundTask.mTaskProcessState = state;
             }
         }
 
-        task.processState = state;
+        task.mTaskProcessState = state;
         mEbeanServer.createTransaction();
         try {
             mEbeanServer.save(task);
@@ -154,27 +194,29 @@ public class TaskQueue {
      */
     private class DispatchResponse implements IPushResponse {
         private Task mOriginalTask = null;
-        private List<Message> mTaskMessages = null;
 
-        public DispatchResponse(Task originalTask) {
+        DispatchResponse(Task originalTask) {
             mOriginalTask = originalTask;
-            mTaskMessages = originalTask.messages;
-            updateTaskState(originalTask, Task.ProcessState.STATE_PROCESSING);
+            updateTaskState(originalTask, Task.TaskProcessState.STATE_PROCESSING);
         }
 
         @Override
-        public void messageSuccess(@Nonnull MessageResult result) {
+        public void messageResult(@NotNull @Nonnull MessageResult result) {
+            Message sentMessage = result.getOriginalMessage();
+            mLog.d(TAG, String.format("Successful response from Google for message %d", sentMessage.messageId));
+
             if (result.getFailCount() == 0 && result.getSuccessCount() > 0) {
-                updateTaskState(mOriginalTask, Task.ProcessState.STATE_COMPLETE);
+                updateTaskState(mOriginalTask, Task.TaskProcessState.STATE_COMPLETE);
 
             } else if (result.hasCriticalErrors()) {
-                updateTaskState(mOriginalTask, Task.ProcessState.STATE_PERMANENTLY_FAILED);
+                updateTaskState(mOriginalTask, Task.TaskProcessState.STATE_PERMANENTLY_FAILED);
             }
         }
 
         @Override
-        public void messageFailed(@Nonnull MessageResult result) {
-
+        public void messageFailed(@Nonnull Message message, HardFailCause failCause) {
+            mLog.e(TAG, String.format("Failed. %s response from Google for message %d",
+                    failCause.name(), message.messageId));
         }
     }
 }

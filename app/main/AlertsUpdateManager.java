@@ -10,7 +10,6 @@ import services.PushMessageService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,7 +22,6 @@ import java.util.List;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-@Singleton
 public class AlertsUpdateManager {
 
     private static final String TAG = AlertsUpdateManager.class.getSimpleName();

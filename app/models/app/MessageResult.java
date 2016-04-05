@@ -2,10 +2,7 @@ package models.app;
 
 import models.taskqueue.Message;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A model which contains all successes, minor, device, and critical
@@ -16,6 +13,7 @@ public class MessageResult{
     private int mFailCount = 0;
 
     private Message mOriginalMessage = null;
+    private Date mRetryAfter = null;
     private List<String> mStaleRegistrationIds = new ArrayList<>();
     private List<String> mRegistrationsIdsToRetry = new ArrayList<>();
     private Map<String, String> mUpdatedRegistrationsMap = new HashMap<>();
@@ -84,5 +82,13 @@ public class MessageResult{
 
     public void addSuccessToRegistration(String registrationId, String messageId) {
         mSuccessResultsMap.put(registrationId, messageId);
+    }
+
+    public Date getRetryAfter() {
+        return mRetryAfter;
+    }
+
+    public void setRetryAfter(Date retryAfter) {
+        mRetryAfter = retryAfter;
     }
 }

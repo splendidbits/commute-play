@@ -4,6 +4,7 @@ import actors.AgencyUpdateActor;
 import com.avaje.ebean.EbeanServer;
 import com.google.inject.AbstractModule;
 import play.libs.akka.AkkaGuiceSupport;
+import services.TaskQueue;
 
 /**
  * Runs on application startup.
@@ -21,5 +22,8 @@ public class CommuteServerStartModule extends AbstractModule implements AkkaGuic
 
         // Bind the scheduling system.
         bind(CommuteSchedulers.class).asEagerSingleton();
+
+        // Bind the TaskQueue eagerly.
+        bind(TaskQueue.class).asEagerSingleton();
     }
 }
