@@ -23,10 +23,10 @@ public class RegistrationController extends Controller {
     private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
     // Return results enum
-    public enum RegistrationResult {
-        OK(ok("Registration success.")),
-        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
-        BAD_CLIENT_RESULT(badRequest("Calling client is invalid.")),
+    private enum RegistrationResult {
+        OK(ok("Success")),
+        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request")),
+        BAD_CLIENT_RESULT(badRequest("Calling client is invalid")),
         BAD_ACCOUNT(badRequest("No account for api_key")),
         OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co"));
 

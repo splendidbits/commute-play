@@ -13,6 +13,9 @@ import javax.inject.Inject;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * The public API endpoint controller that handles devices subscribing to agency routes
@@ -23,39 +26,50 @@ public class SubscriptionController extends Controller {
     private static final String ROUTE_LIST_KEY = "routeslist";
     private static final String AGENCY_NAME_KEY = "agencyname";
 
+    // Return results enum
+    private enum SubscriptionResult {
+        OK(ok("Success")),
+        MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
+        NO_REGISTRATION_RESULT(badRequest("No registered device found for device ID."));
+
+        public Result mResultValue;
+        SubscriptionResult(play.mvc.Result resultValue) {
+            mResultValue = resultValue;
+        }
+    }
+
     @Inject
     private AgencyService mAgencyService;
 
     @Inject
     private AccountService mAccountService;
 
-    // Response enum.
-    private enum SubscriptionResponse {
-        RESULT_OK("Success"),
-        MISSING_PARAMS_RESULT("Invalid registration parameters in request."),
-        NO_REGISTRATION_RESULT("No registered device found for device ID.");
-
-        private String mValue = null;
-
-        SubscriptionResponse(String value) {
-            mValue = value;
-        }
-
-        public String getValue() {
-            return mValue;
-        }
-    }
-
     /**
      * Endpoint for subscribing a deviceId to a route.
      *
      * @return A result for if the subscription request succeeded or failed.
      */
-    public Result subscribe() {
-        Http.RequestBody requestBody = request().body();
-        SubscriptionResponse dataValidity = validateInputData(requestBody);
+    public CompletionStage<Result> subscribe() {
+        CompletionStage<SubscriptionResult> promiseOfSubscription = initiateSubscription();
 
-        if (dataValidity.equals(SubscriptionResponse.RESULT_OK)) {
+        return promiseOfSubscription.thenApplyAsync(new Function<SubscriptionResult, Result>() {
+            @Override
+            public Result apply(SubscriptionResult result) {
+                return result.mResultValue;
+            }
+        });
+    }
+
+    /**
+     * Perform subscription action for a registered device.
+     *
+     * @return CompletionStage<SubscriptionResult> result of registration action.
+     */
+    private CompletionStage<SubscriptionResult> initiateSubscription() {
+        Http.RequestBody requestBody = request().body();
+        SubscriptionResult subscriptionResult = validateInputData(requestBody);
+
+        if (subscriptionResult.equals(SubscriptionResult.OK)) {
             Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
 
             String deviceId = formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase();
@@ -70,7 +84,7 @@ public class SubscriptionController extends Controller {
             // Check that the device is already registered.
             Registration existingRegistration = mAccountService.getRegistration(deviceId);
             if (existingRegistration == null) {
-                return badRequest(SubscriptionResponse.NO_REGISTRATION_RESULT.getValue());
+                return CompletableFuture.completedFuture(SubscriptionResult.NO_REGISTRATION_RESULT);
             }
 
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
@@ -85,7 +99,7 @@ public class SubscriptionController extends Controller {
                 mAccountService.addSubscription(subscription);
             }
         }
-        return ok(dataValidity.getValue());
+        return CompletableFuture.completedFuture(subscriptionResult);
     }
 
     /**
@@ -94,12 +108,12 @@ public class SubscriptionController extends Controller {
      * @param requestBody the body of the incoming request.
      * @return enum success result type.
      */
-    private SubscriptionResponse validateInputData(Http.RequestBody requestBody) {
+    private SubscriptionResult validateInputData(Http.RequestBody requestBody) {
         if (requestBody != null) {
             Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
 
             if (clientRequestBody == null) {
-                return SubscriptionResponse.MISSING_PARAMS_RESULT;
+                return SubscriptionResult.MISSING_PARAMS_RESULT;
             }
 
             // TODO: Re-add check for agency name when it has been added to the client.
@@ -107,9 +121,9 @@ public class SubscriptionController extends Controller {
             if ((!clientRequestBody.containsKey(DEVICE_UUID_KEY)) ||
                     //(!clientRequestBody.containsKey(AGENCY_NAME_KEY)) ||
                     (!clientRequestBody.containsKey(ROUTE_LIST_KEY))) {
-                return SubscriptionResponse.MISSING_PARAMS_RESULT;
+                return SubscriptionResult.MISSING_PARAMS_RESULT;
             }
         }
-        return SubscriptionResponse.RESULT_OK;
+        return SubscriptionResult.OK;
     }
 }

@@ -198,9 +198,6 @@ public class AccountService {
                         newRegistration.deviceId), e);
                 mEbeanServer.rollbackTransaction();
                 return false;
-
-            } finally {
-                mEbeanServer.commitTransaction();
             }
             return true;
         }
