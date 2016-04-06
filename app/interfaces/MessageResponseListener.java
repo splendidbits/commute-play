@@ -9,8 +9,8 @@ import javax.annotation.Nonnull;
  * Interface callback to allow clients to know the state of a particular
  * outbound Google GCM or APNS push message.
  */
-public interface IPushResponse {
-    public enum HardFailCause {
+public interface MessageResponseListener {
+    enum HardFailCause {
         ENDPOINT_NOT_FOUND,
         ENDPOINT_TIMEOUT,
         AUTH_ERROR,

@@ -1,11 +1,10 @@
 package services;
 
 import com.avaje.ebean.EbeanServer;
-import interfaces.IPushResponse;
+import interfaces.MessageResponseListener;
 import main.Log;
 import models.app.MessageResult;
 import models.taskqueue.Message;
-import models.taskqueue.Recipient;
 import models.taskqueue.Task;
 import org.jetbrains.annotations.NotNull;
 
@@ -58,7 +57,7 @@ public class TaskQueue {
                         if (isTaskReady(taskToProcess)) {
 
                             // Create a single response class for each separate message in the task.
-                            DispatchResponse taskDispatchResponse = new DispatchResponse(taskToProcess);
+                            DispatchResponseListener taskDispatchResponse = new DispatchResponseListener(taskToProcess);
                             for (Message message : taskToProcess.messages) {
 
                                 // Dispatch the message.
@@ -86,8 +85,8 @@ public class TaskQueue {
      * @return true or false, duh.
      */
     private boolean isTaskReady(@Nonnull Task task) {
-        if (!task.mTaskProcessState.equals(Task.TaskProcessState.STATE_COMPLETE) &&
-                !task.mTaskProcessState.equals(Task.TaskProcessState.STATE_PERMANENTLY_FAILED)) {
+        if (!task.processState.equals(Task.TaskProcessState.STATE_COMPLETE) &&
+                !task.processState.equals(Task.TaskProcessState.STATE_PERMANENTLY_FAILED)) {
             return true;
         }
         return false;
@@ -97,27 +96,27 @@ public class TaskQueue {
      * Get all tasks from the database which have not yet completed fully.
      */
     private void fetchPendingTasks() {
-        List<Task> tasks = mEbeanServer.find(Task.class)
-                .fetch("recipients")
-                .where()
-                .disjunction()
-                .eq("processState", Task.TaskProcessState.STATE_NOT_STARTED)
-                .eq("processState", Task.TaskProcessState.STATE_PARTIALLY_COMPLETE)
-                .eq("processState", Task.TaskProcessState.STATE_PROCESSING)
-                .endJunction()
-                .where()
-                .disjunction()
-                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_NOT_STARTED)
-                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_PROCESSING)
-                .endJunction()
-                .findList();
-
-        // Add the saved pending tasks back into the queue
-        if (tasks != null) {
-            for (Task task : tasks) {
-                mPendingTasks.add(task);
-            }
-        }
+//        List<Task> tasks = mEbeanServer.find(Task.class)
+//                .where()
+//                .disjunction()
+//                .eq("processState", Task.TaskProcessState.STATE_NOT_STARTED)
+//                .eq("processState", Task.TaskProcessState.STATE_PARTIALLY_COMPLETE)
+//                .eq("processState", Task.TaskProcessState.STATE_PROCESSING)
+//                .endJunction()
+//                .conjunction()
+//                .where()
+//                .disjunction()
+//                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_NOT_STARTED)
+//                .eq("recipients.recipientState", Recipient.RecipientProcessState.STATE_PROCESSING)
+//                .endJunction()
+//                .findList();
+//
+//        // Add the saved pending tasks back into the queue
+//        if (tasks != null) {
+//            for (Task task : tasks) {
+//                mPendingTasks.add(task);
+//            }
+//        }
     }
 
     /**
@@ -170,11 +169,11 @@ public class TaskQueue {
         // Fetch the sent task out of the pending queue.
         for (Task foundTask : mPendingTasks) {
             if (foundTask.taskId.equals(task.taskId)) {
-                foundTask.mTaskProcessState = state;
+                foundTask.processState = state;
             }
         }
 
-        task.mTaskProcessState = state;
+        task.processState = state;
         mEbeanServer.createTransaction();
         try {
             mEbeanServer.save(task);
@@ -192,10 +191,10 @@ public class TaskQueue {
      * Results from the dispatcher for individual tasks of one or
      * more messages.
      */
-    private class DispatchResponse implements IPushResponse {
+    private class DispatchResponseListener implements MessageResponseListener {
         private Task mOriginalTask = null;
 
-        DispatchResponse(Task originalTask) {
+        DispatchResponseListener(Task originalTask) {
             mOriginalTask = originalTask;
             updateTaskState(originalTask, Task.TaskProcessState.STATE_PROCESSING);
         }

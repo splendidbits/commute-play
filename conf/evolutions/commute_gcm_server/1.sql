@@ -81,7 +81,9 @@ create sequence platform_account_id_seq increment by 1;
 create table task_queue.recipients (
   recipient_id                  varchar(255) not null,
   message_message_id            integer,
+  recipient_state               varchar(18),
   last_attempt                  timestamp,
+  constraint ck_recipients_recipient_state check (recipient_state in ('COMPLETE','PERMANENTLY_FAILED','NOT_STARTED','PROCESSING')),
   constraint pk_recipients primary key (recipient_id)
 );
 
@@ -121,7 +123,7 @@ create table task_queue.tasks (
   task_added                    timestamp,
   previous_attempt              timestamp,
   upcoming_attempt              timestamp,
-  constraint ck_tasks_process_state check (process_state in ('COMPLETE','SOFT_ERROR','PERMANENTLY_FAILED','NOT_STARTED','PARTIALLY_COMPLETE','PROCESSING')),
+  constraint ck_tasks_process_state check (process_state in ('COMPLETE','PERMANENTLY_FAILED','NOT_STARTED','PARTIALLY_COMPLETE','PROCESSING')),
   constraint pk_tasks primary key (task_id)
 );
 create sequence task_id_seq increment by 1;

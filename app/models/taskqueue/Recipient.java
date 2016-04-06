@@ -10,7 +10,6 @@ import javax.persistence.*;
 import java.util.Calendar;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "recipients", schema = "task_queue")
 public class Recipient extends Model {
     public static Finder<Integer, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
@@ -21,9 +20,9 @@ public class Recipient extends Model {
         @EnumValue("PROCESSING")
         STATE_PROCESSING,
         @EnumValue("PERMANENTLY_FAILED")
-        STATE_PERMANENTLY_FAILED,
+        STATE_FAILED,
         @EnumValue("COMPLETE")
-        STATE_COMPLETE,
+        STATE_COMPLETE
     }
 
     @Id
@@ -42,13 +41,13 @@ public class Recipient extends Model {
     public Calendar lastAttempt;
 
     @PrePersist
-    @PreUpdate
-    public void insertUpdateValues() {
+    public void insertValues(){
         lastAttempt = Calendar.getInstance();
+        recipientState = RecipientProcessState.STATE_NOT_STARTED;
     }
 
-    @PrePersist
-    public void insertValues(){
-        recipientState = RecipientProcessState.STATE_NOT_STARTED;
+    @PreUpdate
+    public void updateValues() {
+        lastAttempt = Calendar.getInstance();
     }
 }

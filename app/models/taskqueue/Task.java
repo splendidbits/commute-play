@@ -13,7 +13,6 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "tasks", schema = "task_queue")
 public class Task extends Model {
     public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
@@ -28,7 +27,7 @@ public class Task extends Model {
         @EnumValue("PERMANENTLY_FAILED")
         STATE_PERMANENTLY_FAILED,
         @EnumValue("COMPLETE")
-        STATE_COMPLETE,
+        STATE_COMPLETE
     }
 
     @Id
@@ -44,7 +43,7 @@ public class Task extends Model {
     public int currentExponent;
 
     @Column(name = "process_state")
-    public TaskProcessState mTaskProcessState;
+    public TaskProcessState processState;
 
     @Basic
     @Column(name = "task_added")
@@ -62,7 +61,7 @@ public class Task extends Model {
     public Calendar upcomingAttempt;
 
     public Task() {
-        mTaskProcessState = TaskProcessState.STATE_NOT_STARTED;
+        processState = TaskProcessState.STATE_NOT_STARTED;
     }
 
     public void addMessage(@Nonnull Message platformMessage) {

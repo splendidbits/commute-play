@@ -1,6 +1,6 @@
 package controllers;
 
-import com.avaje.ebean.Ebean;
+import com.avaje.ebean.EbeanServer;
 import helpers.ValidationHelper;
 import main.Log;
 import models.accounts.Account;
@@ -34,6 +34,9 @@ public class SignupController extends Controller {
     // Return results
     private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
     private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
+
+    @Inject
+    private EbeanServer mEbeanServer;
 
     @Inject
     private FormFactory mFormFactory;
@@ -93,7 +96,7 @@ public class SignupController extends Controller {
             pendingAccount.dailySendLimit = 1000000L;
             pendingAccount.active = false;
             pendingAccount.platformAccounts = platformAccounts;
-            Ebean.save(pendingAccount);
+            mEbeanServer.save(pendingAccount);
 
         } else {
             mLog.w(TAG, "No platforms were found for account signup: " + email);
@@ -143,11 +146,6 @@ public class SignupController extends Controller {
                     Integer.valueOf(estDailyRegistrations) < 1000000;
 
             boolean platformsGood = requiresApns || requiresGcm;
-
-            if (packageUri == null || packageUri.isEmpty() || !packageUri.contains(".")) {
-                signupForm.reject(new ValidationError("package_uri", "Package URI must be in format of com.company.app"));
-                mLog.i(TAG, "No package_uri found for account signup: " + email);
-            }
 
             if (!passwordGood) {
                 signupForm.reject(new ValidationError("password_1", "Passwords must match and be more than 5 characters."));

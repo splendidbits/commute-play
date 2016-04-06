@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import helpers.GcmMessageSerializer;
-import interfaces.IPushResponse;
+import interfaces.MessageResponseListener;
 import main.Log;
 import models.accounts.PlatformAccount;
 import models.app.GoogleResponse;
@@ -12,7 +12,6 @@ import models.app.MessageResult;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
 import play.libs.ws.WSClient;
-import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
 
 import javax.annotation.Nonnull;
@@ -30,7 +29,7 @@ import java.util.List;
  */
 public class GcmDispatcher {
     private static final String TAG = GcmDispatcher.class.getSimpleName();
-    private static final int GCM_REQUEST_TIMEOUT = 5 * 1000; // 5 seconds
+    private static final int GCM_REQUEST_TIMEOUT = 10 * 1000; // 5 seconds
 
     private WSClient mWsClient;
     private Log mLog;
@@ -42,19 +41,19 @@ public class GcmDispatcher {
     }
 
     /**
-     * Dispatch a message synchronously to Google.
+     * Dispatch a message synchronously to the Google GCM service..
      *
      * @param message          The message to send.
      * @param platformAccount  The platform account for which to send the message with.
      * @param responseListener The response listener.
      */
     @SuppressWarnings("Convert2Lambda")
-    public void dispatchMessageAsync(@Nonnull Message message, @Nonnull IPushResponse responseListener,
+    public void dispatchMessageAsync(@Nonnull Message message, @Nonnull MessageResponseListener responseListener,
                                      @Nonnull PlatformAccount platformAccount) {
 
         // Return error on  no recipients.
         if (message.recipients == null || message.recipients.isEmpty()) {
-            responseListener.messageFailed(message, IPushResponse.HardFailCause.MISSING_RECIPIENTS);
+            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.MISSING_RECIPIENTS);
             return;
         }
 
@@ -63,33 +62,34 @@ public class GcmDispatcher {
 
         // Send each message part one by one asynchronously, and add the result into a list.
         for (Message messagePart : messageParts) {
-            WSResponse partResponse = sendMessage(messagePart, platformAccount);
 
-            if (partResponse != null) {
-                GoogleResponse parsedGoogleResponse = null;
-
-                // Return any hard errors immediately.
-                int httpResponseCode = partResponse.getStatus();
-                switch (httpResponseCode) {
-                    case 200:
-                        parsedGoogleResponse = parseMessageResponse(partResponse);
-                        break;
-
-                    case 400:
-                        responseListener.messageFailed(message, IPushResponse.HardFailCause.GCM_MESSAGE_JSON_ERROR);
-                        return;
-
-                    case 401:
-                        responseListener.messageFailed(message, IPushResponse.HardFailCause.AUTH_ERROR);
-                        return;
-
-                    default:
-                        responseListener.messageFailed(message, IPushResponse.HardFailCause.UNKNOWN_ERROR);
-                        break;
+            try {
+                WSResponse partResponse = sendMessageRequest(messagePart, platformAccount);
+                if (partResponse != null) {
+                    GoogleResponse partGoogleResponse = parseCallResponse(partResponse);
+                    messagePartResponses.add(partGoogleResponse);
                 }
 
-                if (parsedGoogleResponse != null) {
-                    messagePartResponses.add(parsedGoogleResponse);
+            } catch (GoogleCallException callException) {
+                mLog.e(TAG, "Error while making Google GCM request call", callException);
+
+                if (callException.mStatusCode > -1) {
+                    switch (callException.mStatusCode) {
+                        case 200:
+                            break;
+
+                        case 400:
+                            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.GCM_MESSAGE_JSON_ERROR);
+                            return;
+
+                        case 401:
+                            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.AUTH_ERROR);
+                            return;
+
+                        default:
+                            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.UNKNOWN_ERROR);
+                            break;
+                    }
                 }
             }
         }
@@ -102,9 +102,11 @@ public class GcmDispatcher {
     }
 
     /**
-     * Internally send a message using the GCM protocol to google.
-     * If a message contains more than 1000 registration ids,
-     * it'll split that into multiples messages.
+     * Internally send a message using the GCM protocol to google. If a message contains
+     * more than 1000 registration ids, it'll split that into multiples messages.
+     *
+     * @param originalMessage the client message sent to the dispatcher.
+     * @return A list of organised parts.
      */
     private List<Message> organiseMessageParts(@Nonnull Message originalMessage) {
         List<Message> returnedMessageParts = new ArrayList<>();
@@ -147,10 +149,7 @@ public class GcmDispatcher {
      * @return WSResponse google request response.
      */
     @Nullable
-    private WSResponse sendMessage(@Nonnull Message messagePart, @Nonnull PlatformAccount platformAccount) {
-        MessageResult clientMessageResult = new MessageResult();
-
-        // Check that the message contains the necessary platform account properties.
+    private WSResponse sendMessageRequest(@Nonnull Message messagePart, @Nonnull PlatformAccount platformAccount) {
         if (messagePart.platformAccount.platform != null &&
                 messagePart.platformAccount.platform.endpointUrl != null) {
 
@@ -159,15 +158,16 @@ public class GcmDispatcher {
                     .create()
                     .toJson(messagePart);
 
-            WSRequest request = mWsClient
+            WSResponse response = (WSResponse) mWsClient
                     .url(messagePart.platformAccount.platform.endpointUrl)
-                    .setFollowRedirects(true)
                     .setContentType("application/json")
+                    .setHeader("Authorization", String.format("key=%s", platformAccount.authToken))
                     .setRequestTimeout(GCM_REQUEST_TIMEOUT)
-                    .setHeader("Authorization", String.format("key=%s", platformAccount.authToken));
+                    .setFollowRedirects(true)
+                    .setBody(jsonBody)
+                    .execute("post");
 
-            WSResponse result = (WSResponse) request.post(jsonBody);
-            return result;
+            return response;
         }
         return null;
     }
@@ -175,13 +175,20 @@ public class GcmDispatcher {
     /**
      * Parse an incoming response back from a GCM send action.
      *
-     * @param requestResponse PlatformMessageResult The WSResponse back from google which
-     *                        should contain a json success / fail map.
+     * @param callResponse PlatformMessageResult The WSResponse back from google which
+     *                     should contain a json success / fail map.
      * @return MessageResult result from google for gcm message.
      */
     @Nonnull
-    private GoogleResponse parseMessageResponse(@Nonnull WSResponse requestResponse) {
-        GoogleResponse response = new Gson().fromJson(requestResponse.getBody(), GoogleResponse.class);
+    private GoogleResponse parseCallResponse(@Nonnull WSResponse callResponse) throws GoogleCallException {
+        GoogleResponse parsedGoogleResponse = null;
+
+        // Return any hard errors immediately.
+        if (callResponse.getStatus() != 200) {
+            throw new GoogleCallException(callResponse.getStatusText(), callResponse.getStatus());
+        }
+
+        GoogleResponse response = new Gson().fromJson(callResponse.getBody(), GoogleResponse.class);
 
         mLog.d(TAG, String.format("%d canonical ids.", response.mCanonicalIdCount));
         mLog.d(TAG, String.format("%d successful GCM messages.", response.mSuccessCount));
@@ -266,7 +273,6 @@ public class GcmDispatcher {
         return messageResult;
     }
 
-
     /**
      * Clone a message completely without any registration information
      *
@@ -293,4 +299,18 @@ public class GcmDispatcher {
         }
         return null;
     }
+
+    /**
+     * Thrown on a hard, breaking http call error such as 404.
+     */
+    private class GoogleCallException extends Exception {
+        private int mStatusCode = -1;
+        private String mErrorMessage;
+
+        public GoogleCallException(String errorMessage, int statusCode) {
+            mErrorMessage = errorMessage;
+            mStatusCode = statusCode;
+        }
+    }
+
 }

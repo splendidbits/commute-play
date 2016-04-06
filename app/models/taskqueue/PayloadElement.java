@@ -7,7 +7,6 @@ import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import javax.persistence.*;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "payload_element", schema = "task_queue")
 public class PayloadElement extends Model {
 
