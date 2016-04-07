@@ -46,7 +46,7 @@ public class Recipient extends Model {
     public Calendar timeAdded;
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    public RecipientFailure mRecipientFailure;
+    public RecipientFailure failure;
 
     @PrePersist
     public void insertValues(){

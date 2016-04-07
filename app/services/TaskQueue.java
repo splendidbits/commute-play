@@ -103,7 +103,7 @@ public class TaskQueue {
     private void fetchPendingTasks() {
         List<Task> tasks = mEbeanServer.find(Task.class)
                 .where()
-                .disjunction()
+                .conjunction()
                 .ne("processState", Task.ProcessState.FAILED)
                 .ne("processState", Task.ProcessState.COMPLETE)
                 .endJunction()
@@ -230,7 +230,7 @@ public class TaskQueue {
                 Recipient failedRecipient = entry.getKey();
                 String failureReason = entry.getValue();
 
-                failedRecipient.mRecipientFailure = new RecipientFailure(failureReason);
+                failedRecipient.failure = new RecipientFailure(failureReason);
                 failedRecipient.state = Recipient.ProcessState.COMPLETE;
                 failedRecipient.save();
             }
@@ -264,7 +264,7 @@ public class TaskQueue {
 
                     for (Recipient recipientToRetry : sentMessage.recipients) {
                         recipientToRetry.state = Recipient.ProcessState.COMPLETE;
-                        recipientToRetry.mRecipientFailure = new RecipientFailure("MaxRetryReached");
+                        recipientToRetry.failure = new RecipientFailure("MaxRetryReached");
                         recipientToRetry.save();
                     }
                 }
