@@ -25,6 +25,9 @@ public class RegistrationController extends Controller {
     @Inject
     private AccountService mAccountService;
 
+    @Inject
+    private PushMessageService mPushMessageService;
+
     // Return results enum
     private enum RegistrationResult {
         OK(ok("Success")),
@@ -96,8 +99,7 @@ public class RegistrationController extends Controller {
         boolean persistSuccess = mAccountService.addRegistration(newRegistration);
 
         if (persistSuccess) {
-            PushMessageService pushService = new PushMessageService(mAccountService);
-            pushService.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
+            mPushMessageService.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
             return CompletableFuture.completedFuture(RegistrationResult.OK);
 
         } else {

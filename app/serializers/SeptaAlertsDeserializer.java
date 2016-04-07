@@ -1,4 +1,4 @@
-package helpers;
+package serializers;
 
 import com.google.gson.*;
 import main.Log;

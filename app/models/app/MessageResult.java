@@ -1,35 +1,28 @@
 package models.app;
 
 import models.taskqueue.Message;
+import models.taskqueue.Recipient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A model which contains all successes, minor, device, and critical
  * errors back from any platform provider.
  */
 public class MessageResult{
-    private int mSuccessCount = 0;
-    private int mFailCount = 0;
-
     private Message mOriginalMessage = null;
-    private Date mRetryAfter = null;
-    private List<String> mStaleRegistrationIds = new ArrayList<>();
-    private List<String> mRegistrationsIdsToRetry = new ArrayList<>();
-    private Map<String, String> mUpdatedRegistrationsMap = new HashMap<>();
-    private Map<String, String> mSuccessResultsMap = new HashMap<>();
-    private Map<String, String> mErrorResultsMap = new HashMap<>();
+    private List<Recipient> mRecipientsToRetry = new ArrayList<>();
+    private List<Recipient> mSuccessfulRecipients = new ArrayList<>();
+    private List<Recipient> mStaleRecipients = new ArrayList<>();
+
+    private Map<Recipient, Recipient> mUpdatedRegistrationsMap = new HashMap<>();
+    private Map<Recipient, String> mErrorResultsMap = new HashMap<>();
     private boolean mHasCriticalErrors;
 
     public MessageResult() {
-    }
-
-    public void setFailCount(int failCount) {
-        mFailCount = failCount;
-    }
-
-    public void setSuccessCount(int successCount) {
-        mSuccessCount = successCount;
     }
 
     public boolean hasCriticalErrors() {
@@ -40,14 +33,6 @@ public class MessageResult{
         mHasCriticalErrors = hasCriticalErrors;
     }
 
-    public int getSuccessCount() {
-        return mSuccessCount;
-    }
-
-    public int getFailCount() {
-        return mFailCount;
-    }
-
     public Message getOriginalMessage() {
         return mOriginalMessage;
     }
@@ -56,39 +41,39 @@ public class MessageResult{
         mOriginalMessage = originalMessage;
     }
 
-    public List<String> getStaleRegistationIds() {
-        return mStaleRegistrationIds;
+    public List<Recipient> getRecipientsToRetry() {
+        return mRecipientsToRetry;
     }
 
-    public List<String> getRegistrationsIdsToRetry() {
-        return mRegistrationsIdsToRetry;
+    public List<Recipient> getSuccessfulRecipients() {
+        return mSuccessfulRecipients;
     }
 
-    public Map<String, String> getUpdatedRegistrationsMap() {
+    public List<Recipient> getStaleRecipients() {
+        return mStaleRecipients;
+    }
+
+    public Map<Recipient, Recipient> getUpdatedRegistrationsMap() {
         return mUpdatedRegistrationsMap;
     }
 
-    public void addStaleRegistration(String staleRegistrationId) {
-        mStaleRegistrationIds.add(staleRegistrationId);
+    public Map<Recipient, String> getRecipientErrors() {
+        return mErrorResultsMap;
     }
 
-    public void addUpdatedRegistration(String oldRegistrationId, String newRegistrationId) {
-        mUpdatedRegistrationsMap.put(oldRegistrationId, newRegistrationId);
+    public void addSuccessfulRecipient(Recipient recipient) {
+        mSuccessfulRecipients.add(recipient);
     }
 
-    public void addErrorToRegistration(String registrationId, String result) {
-        mErrorResultsMap.put(registrationId, result);
+    public void addStaleRecipient(Recipient staleRecipient) {
+        mStaleRecipients.add(staleRecipient);
     }
 
-    public void addSuccessToRegistration(String registrationId, String messageId) {
-        mSuccessResultsMap.put(registrationId, messageId);
+    public void addUpdatedRecipient(Recipient oldRecipient, Recipient newRecipient) {
+        mUpdatedRegistrationsMap.put(oldRecipient, newRecipient);
     }
 
-    public Date getRetryAfter() {
-        return mRetryAfter;
-    }
-
-    public void setRetryAfter(Date retryAfter) {
-        mRetryAfter = retryAfter;
+    public void addErrorToRecipient(Recipient recipient, String cause) {
+        mErrorResultsMap.put(recipient, cause);
     }
 }

@@ -2,7 +2,6 @@ package main;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Provider;
 import models.accounts.Account;
@@ -13,10 +12,8 @@ import models.alerts.Alert;
 import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
-import models.taskqueue.Message;
-import models.taskqueue.PayloadElement;
-import models.taskqueue.Recipient;
-import models.taskqueue.Task;
+import models.taskqueue.*;
+import org.avaje.datasource.DataSourceConfig;
 
 import java.util.ArrayList;
 
@@ -59,6 +56,7 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
         models.add(Message.class);
         models.add(PayloadElement.class);
+        models.add(RecipientFailure.class);
         models.add(Recipient.class);
         models.add(Task.class);
 

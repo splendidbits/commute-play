@@ -86,6 +86,7 @@ public class SignupController extends Controller {
             platformAccounts.add(apnsAccount);
         }
 
+
         if (!platformAccounts.isEmpty()) {
             Account pendingAccount = new Account();
             pendingAccount.orgName = organisationName;

@@ -1,4 +1,4 @@
-package helpers;
+package serializers;
 
 import com.google.gson.*;
 import models.taskqueue.Message;
@@ -22,7 +22,7 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
 
         JsonArray registrationIdArray = new JsonArray();
         for (Recipient recipient : message.recipients) {
-            registrationIdArray.add(new JsonPrimitive(recipient.recipientId));
+            registrationIdArray.add(new JsonPrimitive(recipient.token));
         }
 
         // Serialise the main elements.

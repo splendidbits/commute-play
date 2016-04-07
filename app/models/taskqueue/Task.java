@@ -1,8 +1,6 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.avaje.ebean.annotation.EnumValue;
 import main.Constants;
 
@@ -17,17 +15,17 @@ import java.util.List;
 public class Task extends Model {
     public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
-    public enum TaskProcessState {
-        @EnumValue("NOT_STARTED")
-        STATE_NOT_STARTED,
+    public enum ProcessState {
+        @EnumValue("IDLE")
+        IDLE,
         @EnumValue("PROCESSING")
-        STATE_PROCESSING,
+        PROCESSING,
         @EnumValue("PARTIALLY_COMPLETE")
-        STATE_PARTIALLY_COMPLETE,
-        @EnumValue("PERMANENTLY_FAILED")
-        STATE_PERMANENTLY_FAILED,
+        PARTIALLY_COMPLETE,
+        @EnumValue("FAILED")
+        FAILED,
         @EnumValue("COMPLETE")
-        STATE_COMPLETE
+        COMPLETE
     }
 
     @Id
@@ -36,33 +34,29 @@ public class Task extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Integer taskId;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.LAZY)
     public List<Message> messages;
 
-    @Column(name = "exponential_multiplier")
-    public int currentExponent;
+    @Column(name = "retry_count")
+    public int retryCount;
 
     @Column(name = "process_state")
-    public TaskProcessState processState;
+    public ProcessState processState;
 
-    @Basic
+    @Basic(fetch=FetchType.LAZY)
     @Column(name = "task_added")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar taskAdded;
 
-    @Basic
-    @Column(name = "previous_attempt")
+    @Basic(fetch=FetchType.LAZY)
+    @Column(name = "last_attempt")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar previousAttempt;
+    public Calendar lastAttempt;
 
-    @Basic
-    @Column(name = "upcoming_attempt")
+    @Basic(fetch=FetchType.LAZY)
+    @Column(name = "next_attempt")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar upcomingAttempt;
-
-    public Task() {
-        processState = TaskProcessState.STATE_NOT_STARTED;
-    }
+    public Calendar nextAttempt;
 
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
@@ -73,7 +67,8 @@ public class Task extends Model {
 
     @PrePersist
     public void initialValues() {
+        processState = ProcessState.IDLE;
         taskAdded = Calendar.getInstance();
-        currentExponent = 1;
+        retryCount = 0;
     }
 }

@@ -40,6 +40,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: aopalliance:aopalliance:1.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.jetbrains:annotations:13.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm-agent:4.9.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-ebean_2.11:3.0.0:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: junit:junit:4.12:jar" level="project" />
     <orderEntry type="library" name="SBT: org.postgresql:postgresql:9.4.1207:jar" level="project" />
     <orderEntry type="library" name="SBT: xml-apis:xml-apis:1.4.01:jar" level="project" />
@@ -94,7 +97,6 @@
     <orderEntry type="library" name="SBT: com.typesafe.play:build-link:2.5.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-cache_2.11:2.5.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-ebean_2.11:3.0.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-exceptions:2.5.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.5.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.5.0:jar" level="project" />
@@ -143,8 +145,6 @@
     <orderEntry type="library" name="SBT: org.asynchttpclient:netty-codec-dns:2.0.0-RC9:jar" level="project" />
     <orderEntry type="library" name="SBT: org.asynchttpclient:netty-resolver:2.0.0-RC9:jar" level="project" />
     <orderEntry type="library" name="SBT: org.asynchttpclient:netty-resolver-dns:2.0.0-RC9:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm:6.18.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm-agent:4.9.1:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: org.eclipse.jetty:jetty-io:9.2.15.v20160210:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: org.eclipse.jetty:jetty-util:9.2.15.v20160210:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: org.eclipse.jetty.websocket:websocket-api:9.2.15.v20160210:jar" level="project" />
@@ -153,7 +153,6 @@
     <orderEntry type="library" scope="TEST" name="SBT: org.fluentlenium:fluentlenium-core:0.10.9:jar" level="project" />
     <orderEntry type="library" name="SBT: org.hibernate:hibernate-validator:5.2.4.Final:jar" level="project" />
     <orderEntry type="library" name="SBT: org.javassist:javassist:3.20.0-GA:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.jetbrains:annotations:13.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.joda:joda-convert:1.8.1:jar" level="project" />
     <orderEntry type="library" name="SBT: org.reactivestreams:reactive-streams:1.0.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.reflections:reflections:0.9.10:jar" level="project" />
@@ -176,12 +175,16 @@
     <orderEntry type="library" scope="TEST" name="SBT: org.seleniumhq.selenium:selenium-support:2.48.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:jcl-over-slf4j:1.7.16:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:jul-to-slf4j:1.7.16:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.16:jar" level="project" />
     <orderEntry type="library" name="SBT: org.springframework:spring-beans:4.2.4.RELEASE:jar" level="project" />
     <orderEntry type="library" name="SBT: org.springframework:spring-context:4.2.4.RELEASE:jar" level="project" />
     <orderEntry type="library" name="SBT: org.springframework:spring-core:4.2.4.RELEASE:jar" level="project" />
     <orderEntry type="library" name="SBT: org.yaml:snakeyaml:1.16:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: xalan:serializer:2.7.2:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: xalan:xalan:2.7.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje:avaje-datasource:1.1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje:avaje-datasource-api:1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm:7.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm-cluster:1.1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.21:jar" level="project" />
   </component>
 </module>

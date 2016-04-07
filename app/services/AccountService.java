@@ -18,16 +18,13 @@ import java.util.List;
 /**
  * A DAO class for both device registration / subscription actions and
  * platform + API account functions.
- *
+ * <p>
  * TODO: Split this up into two separate services.
  */
 public class AccountService {
     private static final String TAG = AccountService.class.getSimpleName();
 
-    @Inject
     private EbeanServer mEbeanServer;
-
-    @Inject
     private Log mLog;
 
     @Inject
@@ -38,8 +35,8 @@ public class AccountService {
 
     /**
      * Get a API service Account.
-     * @param email registered email address for account.
      *
+     * @param email registered email address for account.
      * @return an Account object, null if not found.
      */
     @Nullable
@@ -55,8 +52,8 @@ public class AccountService {
 
     /**
      * Get a API service Account.
-     * @param apiKey api key for which account was assigned.
      *
+     * @param apiKey api key for which account was assigned.
      * @return an Account object, null if not found.
      */
     @Nullable
@@ -83,8 +80,8 @@ public class AccountService {
 
     /**
      * Get a platform object for name, such as GCM or APNS.
-     * @param platformName name of platform.
      *
+     * @param platformName name of platform.
      * @return Platform. null if not found
      */
     @Nullable
@@ -102,9 +99,7 @@ public class AccountService {
      * @return list of subscribers.
      */
     @Nullable
-    public List<Account> getRegistrationAccounts(@Nonnull String platformName,
-                                                 int agencyId,
-                                                 @Nonnull Route route) {
+    public List<Account> getRegistrationAccounts(@Nonnull String platformName, int agencyId, @Nonnull Route route) {
         return mEbeanServer.find(Account.class)
                 .fetch("registrations")
                 .fetch("platformAccounts")
@@ -153,6 +148,36 @@ public class AccountService {
         return false;
     }
 
+
+
+    /**
+     * Delete a device registration.
+     * @param registrationToken the registration token for the device.
+     *
+     * @return true or false depending on if the registration was deleted.
+     */
+    public boolean deleteRegistration(@Nonnull String registrationToken) {
+        // Build a query depending on if we have a token, and or device identifier.
+        Registration existingRegistration = mEbeanServer.createQuery(Registration.class)
+                .where()
+                .eq("registration_token", registrationToken)
+                .findUnique();
+
+            try {
+                // Update an existing registration if it exists.
+                if (existingRegistration != null) {
+                    mEbeanServer.beginTransaction();
+                    mEbeanServer.delete(existingRegistration);
+                }
+                mEbeanServer.commitTransaction();
+                return true;
+
+            } catch (Exception e) {
+                mLog.e(TAG, String.format("Error deleting registration for %s.", registrationToken), e);
+                mEbeanServer.rollbackTransaction();
+            }
+        return false;
+    }
 
     /**
      * Save a registration for a device to the database. Will find any previous registrations

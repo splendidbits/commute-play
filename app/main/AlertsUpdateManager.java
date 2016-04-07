@@ -4,7 +4,6 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.app.ModifiedAlerts;
-import services.AccountService;
 import services.AgencyService;
 import services.PushMessageService;
 
@@ -27,14 +26,14 @@ public class AlertsUpdateManager {
     private static final String TAG = AlertsUpdateManager.class.getSimpleName();
 
     private AgencyService mAgencyService;
-    private AccountService mAccountService;
+    private PushMessageService mPushMessageService;
     private Log mLog;
 
     @Inject
-    public AlertsUpdateManager(Log log, AgencyService agencyService, AccountService accountService) {
+    public AlertsUpdateManager(Log log, AgencyService agencyService, PushMessageService pushMessageService) {
         mAgencyService = agencyService;
-        mAccountService = accountService;
         mLog = log;
+        mPushMessageService = pushMessageService;
     }
 
     /**
@@ -48,20 +47,19 @@ public class AlertsUpdateManager {
      * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
-        PushMessageService pushMessageService = new PushMessageService(mAccountService);
-
         List<Route> agencyRoutes = updatedAgency.routes;
         if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
-            mLog.d(TAG, "Found routes and alerts for agency.");
             Collections.sort(agencyRoutes);
 
             // Pass the Alert differences on to the GCM Pre-processor.
             ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
             if (modifiedAlerts.hasModifiedAlerts()) {
-                mLog.d(TAG, "Found new alerts agency routes.");
-                pushMessageService.notifyAlertSubscribers(modifiedAlerts);
+
+                mLog.d(TAG, "Found new alerts in agency routes.");
+                mPushMessageService.notifySubscribersAsync(modifiedAlerts);
 
                 // Save the agency in the datastore.
+                mLog.d(TAG, "Saving new or updated agency data.");
                 mAgencyService.saveAgencyAlerts(updatedAgency);
             }
         }

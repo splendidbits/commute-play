@@ -21,7 +21,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-play-enhancer" % "1.1.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-play-ebean" % "3.0.0")
 
-
 resolvers ++= Seq(
   Resolver.typesafeIvyRepo("releases"),
   "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",

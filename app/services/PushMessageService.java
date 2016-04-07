@@ -1,6 +1,6 @@
 package services;
 
-import helpers.GcmMessageHelper;
+import helpers.MessageHelper;
 import main.Log;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -9,14 +9,14 @@ import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Task;
-import play.api.Play;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static helpers.GcmMessageHelper.buildAlertMessage;
+import static helpers.MessageHelper.buildAlertMessage;
 import static models.accounts.Platform.PLATFORM_NAME_GCM;
 
 /**
@@ -26,55 +26,67 @@ import static models.accounts.Platform.PLATFORM_NAME_GCM;
 public class PushMessageService {
     private static final String TAG = PushMessageService.class.getSimpleName();
 
+    @Inject
     private AccountService mAccountService;
-    private Log mLog = Play.current().injector().instanceOf(Log.class);
-    private TaskQueue mTaskQueue = Play.current().injector().instanceOf(TaskQueue.class);
 
-    public PushMessageService(AccountService accountService) {
-        mAccountService = accountService;
-    }
+    @Inject
+    private Log mLog;
+
+    @Inject
+    private TaskQueue mTaskQueue;
 
     /**
      * Notify GCM subscribers of the modified alerts which have changed.
      *
      * @param modifiedAlerts Collection of modified alerts including their routes.
      */
-    public void notifyAlertSubscribers(@Nonnull ModifiedAlerts modifiedAlerts) {
-        List<Alert> updatedAlerts = modifiedAlerts.getUpdatedAlerts();
+    public CompletionStage<Boolean> notifySubscribersAsync(@Nonnull ModifiedAlerts modifiedAlerts) {
+        CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        CompletableFuture.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                List<Alert> updatedAlerts = modifiedAlerts.getUpdatedAlerts();
 
-        // Iterate through the routes.
-        for (Alert alert : updatedAlerts) {
+                // Iterate through the routes.
+                for (Alert alert : updatedAlerts) {
 
-            // Get all accounts for the registrations subscribed to that route.
-            List<Account> accounts = mAccountService.getRegistrationAccounts(
-                    PLATFORM_NAME_GCM,
-                    modifiedAlerts.getAgencyId(),
-                    alert.route);
+                    // Get all accounts for the registrations subscribed to that route.
+                    List<Account> accounts = mAccountService.getRegistrationAccounts(
+                            PLATFORM_NAME_GCM,
+                            modifiedAlerts.getAgencyId(),
+                            alert.route);
 
-            // Loop through each sending API account.
-            if (accounts != null && !accounts.isEmpty()) {
+                    // Loop through each sending API account.
+                    if (accounts != null && !accounts.isEmpty()) {
 
-                // Create a new task and send a logMessage per platform account.
-                Task messageTask = new Task();
-                for (Account account : accounts) {
+                        // Create a new task and send a logMessage per platform account.
+                        Task messageTask = new Task();
+                        for (Account account : accounts) {
 
-                    for (PlatformAccount platformAccount : account.platformAccounts) {
-                        if (account.registrations != null && !account.registrations.isEmpty()) {
-                            Message message = buildAlertMessage(alert, account.registrations, platformAccount);
-                            messageTask.addMessage(message);
+                            for (PlatformAccount platformAccount : account.platformAccounts) {
+                                if (account.registrations != null && !account.registrations.isEmpty()) {
+                                    Message message = buildAlertMessage(alert, account.registrations, platformAccount);
+                                    messageTask.addMessage(message);
 
+                                } else {
+                                    mLog.i(TAG, "Outbound message not build as there were 0 recipients");
+                                }
+                            }
+                        }
+
+                        // Add the message task to the TaskQueue.
+                        if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
+                            mTaskQueue.addTask(messageTask);
+                            completableFuture.complete(true);
                         } else {
-                            mLog.i(TAG, "Outbound message not build as there were 0 recipients");
+                            completableFuture.complete(false);
                         }
                     }
                 }
-
-                // Add the message task to the TaskQueue.
-                if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
-                    mTaskQueue.addTask(messageTask);
-                }
             }
-        }
+        });
+
+        return completableFuture;
     }
 
     /**
@@ -94,8 +106,8 @@ public class PushMessageService {
                 // Loop through each sending API account.
                 if (platformAccount.platform.platformName.equals(PLATFORM_NAME_GCM)) {
 
-                    Message message = GcmMessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
-                    message.addRegistrationId(registration.registrationToken);
+                    Message message = MessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
+                    message.addRegistrationToken(registration.registrationToken);
                     messageTask.addMessage(message);
                 }
             }

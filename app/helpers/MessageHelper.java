@@ -6,14 +6,15 @@ import models.registrations.Registration;
 import models.taskqueue.Message;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Used to easily create relevent push platform messages which can be sent
  * out using the dispatchers.
  */
-public class GcmMessageHelper {
-    private static final String TAG = GcmMessageHelper.class.getSimpleName();
+public class MessageHelper {
+    private static final String TAG = MessageHelper.class.getSimpleName();
 
     private enum MessageRoot {
         MESSAGE_TYPE("alert_type"),
@@ -88,7 +89,7 @@ public class GcmMessageHelper {
         gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_NAME.value, updatedAlert.route.routeName);
 
         for (Registration registration : registrations) {
-            gcmMessage.addRegistrationId(registration.registrationToken);
+            gcmMessage.addRegistrationToken(registration.registrationToken);
         }
 
         boolean messageDataEmpty = CompareUtils.isEmptyNullSafe(
@@ -129,5 +130,32 @@ public class GcmMessageHelper {
             gcmMessage.collapseKey = updatedAlert.route.routeId;
         }
         return gcmMessage;
+    }
+
+    /**
+     * Clone a message completely without any registration information
+     *
+     * @param message message to copy.
+     * @return a copied message that is exactly the same but with registration information removed.
+     */
+    public static Message cloneMessage(Message message) {
+        if (message != null) {
+            Message clonedMessage = new Message();
+            clonedMessage.messageId = message.messageId;
+            clonedMessage.platformAccount = message.platformAccount;
+            clonedMessage.recipients = new ArrayList<>();
+            clonedMessage.payloadData = message.payloadData;
+            clonedMessage.collapseKey = message.collapseKey;
+            clonedMessage.ttl = message.ttl;
+            clonedMessage.restrictedPackageName = message.restrictedPackageName;
+            clonedMessage.isDryRun = message.isDryRun;
+            clonedMessage.isDelayWhileIdle = message.isDelayWhileIdle;
+            clonedMessage.priority = message.priority;
+            clonedMessage.task = message.task;
+            clonedMessage.sentTime = message.sentTime;
+
+            return clonedMessage;
+        }
+        return null;
     }
 }

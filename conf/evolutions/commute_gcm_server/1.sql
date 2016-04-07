@@ -41,7 +41,7 @@ create sequence alerts_id_seq increment by 1;
 
 create table task_queue.messages (
   message_id                    integer not null,
-  task_task_id                  integer,
+  task_id                       integer,
   collapse_key                  varchar(255),
   restricted_package_name       varchar(255),
   delay_while_idle              boolean,
@@ -79,13 +79,25 @@ create table service_accounts.platform_account (
 create sequence platform_account_id_seq increment by 1;
 
 create table task_queue.recipients (
-  recipient_id                  varchar(255) not null,
-  message_message_id            integer,
-  recipient_state               varchar(18),
-  last_attempt                  timestamp,
-  constraint ck_recipients_recipient_state check (recipient_state in ('COMPLETE','PERMANENTLY_FAILED','NOT_STARTED','PROCESSING')),
+  recipient_id                  integer not null,
+  token                         varchar(255),
+  message_id                    integer,
+  state                         varchar(10),
+  time_added                    timestamp,
+  m_recipient_failure_id        integer,
+  constraint ck_recipients_state check (state in ('COMPLETE','IDLE','PROCESSING','RETRY')),
   constraint pk_recipients primary key (recipient_id)
 );
+create sequence recipient_id_seq increment by 1;
+
+create table task_queue.recipient_failures (
+  id                            integer not null,
+  failure_reason                varchar(255),
+  recipient_id                  integer,
+  fail_time                     timestamp,
+  constraint pk_recipient_failures primary key (id)
+);
+create sequence failure_id_seq increment by 1;
 
 create table device_subscriptions.registrations (
   device_id                     varchar(255) not null,
@@ -118,12 +130,12 @@ create table device_subscriptions.subscription_route (
 
 create table task_queue.tasks (
   task_id                       integer not null,
-  exponential_multiplier        integer,
+  retry_count                   integer,
   process_state                 varchar(18),
   task_added                    timestamp,
-  previous_attempt              timestamp,
-  upcoming_attempt              timestamp,
-  constraint ck_tasks_process_state check (process_state in ('COMPLETE','PERMANENTLY_FAILED','NOT_STARTED','PARTIALLY_COMPLETE','PROCESSING')),
+  last_attempt                  timestamp,
+  next_attempt                  timestamp,
+  constraint ck_tasks_process_state check (process_state in ('COMPLETE','FAILED','IDLE','PROCESSING','PARTIALLY_COMPLETE')),
   constraint pk_tasks primary key (task_id)
 );
 create sequence task_id_seq increment by 1;
@@ -131,8 +143,8 @@ create sequence task_id_seq increment by 1;
 alter table agency_alerts.alerts add constraint fk_alerts_route_route_id foreign key (route_route_id) references agency_alerts.routes (route_id) on delete restrict on update restrict;
 create index ix_alerts_route_route_id on agency_alerts.alerts (route_route_id);
 
-alter table task_queue.messages add constraint fk_messages_task_task_id foreign key (task_task_id) references task_queue.tasks (task_id) on delete restrict on update restrict;
-create index ix_messages_task_task_id on task_queue.messages (task_task_id);
+alter table task_queue.messages add constraint fk_messages_task_id foreign key (task_id) references task_queue.tasks (task_id) on delete restrict on update restrict;
+create index ix_messages_task_id on task_queue.messages (task_id);
 
 alter table task_queue.payload_element add constraint fk_payload_element_message_message_id foreign key (message_message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
 create index ix_payload_element_message_message_id on task_queue.payload_element (message_message_id);
@@ -143,8 +155,14 @@ create index ix_platform_account_account_account_id on service_accounts.platform
 alter table service_accounts.platform_account add constraint fk_platform_account_platform_platform_name foreign key (platform_platform_name) references service_accounts.platform (platform_name) on delete restrict on update restrict;
 create index ix_platform_account_platform_platform_name on service_accounts.platform_account (platform_platform_name);
 
-alter table task_queue.recipients add constraint fk_recipients_message_message_id foreign key (message_message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
-create index ix_recipients_message_message_id on task_queue.recipients (message_message_id);
+alter table task_queue.recipients add constraint fk_recipients_message_id foreign key (message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
+create index ix_recipients_message_id on task_queue.recipients (message_id);
+
+alter table task_queue.recipients add constraint fk_recipients_m_recipient_failure_id foreign key (m_recipient_failure_id) references task_queue.recipient_failures (id) on delete restrict on update restrict;
+create index ix_recipients_m_recipient_failure_id on task_queue.recipients (m_recipient_failure_id);
+
+alter table task_queue.recipient_failures add constraint fk_recipient_failures_recipient_id foreign key (recipient_id) references task_queue.recipients (recipient_id) on delete restrict on update restrict;
+create index ix_recipient_failures_recipient_id on task_queue.recipient_failures (recipient_id);
 
 alter table device_subscriptions.registrations add constraint fk_registrations_account_account_id foreign key (account_account_id) references service_accounts.account (account_id) on delete restrict on update restrict;
 create index ix_registrations_account_account_id on device_subscriptions.registrations (account_account_id);
@@ -167,8 +185,8 @@ create index ix_subscription_route_routes on device_subscriptions.subscription_r
 alter table if exists agency_alerts.alerts drop constraint if exists fk_alerts_route_route_id;
 drop index if exists ix_alerts_route_route_id;
 
-alter table if exists task_queue.messages drop constraint if exists fk_messages_task_task_id;
-drop index if exists ix_messages_task_task_id;
+alter table if exists task_queue.messages drop constraint if exists fk_messages_task_id;
+drop index if exists ix_messages_task_id;
 
 alter table if exists task_queue.payload_element drop constraint if exists fk_payload_element_message_message_id;
 drop index if exists ix_payload_element_message_message_id;
@@ -179,8 +197,14 @@ drop index if exists ix_platform_account_account_account_id;
 alter table if exists service_accounts.platform_account drop constraint if exists fk_platform_account_platform_platform_name;
 drop index if exists ix_platform_account_platform_platform_name;
 
-alter table if exists task_queue.recipients drop constraint if exists fk_recipients_message_message_id;
-drop index if exists ix_recipients_message_message_id;
+alter table if exists task_queue.recipients drop constraint if exists fk_recipients_message_id;
+drop index if exists ix_recipients_message_id;
+
+alter table if exists task_queue.recipients drop constraint if exists fk_recipients_m_recipient_failure_id;
+drop index if exists ix_recipients_m_recipient_failure_id;
+
+alter table if exists task_queue.recipient_failures drop constraint if exists fk_recipient_failures_recipient_id;
+drop index if exists ix_recipient_failures_recipient_id;
 
 alter table if exists device_subscriptions.registrations drop constraint if exists fk_registrations_account_account_id;
 drop index if exists ix_registrations_account_account_id;
@@ -217,6 +241,10 @@ drop table if exists service_accounts.platform_account cascade;
 drop sequence if exists platform_account_id_seq;
 
 drop table if exists task_queue.recipients cascade;
+drop sequence if exists recipient_id_seq;
+
+drop table if exists task_queue.recipient_failures cascade;
+drop sequence if exists failure_id_seq;
 
 drop table if exists device_subscriptions.registrations cascade;
 

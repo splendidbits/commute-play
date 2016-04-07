@@ -7,6 +7,7 @@ import com.avaje.ebean.annotation.EnumValue;
 import main.Constants;
 import models.accounts.PlatformAccount;
 import interfaces.PlatformMessage;
+import models.alerts.Alert;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
@@ -30,12 +31,13 @@ public class Message extends Model implements PlatformMessage {
     public Integer messageId;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="task_id")
     public Task task;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.LAZY)
     public List<Recipient> recipients;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.LAZY)
     public List<PayloadElement> payloadData;
 
     @Transient
@@ -59,7 +61,7 @@ public class Message extends Model implements PlatformMessage {
     @Column(name = "time_to_live")
     public int ttl;
 
-    @Basic
+    @Basic(fetch=FetchType.LAZY)
     @Column(name = "sent_time")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar sentTime;
@@ -74,9 +76,9 @@ public class Message extends Model implements PlatformMessage {
     }
 
     @Transient
-    public void addRegistrationId(@Nonnull String registrationId){
+    public void addRegistrationToken(@Nonnull String token){
         Recipient recipient = new Recipient();
-        recipient.recipientId = registrationId;
+        recipient.token = token;
         if (recipients == null) {
             recipients = new ArrayList<>();
         }

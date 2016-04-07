@@ -3,13 +3,12 @@ package agency;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import controllers.Application;
-import helpers.SeptaAlertsDeserializer;
 import main.AlertsUpdateManager;
 import main.Log;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;
-import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
+import serializers.SeptaAlertsDeserializer;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -60,12 +59,12 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     public void updateAgency() {
         try {
             mLog.d(TAG, "Starting download of SEPTA agency alert data.");
-            WSRequest request = mWsClient
+            CompletionStage<WSResponse> resultPromise = mWsClient
                     .url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
-                    .setFollowRedirects(true);
+                    .setFollowRedirects(true)
+                    .get();
 
-            CompletionStage<WSResponse> resultPromise = request.get();
             resultPromise.thenAccept(new Consumer<WSResponse>() {
                 @Override
                 public void accept(WSResponse response) {
