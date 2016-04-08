@@ -6,7 +6,6 @@ import com.google.inject.Inject;
 import helpers.MessageHelper;
 import interfaces.MessageResponseListener;
 import main.Log;
-import models.accounts.PlatformAccount;
 import models.app.GoogleResponse;
 import models.app.MessageResult;
 import models.taskqueue.Message;
@@ -48,24 +47,22 @@ public class GcmDispatcher {
      * Dispatch a message synchronously to the Google GCM service..
      *
      * @param message          The message to send.
-     * @param platformAccount  The platform account for which to send the message with.
      * @param responseListener The response listener.
      */
     @SuppressWarnings("Convert2Lambda")
-    public void dispatchMessageAsync(@Nonnull Message message, @Nonnull MessageResponseListener responseListener,
-                                     @Nonnull PlatformAccount platformAccount) {
+    public void dispatchMessageAsync(@Nonnull Message message, @Nonnull MessageResponseListener responseListener) {
 
-        // Return error on  no recipients.
+        // Return error on no recipients.
         if (message.recipients == null || message.recipients.isEmpty()) {
             responseListener.messageFailed(message, MessageResponseListener.HardFailCause.MISSING_RECIPIENTS);
             return;
         }
 
-        // Set the message recipients as processing.
-        for (Recipient recipient : message.recipients) {
-            recipient.state = Recipient.ProcessState.PROCESSING;
+        // Return error on no platform.
+        if (message.endpointUrl == null || message.authToken == null) {
+            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.ENDPOINT_NOT_FOUND);
+            return;
         }
-        message.save();
 
         // Build the exception handler block.
         Function<Throwable, Void> exceptionHandler = new Function<Throwable, Void>() {
@@ -94,12 +91,16 @@ public class GcmDispatcher {
             }
         };
 
+        // Split the message into "parts" as it could be over the max size for the dispatcher.
         List<Message> messageParts = organiseMessageParts(message);
-        CompletionStage<List<GoogleResponse>> googleResponses = getMessageResponses(messageParts, platformAccount);
 
+        // Get the accounts for which we are sending the message.
+        CompletionStage<List<GoogleResponse>> googleResponses = getMessageResponses(messageParts);
         googleResponses.thenApply(new Function<List<GoogleResponse>, Void>() {
+
             @Override
             public Void apply(List<GoogleResponse> googleResponses) {
+                // The response from each message send.
                 MessageResult messageCompleteResult = combineMessageResponses(message, googleResponses);
                 responseListener.messageResult(messageCompleteResult);
 
@@ -108,22 +109,19 @@ public class GcmDispatcher {
         }).exceptionally(exceptionHandler);
     }
 
-
     /**
      * Get a list of Google message responses for a given list of message parts.
      *
      * @param messageParts    The list of parts to get responses for.
-     * @param platformAccount The platform account for the original message.
      * @return A list of google reposes.
      */
-    private CompletionStage<List<GoogleResponse>> getMessageResponses(@Nonnull List<Message> messageParts,
-                                                                      @Nonnull PlatformAccount platformAccount) {
+    private CompletionStage<List<GoogleResponse>> getMessageResponses(@Nonnull List<Message> messageParts) {
 
         CompletableFuture<List<GoogleResponse>> responseFuture = new CompletableFuture<>();
         List<GoogleResponse> messagePartResponses = new ArrayList<>();
         for (Message messagePart : messageParts) {
 
-            sendMessageRequest(messagePart, platformAccount).thenApply(new Function<WSResponse, Void>() {
+            sendMessageRequest(messagePart).thenApply(new Function<WSResponse, Void>() {
                 @Override
                 public Void apply(WSResponse response) {
                     GoogleResponse googleResponse = parseCallResponse(response);
@@ -182,24 +180,20 @@ public class GcmDispatcher {
      * Send a message and get a synchronous application response in return.
      *
      * @param messagePart     the message or message part to send.
-     * @param platformAccount the platform account for which to send the messgage from.
      * @return WSResponse google request response.
      */
     @Nullable
-    private CompletionStage<WSResponse> sendMessageRequest(@Nonnull Message messagePart,
-                                                           @Nonnull PlatformAccount platformAccount) {
-        if (messagePart.platformAccount.platform != null &&
-                messagePart.platformAccount.platform.endpointUrl != null) {
-
+    private CompletionStage<WSResponse> sendMessageRequest(@Nonnull Message messagePart) {
+        if (messagePart.endpointUrl != null && messagePart.authToken != null) {
             String jsonBody = new GsonBuilder()
                     .registerTypeAdapter(Message.class, new GcmMessageSerializer())
                     .create()
                     .toJson(messagePart);
 
             CompletionStage<WSResponse> response = mWsClient
-                    .url(messagePart.platformAccount.platform.endpointUrl)
+                    .url(messagePart.endpointUrl)
                     .setContentType("application/json")
-                    .setHeader("Authorization", String.format("key=%s", platformAccount.authToken))
+                    .setHeader("Authorization", String.format("key=%s", messagePart.authToken))
                     .setRequestTimeout(GCM_REQUEST_TIMEOUT)
                     .setFollowRedirects(true)
                     .post(jsonBody);

@@ -1,8 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.EnumValue;
 import main.Constants;
+import models.app.ProcessState;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -11,17 +11,6 @@ import java.util.Calendar;
 @Table(name = "recipients", schema = "task_queue")
 public class Recipient extends Model {
     public static Finder<Integer, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
-
-    public enum ProcessState {
-        @EnumValue("IDLE")
-        IDLE,
-        @EnumValue("PROCESSING")
-        PROCESSING,
-        @EnumValue("RETRY")
-        RETRY,
-        @EnumValue("COMPLETE")
-        COMPLETE
-    }
 
     @Id
     @Column(name = "recipient_id")
@@ -32,8 +21,7 @@ public class Recipient extends Model {
     @Column(name = "token")
     public String token;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="message_id")
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
     public Message message;
 
     @Column(name = "state")
@@ -45,13 +33,13 @@ public class Recipient extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeAdded;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     public RecipientFailure failure;
 
     @PrePersist
     public void insertValues(){
         timeAdded = Calendar.getInstance();
-        state = ProcessState.IDLE;
+        state = ProcessState.STATE_IDLE;
     }
 
     @PreUpdate

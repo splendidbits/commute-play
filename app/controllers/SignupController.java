@@ -86,7 +86,6 @@ public class SignupController extends Controller {
             platformAccounts.add(apnsAccount);
         }
 
-
         if (!platformAccounts.isEmpty()) {
             Account pendingAccount = new Account();
             pendingAccount.orgName = organisationName;
@@ -97,7 +96,11 @@ public class SignupController extends Controller {
             pendingAccount.dailySendLimit = 1000000L;
             pendingAccount.active = false;
             pendingAccount.platformAccounts = platformAccounts;
+
+            mEbeanServer.beginTransaction();
             mEbeanServer.save(pendingAccount);
+            mEbeanServer.commitTransaction();
+            mEbeanServer.endTransaction();
 
         } else {
             mLog.w(TAG, "No platforms were found for account signup: " + email);

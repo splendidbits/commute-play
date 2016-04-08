@@ -61,6 +61,7 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Task.class);
 
         ServerConfig serverConfig = new ServerConfig();
+        serverConfig.setUpdateChangesOnly(true);
         serverConfig.setRegister(true);
         serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setName(name);

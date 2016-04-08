@@ -1,9 +1,12 @@
 package services;
 
 import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.FetchConfig;
+import com.avaje.ebean.Transaction;
 import interfaces.MessageResponseListener;
 import main.Log;
 import models.app.MessageResult;
+import models.app.ProcessState;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
 import models.taskqueue.RecipientFailure;
@@ -13,7 +16,12 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TransferQueue;
 
 /**
  * The singleton class that handles all GCM task jobs.
@@ -25,7 +33,9 @@ public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
     private static final int MAXIMUM_TASK_RETRIES = 10;
     private static boolean mQueueRunning = false;
-    private List<Task> mPendingTasks = Collections.synchronizedList(new ArrayList<>());
+
+    private TransferQueue<Task> mPendingTaskQueue = new LinkedTransferQueue<>();
+    private QueueConsumer mQueueConsumer = new QueueConsumer();
 
     private AccountService mAccountService;
     private GcmDispatcher mGcmDispatcher;
@@ -41,6 +51,9 @@ public class TaskQueue {
 
         // Fetch any tasks that are partially or incomplete.
         fetchPendingTasks();
+
+        // Start the queue take thread.
+        new Thread(mQueueConsumer).start();
     }
 
     /**
@@ -52,27 +65,9 @@ public class TaskQueue {
             mQueueRunning = true;
 
             try {
-                Iterator<Task> pendingTaskIterator = mPendingTasks.iterator();
                 // Do not use the tasks which are running or have failed.
-                while (pendingTaskIterator.hasNext()) {
-                    Task taskToProcess = pendingTaskIterator.next();
-                    if (isTaskIncomplete(taskToProcess)) {
+                mQueueConsumer.run();
 
-                        // Create a single response class for each separate message in the task.
-                        DispatchResponseListener taskDispatchResponse = new DispatchResponseListener(taskToProcess);
-                        for (Message message : taskToProcess.messages) {
-
-                            // Set the task as processing
-                            taskToProcess.processState = Task.ProcessState.PROCESSING;
-                            updateTask(taskToProcess);
-
-                            // Dispatch the message.
-                            mGcmDispatcher.dispatchMessageAsync(message,
-                                    taskDispatchResponse,
-                                    message.platformAccount);
-                        }
-                    }
-                }
             } catch (Exception e) {
                 mLog.e(TAG, "Error processing entry in TaskQueue", e);
 
@@ -90,8 +85,11 @@ public class TaskQueue {
      * @return true or false, duh.
      */
     private boolean isTaskIncomplete(@Nonnull Task task) {
-        if (!task.processState.equals(Task.ProcessState.COMPLETE) &&
-                !task.processState.equals(Task.ProcessState.FAILED)) {
+        Calendar currentTime = Calendar.getInstance();
+
+        if (!task.processState.equals(ProcessState.STATE_COMPLETE) &&
+                !task.processState.equals(ProcessState.STATE_FAILED) &&
+                !task.nextAttempt.after(currentTime)) {
             return true;
         }
         return false;
@@ -102,18 +100,21 @@ public class TaskQueue {
      */
     private void fetchPendingTasks() {
         List<Task> tasks = mEbeanServer.find(Task.class)
+                .fetch("messages", new FetchConfig().query())
+                .fetch("messages.recipients", new FetchConfig().query())
                 .where()
                 .conjunction()
-                .ne("processState", Task.ProcessState.FAILED)
-                .ne("processState", Task.ProcessState.COMPLETE)
+                .ne("processState", ProcessState.STATE_FAILED)
+                .ne("processState", ProcessState.STATE_COMPLETE)
                 .endJunction()
-                .filterMany("messages.recipients").ne("state", Recipient.ProcessState.COMPLETE)
+                .filterMany("messages.recipients").ne("state", ProcessState.STATE_COMPLETE)
+                .filterMany("messages.recipients").ne("state", ProcessState.STATE_FAILED)
                 .findList();
 
         // Add the saved pending tasks back into the queue
         if (tasks != null) {
             for (Task task : tasks) {
-                mPendingTasks.add(task);
+                mPendingTaskQueue.offer(task);
             }
         }
     }
@@ -133,32 +134,26 @@ public class TaskQueue {
      * @param task task to save and add to TaskQueue.
      */
     @SuppressWarnings("WeakerAccess")
-    public synchronized boolean addTask(@Nonnull Task task) {
-        // Check to see if the task is already in the queue.
-        for (Task pendingTask : mPendingTasks) {
-            if (pendingTask.taskId.equals(task.taskId)) {
-                return false;
-            }
-        }
-
+    public boolean addTask(@Nonnull Task task) {
         mLog.d(TAG, "Saving new task to TaskQueue and datastore.");
-        mPendingTasks.add(task);
-        mEbeanServer.beginTransaction();
+        if (!mPendingTaskQueue.contains(task)) {
 
-        try {
-            mEbeanServer.save(task);
-            mEbeanServer.commitTransaction();
+            // Add to the queue in a new thread.
+            if (task.processState == null ||
+                    !task.processState.equals(ProcessState.STATE_COMPLETE) &&
+                            !task.processState.equals(ProcessState.STATE_FAILED)) {
+                CompletableFuture.runAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateTask(task);
+                        mPendingTaskQueue.offer(task);
+                    }
+                });
+            }
 
-        } catch (Exception exception) {
-            mLog.e(TAG, "Error saving new task to database", exception);
-            mEbeanServer.rollbackTransaction();
-            return false;
-
-        } finally {
-            mEbeanServer.endTransaction();
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     /**
@@ -166,32 +161,43 @@ public class TaskQueue {
      *
      * @param task the task within queue
      */
+
     private void updateTask(@Nonnull Task task) {
-        if (task.taskId != null) {
-            Iterator<Task> pendingTaskIterator = mPendingTasks.iterator();
-            while (pendingTaskIterator.hasNext()) {
+        Transaction taskTransaction = mEbeanServer.createTransaction();
+        try {
+            boolean updatedTask = false;
+            if (task.taskId != null) {
+                Task persistedTask = mEbeanServer
+                        .find(Task.class)
+                        .fetch("messages")
+                        .fetch("messages.recipients")
+                        .where()
+                        .idEq(task.taskId)
+                        .findUnique();
 
-                Task pendingTask = pendingTaskIterator.next();
-                if (pendingTask.taskId.equals(task.taskId)) {
-
-                    pendingTaskIterator.remove();
-                    if (isTaskIncomplete(task)) {
-                        mPendingTasks.add(task);
-                    }
+                if (persistedTask != null) {
+                    updatedTask = true;
+                    persistedTask.messages = task.messages;
+                    persistedTask.processState = task.processState;
+                    persistedTask.retryCount = task.retryCount;
+                    persistedTask.lastAttempt = task.lastAttempt;
+                    persistedTask.nextAttempt = task.nextAttempt;
+                    persistedTask.taskAdded = task.taskAdded;
+                    mEbeanServer.update(persistedTask, taskTransaction, false);
                 }
             }
 
-            mEbeanServer.beginTransaction();
-            try {
-                mEbeanServer.save(task);
-                mEbeanServer.commitTransaction();
-
-            } catch (Exception exception) {
-                mLog.e(TAG, "Error saving new task state", exception);
-
-            } finally {
-                mEbeanServer.endTransaction();
+            if (!updatedTask) {
+                mEbeanServer.save(task, taskTransaction);
             }
+            taskTransaction.commit();
+
+        } catch (Exception exception) {
+            mLog.e(TAG, "Error saving new task state", exception);
+            taskTransaction.rollback();
+
+        } finally {
+            taskTransaction.end();
         }
     }
 
@@ -208,67 +214,78 @@ public class TaskQueue {
 
         @Override
         public void messageResult(@NotNull @Nonnull MessageResult result) {
-            Message sentMessage = result.getOriginalMessage();
+            Message message = result.getOriginalMessage();
             int taskRetryCount = mOriginalTask.retryCount;
 
-            mLog.d(TAG, String.format("Successful response from Google for message %d", sentMessage.messageId));
+            mLog.d(TAG, String.format("Successful response from Google for message %d", message.messageId));
 
             Map<Recipient, String> failedRecipients = result.getRecipientErrors();
             List<Recipient> successfulRecipients = result.getSuccessfulRecipients();
             List<Recipient> retryRecipients = result.getRecipientsToRetry();
             List<Recipient> staleRecipients = result.getStaleRecipients();
 
-            if (!successfulRecipients.isEmpty() && failedRecipients.isEmpty()) {
-                mOriginalTask.processState = Task.ProcessState.COMPLETE;
+            if (!successfulRecipients.isEmpty() && failedRecipients.isEmpty() && retryRecipients.isEmpty()) {
+                // Everything was successful.
+
+                mOriginalTask.processState = ProcessState.STATE_COMPLETE;
+                for (Recipient recipient : message.recipients) {
+                    recipient.state = ProcessState.STATE_COMPLETE;
+                }
 
             } else if (result.hasCriticalErrors()) {
-                mOriginalTask.processState = Task.ProcessState.FAILED;
-            }
+                // There were unrecoverable errors.
+                mOriginalTask.processState = ProcessState.STATE_FAILED;
 
-            // Update the failed recipients with the reason why.
-            for (Map.Entry<Recipient, String> entry : failedRecipients.entrySet()) {
-                Recipient failedRecipient = entry.getKey();
-                String failureReason = entry.getValue();
+            } else {
+                // Every other situation.
 
-                failedRecipient.failure = new RecipientFailure(failureReason);
-                failedRecipient.state = Recipient.ProcessState.COMPLETE;
-                failedRecipient.save();
-            }
+                // Update the FAILED RECIPIENTS (with the reason why)
+                for (Map.Entry<Recipient, String> entry : failedRecipients.entrySet()) {
 
-            // Remove stale registrations from the datastore.
-            // TODO: Add an interface so there is no hard link between GCM module -> main module.
-            for (Recipient staleRecipient : staleRecipients) {
-                mAccountService.deleteRegistration(staleRecipient.token);
-            }
+                    Recipient failedRecipient = entry.getKey();
+                    String failureReason = entry.getValue();
 
-            // If we are retrying for some recipients, then update the task accordingly.
-            if (!retryRecipients.isEmpty()) {
-                if (taskRetryCount <= MAXIMUM_TASK_RETRIES) {
-                    mOriginalTask.retryCount = taskRetryCount + 1;
-                    mOriginalTask.lastAttempt = Calendar.getInstance();
+                    failedRecipient.failure = new RecipientFailure(failureReason);
+                    failedRecipient.state = ProcessState.STATE_FAILED;
+                    mEbeanServer.save(failedRecipient);
+                }
 
-                    // Exponentially bump up the next retry interval
-                    Calendar nextAttemptCal = Calendar.getInstance();
-                    nextAttemptCal.add(Calendar.MINUTE, (mOriginalTask.retryCount * 2));
-                    mOriginalTask.nextAttempt = nextAttemptCal;
+                // Remove stale registrations from the datastore.
+                // TODO: Add an interface so there is no hard link between GCM module -> main module.
+                for (Recipient staleRecipient : staleRecipients) {
+                    mAccountService.deleteRegistration(staleRecipient.token);
+                }
 
-                    mOriginalTask.processState = Task.ProcessState.PARTIALLY_COMPLETE;
-                    for (Recipient recipientToRetry : sentMessage.recipients) {
-                        recipientToRetry.state = Recipient.ProcessState.RETRY;
-                        recipientToRetry.save();
-                    }
+                // Retry logic.
+                if (!retryRecipients.isEmpty()) {
+                    if (taskRetryCount <= MAXIMUM_TASK_RETRIES) {
+                        mOriginalTask.retryCount = taskRetryCount + 1;
+                        mOriginalTask.lastAttempt = Calendar.getInstance();
 
-                } else {
-                    // If the maximum retry count has eben reached, complete the task, and fail the remaining recipients.
-                    mOriginalTask.processState = Task.ProcessState.COMPLETE;
+                        // Exponentially bump up the next retry interval
+                        Calendar nextAttemptCal = Calendar.getInstance();
+                        nextAttemptCal.add(Calendar.MINUTE, (mOriginalTask.retryCount * 2));
+                        mOriginalTask.nextAttempt = nextAttemptCal;
 
-                    for (Recipient recipientToRetry : sentMessage.recipients) {
-                        recipientToRetry.state = Recipient.ProcessState.COMPLETE;
-                        recipientToRetry.failure = new RecipientFailure("MaxRetryReached");
-                        recipientToRetry.save();
+                        mOriginalTask.processState = ProcessState.STATE_WAITING_RETRY;
+                        for (Recipient recipientToRetry : message.recipients) {
+                            recipientToRetry.state = ProcessState.STATE_WAITING_RETRY;
+                            mEbeanServer.update(recipientToRetry);
+                        }
+
+                    } else {
+                        // If the maximum retry count has eben reached, complete the task, and fail the remaining recipients.
+                        mOriginalTask.processState = ProcessState.STATE_COMPLETE;
+
+                        for (Recipient recipientToRetry : message.recipients) {
+                            recipientToRetry.state = ProcessState.STATE_FAILED;
+                            recipientToRetry.failure = new RecipientFailure("MaxRetryReached");
+                            mEbeanServer.update(recipientToRetry);
+                        }
                     }
                 }
             }
+
             updateTask(mOriginalTask);
         }
 
@@ -277,8 +294,54 @@ public class TaskQueue {
             mLog.e(TAG, String.format("Failed. %s response from Google for message %d",
                     failCause.name(), message.messageId));
 
-            mOriginalTask.processState = Task.ProcessState.FAILED;
-            updateTask(mOriginalTask);
+            mOriginalTask.processState = ProcessState.STATE_FAILED;
+            for (Recipient recipient : message.recipients) {
+                recipient.state = ProcessState.STATE_FAILED;
+            }
+
+            mEbeanServer.save(message);
+        }
+    }
+
+    private class QueueConsumer implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    mLog.d(TAG, "Consumer is waiting to take element...");
+                    Task taskToProcess = mPendingTaskQueue.take();
+
+                    mLog.d(TAG, "Consumer received Element: " + taskToProcess.taskId);
+                    if (isTaskIncomplete(taskToProcess)) {
+
+                        // Set the timestamp for now.
+                        taskToProcess.lastAttempt = Calendar.getInstance();
+                        updateTask(taskToProcess);
+
+                        // Create a single response class for each separate message in the task.
+                        for (Message message : taskToProcess.messages) {
+
+                            // Set the task as processing
+                            taskToProcess.processState = ProcessState.STATE_PROCESSING;
+
+                            // Set the message recipients as processing.
+                            for (Recipient recipient : message.recipients) {
+                                recipient.state = ProcessState.STATE_PROCESSING;
+                            }
+                            updateTask(taskToProcess);
+
+                            // Dispatch the message.
+                            mGcmDispatcher.dispatchMessageAsync(message, new DispatchResponseListener(taskToProcess));
+                        }
+                    }
+
+                    Thread.sleep(5000);
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

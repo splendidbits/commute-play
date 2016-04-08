@@ -6,6 +6,7 @@ import models.registrations.Registration;
 import models.taskqueue.Message;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class MessageHelper {
         MESSAGE("message");
 
         private String value;
+
         MessageRoot(String value) {
             this.value = value;
         }
@@ -36,6 +38,7 @@ public class MessageHelper {
         ALERT_CANCEL("cancel_alert");
 
         private String value;
+
         MessageType(String value) {
             this.value = value;
         }
@@ -46,6 +49,7 @@ public class MessageHelper {
         GCM_KEY_ROUTE_NAME("route_name");
 
         private String value;
+
         AlertMessage(String value) {
             this.value = value;
         }
@@ -54,20 +58,24 @@ public class MessageHelper {
     /**
      * Build a GCM device confirmation push message.
      *
-     * @param registration    registration of device to send to.
-     * @param platformAccount account holder of registrationId
+     * @param registration     registration of device to send to.
+     * @param platformAccounts account holders of registration
      * @return Message.
      */
+    @Nullable
     public static Message buildConfirmDeviceMessage(@Nonnull Registration registration,
-                                                    @Nonnull PlatformAccount platformAccount) {
+                                                    @Nonnull List<PlatformAccount> platformAccounts) {
         final int ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
-        Message gcmMessage = new Message();
-        gcmMessage.platformAccount = platformAccount;
-        gcmMessage.collapseKey = MessageType.REGISTERED_ON_NETWORK.value;
-        gcmMessage.ttl = ONE_WEEK_IN_SECONDS;
-        gcmMessage.isDelayWhileIdle = true;
-        gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.REGISTERED_ON_NETWORK.value);
+        Message gcmMessage = addMessagePlatformAccounts(new Message(), platformAccounts);
+        if (gcmMessage != null) {
+
+            gcmMessage.collapseKey = MessageType.REGISTERED_ON_NETWORK.value;
+            gcmMessage.ttl = ONE_WEEK_IN_SECONDS;
+            gcmMessage.isDelayWhileIdle = true;
+            gcmMessage.addRegistrationToken(registration.registrationToken);
+            gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.REGISTERED_ON_NETWORK.value);
+        }
         return gcmMessage;
     }
 
@@ -75,61 +83,88 @@ public class MessageHelper {
      * Add an alert message (detour, advisory, etc) and a set of
      * registrations to the preprocessor.
      *
-     * @param updatedAlert    alert which has been validated as update ready..
-     * @param platformAccount the gcm account to send the message from.
+     * @param updatedAlert     alert which has been validated as update ready..
+     * @param platformAccounts account holders for alert.
      */
+    @Nullable
     public static Message buildAlertMessage(@Nonnull Alert updatedAlert,
                                             @Nonnull List<Registration> registrations,
-                                            @Nonnull PlatformAccount platformAccount) {
-        Message gcmMessage = new Message();
-        gcmMessage.platformAccount = platformAccount;
-        gcmMessage.isDelayWhileIdle = true;
+                                            @Nonnull List<PlatformAccount> platformAccounts) {
 
-        gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_ID.value, updatedAlert.route.routeId);
-        gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_NAME.value, updatedAlert.route.routeName);
+        Message gcmMessage = addMessagePlatformAccounts(new Message(), platformAccounts);
+        if (gcmMessage != null) {
 
-        for (Registration registration : registrations) {
-            gcmMessage.addRegistrationToken(registration.registrationToken);
-        }
+            gcmMessage.isDelayWhileIdle = true;
+            gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_ID.value, updatedAlert.route.routeId);
+            gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_NAME.value, updatedAlert.route.routeName);
 
-        boolean messageDataEmpty = CompareUtils.isEmptyNullSafe(
-                updatedAlert.currentMessage,
-                updatedAlert.advisoryMessage,
-                updatedAlert.detourMessage,
-                updatedAlert.detourStartLocation,
-                updatedAlert.detourReason);
+            for (Registration registration : registrations) {
+                gcmMessage.addRegistrationToken(registration.registrationToken);
+            }
 
-        boolean datesEmpty = updatedAlert.detourStartDate == null
-                && updatedAlert.detourEndDate == null;
+            boolean messageDataEmpty = CompareUtils.isEmptyNullSafe(
+                    updatedAlert.currentMessage,
+                    updatedAlert.advisoryMessage,
+                    updatedAlert.detourMessage,
+                    updatedAlert.detourStartLocation,
+                    updatedAlert.detourReason);
 
-        boolean noSnow = !updatedAlert.isSnow;
+            boolean datesEmpty = updatedAlert.detourStartDate == null
+                    && updatedAlert.detourEndDate == null;
 
-        if (messageDataEmpty && datesEmpty && noSnow) {
-            // If all of the above in the alert was empty, send a cancel alert logMessage.
-            gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CANCEL.value);
+            boolean noSnow = !updatedAlert.isSnow;
 
-        } else if (!datesEmpty || !CompareUtils.isEmptyNullSafe(
-                updatedAlert.detourMessage,
-                updatedAlert.detourStartLocation,
-                updatedAlert.detourReason)) {
-            // Detour alert if there is some detour information.
-            gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_DETOUR_MESSAGE.value);
-            gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.detourMessage);
-            gcmMessage.collapseKey = updatedAlert.route.routeId;
+            if (messageDataEmpty && datesEmpty && noSnow) {
+                // If all of the above in the alert was empty, send a cancel alert logMessage.
+                gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CANCEL.value);
 
-        } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.currentMessage)) {
-            // Current Message has updated.
-            gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CURRENT_MESSAGE.value);
-            gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.currentMessage);
-            gcmMessage.collapseKey = updatedAlert.route.routeId;
+            } else if (!datesEmpty || !CompareUtils.isEmptyNullSafe(
+                    updatedAlert.detourMessage,
+                    updatedAlert.detourStartLocation,
+                    updatedAlert.detourReason)) {
+                // Detour alert if there is some detour information.
+                gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_DETOUR_MESSAGE.value);
+                gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.detourMessage);
+                gcmMessage.collapseKey = updatedAlert.route.routeId;
 
-        } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.advisoryMessage)) {
-            // Advisory Message has updated.
-            gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_ADVISORY_MESSAGE.value);
-            gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.advisoryMessage);
-            gcmMessage.collapseKey = updatedAlert.route.routeId;
+            } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.currentMessage)) {
+                // Current Message has updated.
+                gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CURRENT_MESSAGE.value);
+                gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.currentMessage);
+                gcmMessage.collapseKey = updatedAlert.route.routeId;
+
+            } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.advisoryMessage)) {
+                // Advisory Message has updated.
+                gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_ADVISORY_MESSAGE.value);
+                gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.advisoryMessage);
+                gcmMessage.collapseKey = updatedAlert.route.routeId;
+            }
         }
         return gcmMessage;
+    }
+
+    /**
+     * Add platform accounts to a message.
+     *
+     * @param message          message to add platform accounts to
+     * @param platformAccounts list of accounts for message.
+     * @return Message populated with accounts, or null if no accounts.
+     */
+    private static Message addMessagePlatformAccounts(@Nonnull Message message,
+                                                      @Nonnull List<PlatformAccount> platformAccounts) {
+        // Add accounts to the message.
+        for (PlatformAccount account : platformAccounts) {
+            if (account.platform != null && account.platform.endpointUrl != null) {
+                message.endpointUrl = account.platform.endpointUrl;
+                message.authToken = account.authToken;
+            }
+        }
+
+        // If there are no platform accounts, return null.
+        if (message.authToken == null || message.endpointUrl == null) {
+            return null;
+        }
+        return message;
     }
 
     /**
@@ -142,7 +177,8 @@ public class MessageHelper {
         if (message != null) {
             Message clonedMessage = new Message();
             clonedMessage.messageId = message.messageId;
-            clonedMessage.platformAccount = message.platformAccount;
+            clonedMessage.authToken = message.authToken;
+            clonedMessage.endpointUrl = message.endpointUrl;
             clonedMessage.recipients = new ArrayList<>();
             clonedMessage.payloadData = message.payloadData;
             clonedMessage.collapseKey = message.collapseKey;

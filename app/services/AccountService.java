@@ -1,6 +1,7 @@
 package services;
 
 import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.FetchConfig;
 import main.Constants;
 import main.Log;
 import models.accounts.Account;
@@ -99,18 +100,23 @@ public class AccountService {
      * @return list of subscribers.
      */
     @Nullable
-    public List<Account> getRegistrationAccounts(@Nonnull String platformName, int agencyId, @Nonnull Route route) {
+    public List<Account> getRegistrationAccounts(@Nonnull String platformName, int agencyId,
+                                                 @Nonnull Route route) {
+
         return mEbeanServer.find(Account.class)
-                .fetch("registrations")
-                .fetch("platformAccounts")
-                .fetch("platformAccounts.platform")
-                .fetch("registrations.subscriptions")
+                .fetch("registrations", new FetchConfig().query())
+                .fetch("platformAccounts", new FetchConfig().query())
+                .fetch("platformAccounts.platform", new FetchConfig().query())
+                .fetch("registrations.subscriptions", new FetchConfig().query())
                 .where()
+                .conjunction()
                 .eq("platformAccounts.platform.platformName", platformName)
-                .where()
                 .eq("registrations.subscriptions.routes.routeId", route.routeId)
-                .where()
                 .eq("registrations.subscriptions.routes.agency.agencyId", agencyId)
+                .endJunction()
+                .filterMany("platformAccounts").eq("platform.platformName", platformName)
+                .filterMany("registrations").eq("subscriptions.routes.agency.agencyId", agencyId)
+                .filterMany("registrations").eq("subscriptions.routes.routeId", route.routeId)
                 .findList();
     }
 
@@ -148,12 +154,10 @@ public class AccountService {
         return false;
     }
 
-
-
     /**
      * Delete a device registration.
-     * @param registrationToken the registration token for the device.
      *
+     * @param registrationToken the registration token for the device.
      * @return true or false depending on if the registration was deleted.
      */
     public boolean deleteRegistration(@Nonnull String registrationToken) {
@@ -163,19 +167,19 @@ public class AccountService {
                 .eq("registration_token", registrationToken)
                 .findUnique();
 
-            try {
-                // Update an existing registration if it exists.
-                if (existingRegistration != null) {
-                    mEbeanServer.beginTransaction();
-                    mEbeanServer.delete(existingRegistration);
-                }
-                mEbeanServer.commitTransaction();
-                return true;
-
-            } catch (Exception e) {
-                mLog.e(TAG, String.format("Error deleting registration for %s.", registrationToken), e);
-                mEbeanServer.rollbackTransaction();
+        try {
+            // Update an existing registration if it exists.
+            if (existingRegistration != null) {
+                mEbeanServer.beginTransaction();
+                mEbeanServer.delete(existingRegistration);
             }
+            mEbeanServer.commitTransaction();
+            return true;
+
+        } catch (Exception e) {
+            mLog.e(TAG, String.format("Error deleting registration for %s.", registrationToken), e);
+            mEbeanServer.rollbackTransaction();
+        }
         return false;
     }
 

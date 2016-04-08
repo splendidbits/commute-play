@@ -3,7 +3,7 @@
 ##ASAP
 * ~~Finish automatic scheduling.~~
 * ~~Make entire logging system dependency injectable~~
-* Implement TaskQueue task.
+* ~~Implement TaskQueue task~~.
 * Authenticate external app logging.
 * Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/
 * Create json agency alert endpoints with caching

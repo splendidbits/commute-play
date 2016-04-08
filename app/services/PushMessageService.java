@@ -12,6 +12,7 @@ import models.taskqueue.Task;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -50,37 +51,44 @@ public class PushMessageService {
                 // Iterate through the routes.
                 for (Alert alert : updatedAlerts) {
 
-                    // Get all accounts for the registrations subscribed to that route.
-                    List<Account> accounts = mAccountService.getRegistrationAccounts(
-                            PLATFORM_NAME_GCM,
-                            modifiedAlerts.getAgencyId(),
-                            alert.route);
+                    // Get all accounts with registrations subscribed to that route.
+                    List<Account> accounts = mAccountService.getRegistrationAccounts(PLATFORM_NAME_GCM,
+                            modifiedAlerts.getAgencyId(), alert.route);
 
                     // Loop through each sending API account.
                     if (accounts != null && !accounts.isEmpty()) {
 
-                        // Create a new task and send a logMessage per platform account.
+                        // Create a new task and send 1 message per API account.
                         Task messageTask = new Task();
                         for (Account account : accounts) {
 
+                            List<Registration> registrations = new ArrayList<>();
+                            List<PlatformAccount> platformAccounts = new ArrayList<>();
+
                             for (PlatformAccount platformAccount : account.platformAccounts) {
                                 if (account.registrations != null && !account.registrations.isEmpty()) {
-                                    Message message = buildAlertMessage(alert, account.registrations, platformAccount);
-                                    messageTask.addMessage(message);
-
-                                } else {
-                                    mLog.i(TAG, "Outbound message not build as there were 0 recipients");
+                                    registrations.addAll(account.registrations);
                                 }
+                                if (account.platformAccounts != null) {
+                                    platformAccounts.addAll(account.platformAccounts);
+                                }
+                            }
+
+                            Message message = buildAlertMessage(alert, registrations, platformAccounts);
+                            if (message != null) {
+                                messageTask.addMessage(message);
                             }
                         }
 
-                        // Add the message task to the TaskQueue.
                         if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
+                            // Add the message task to the TaskQueue.
                             mTaskQueue.addTask(messageTask);
                             completableFuture.complete(true);
+
                         } else {
                             completableFuture.complete(false);
                         }
+
                     }
                 }
             }
@@ -101,16 +109,10 @@ public class PushMessageService {
         if (!platformAccounts.isEmpty()) {
             // Create a new task and send a message per platform account.
             Task messageTask = new Task();
-            for (PlatformAccount platformAccount : platformAccounts) {
 
-                // Loop through each sending API account.
-                if (platformAccount.platform.platformName.equals(PLATFORM_NAME_GCM)) {
-
-                    Message message = MessageHelper.buildConfirmDeviceMessage(registration, platformAccount);
-                    message.addRegistrationToken(registration.registrationToken);
-                    messageTask.addMessage(message);
-                }
-            }
+            Message message = MessageHelper.buildConfirmDeviceMessage(registration, platformAccounts);
+            message.addRegistrationToken(registration.registrationToken);
+            messageTask.addMessage(message);
 
             // Add the message task to the TaskQueue.
             if (messageTask.messages != null && !messageTask.messages.isEmpty()) {

@@ -1,28 +1,19 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import com.avaje.ebean.annotation.EnumValue;
-import main.Constants;
-import models.accounts.PlatformAccount;
 import interfaces.PlatformMessage;
-import models.alerts.Alert;
+import main.Constants;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "messages", schema = "task_queue")
 public class Message extends Model implements PlatformMessage {
     public static Finder<Integer, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
-
-    public Message() {
-        priority = "normal";
-        ttl = 86400;
-    }
 
     @Id
     @Column(name = "message_id")
@@ -31,20 +22,27 @@ public class Message extends Model implements PlatformMessage {
     public Integer messageId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="task_id")
     public Task task;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
     public List<Recipient> recipients;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
     public List<PayloadElement> payloadData;
-
-    @Transient
-    public PlatformAccount platformAccount;
 
     @Column(name = "collapse_key")
     public String collapseKey;
+
+    @Basic(fetch=FetchType.LAZY)
+    @Column(name = "sent_time")
+    @Temporal(TemporalType.TIMESTAMP)
+    public Calendar sentTime;
+
+    @Column(name = "priority")
+    public String priority;
+
+    @Column(name = "time_to_live")
+    public int ttl;
 
     @Column(name = "restricted_package_name")
     public String restrictedPackageName;
@@ -55,16 +53,11 @@ public class Message extends Model implements PlatformMessage {
     @Column(name = "dry_run")
     public boolean isDryRun;
 
-    @Column(name = "priority")
-    public String priority;
+    @Column(name = "auth_token")
+    public String authToken;
 
-    @Column(name = "time_to_live")
-    public int ttl;
-
-    @Basic(fetch=FetchType.LAZY)
-    @Column(name = "sent_time")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar sentTime;
+    @Column(name = "endpoint_url")
+    public String endpointUrl;
 
     @Transient
     public void addData(String key, String value){
@@ -94,5 +87,10 @@ public class Message extends Model implements PlatformMessage {
     @PrePersist
     public void initialValues() {
         sentTime = Calendar.getInstance();
+    }
+
+    public Message() {
+        priority = "normal";
+        ttl = 86400;
     }
 }

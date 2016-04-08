@@ -23,14 +23,13 @@ public class RecipientFailure extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
     public Integer id;
 
-    @OneToMany(mappedBy = "failure", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "failure", fetch = FetchType.LAZY)
     public List<Recipient> recipients;
 
     @Column(name = "failure_reason")
     public String failureReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="recipient_id")
     public Recipient recipient;
 
     @Basic

@@ -1,8 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.EnumValue;
 import main.Constants;
+import models.app.ProcessState;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
@@ -15,26 +15,13 @@ import java.util.List;
 public class Task extends Model {
     public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
-    public enum ProcessState {
-        @EnumValue("IDLE")
-        IDLE,
-        @EnumValue("PROCESSING")
-        PROCESSING,
-        @EnumValue("PARTIALLY_COMPLETE")
-        PARTIALLY_COMPLETE,
-        @EnumValue("FAILED")
-        FAILED,
-        @EnumValue("COMPLETE")
-        COMPLETE
-    }
-
     @Id
     @Column(name = "task_id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Integer taskId;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
 
     @Column(name = "retry_count")
@@ -58,6 +45,7 @@ public class Task extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
 
+    @Transient
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
             messages = new ArrayList<>();
@@ -67,8 +55,11 @@ public class Task extends Model {
 
     @PrePersist
     public void initialValues() {
-        processState = ProcessState.IDLE;
-        taskAdded = Calendar.getInstance();
+        Calendar nowTime = Calendar.getInstance();
+
+        processState = ProcessState.STATE_IDLE;
+        taskAdded = nowTime;
+        nextAttempt = nowTime;
         retryCount = 0;
     }
 }

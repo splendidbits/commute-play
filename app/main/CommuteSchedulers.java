@@ -38,7 +38,7 @@ public class CommuteSchedulers {
         mTaskQueue = taskQueue;
 
         startAgencyUpdateSchedule(actorSystem, agencyActor);
-        startTaskQueueSchedule(actorSystem);
+        //startTaskQueueSchedule(actorSystem);
     }
 
     /**
