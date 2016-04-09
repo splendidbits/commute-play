@@ -1,4 +1,4 @@
-package interfaces;
+package dispatcher.interfaces;
 
 public interface PlatformMessage {
     enum PlatformType {

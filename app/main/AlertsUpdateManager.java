@@ -5,7 +5,7 @@ import models.alerts.Alert;
 import models.alerts.Route;
 import models.app.ModifiedAlerts;
 import services.AgencyService;
-import services.PushMessageService;
+import dispatcher.processors.PushMessageService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -56,7 +56,7 @@ public class AlertsUpdateManager {
             if (modifiedAlerts.hasModifiedAlerts()) {
 
                 mLog.d(TAG, "Found new alerts in agency routes.");
-                mPushMessageService.notifySubscribersAsync(modifiedAlerts);
+                mPushMessageService.notifyAlertSubscribers(modifiedAlerts);
 
                 // Save the agency in the datastore.
                 mLog.d(TAG, "Saving new or updated agency data.");

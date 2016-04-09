@@ -1,8 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
+import dispatcher.types.TaskState;
 import main.Constants;
-import models.app.ProcessState;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
@@ -18,7 +18,7 @@ public class Task extends Model {
     @Id
     @Column(name = "task_id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
+    //@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Integer taskId;
 
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
@@ -27,8 +27,11 @@ public class Task extends Model {
     @Column(name = "retry_count")
     public int retryCount;
 
-    @Column(name = "process_state")
-    public ProcessState processState;
+    @Column(name = "name")
+    public String name;
+
+    @Column(name = "state")
+    public TaskState state;
 
     @Basic(fetch=FetchType.LAZY)
     @Column(name = "task_added")
@@ -45,6 +48,13 @@ public class Task extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
 
+    private Task() {
+    }
+
+    public Task(String name) {
+        this.name = name;
+    }
+
     @Transient
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
@@ -57,7 +67,7 @@ public class Task extends Model {
     public void initialValues() {
         Calendar nowTime = Calendar.getInstance();
 
-        processState = ProcessState.STATE_IDLE;
+        state = TaskState.STATE_IDLE;
         taskAdded = nowTime;
         nextAttempt = nowTime;
         retryCount = 0;

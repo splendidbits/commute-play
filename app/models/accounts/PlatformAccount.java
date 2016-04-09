@@ -21,7 +21,7 @@ public class PlatformAccount extends Model {
 
     @Id
     @SequenceGenerator(name = "platform_account_id_seq_gen", sequenceName = "platform_account_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "platform_account_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "platform_account_id_seq_gen")
     @Column(name = "id")
     public Integer id;
 

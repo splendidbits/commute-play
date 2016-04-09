@@ -4,7 +4,7 @@
 # --- !Ups
 
 create table service_accounts.account (
-  account_id                    integer not null,
+  account_id                    serial not null,
   organisation_name             varchar(255),
   account_email                 varchar(255),
   password_hash                 varchar(255),
@@ -15,7 +15,6 @@ create table service_accounts.account (
   time_enrolled                 timestamp,
   constraint pk_account primary key (account_id)
 );
-create sequence account_id_seq increment by 1;
 
 create table agency_alerts.agencies (
   agency_id                     serial not null,
@@ -24,7 +23,7 @@ create table agency_alerts.agencies (
 );
 
 create table agency_alerts.alerts (
-  alert_id                      integer not null,
+  alert_id                      serial not null,
   route_route_id                varchar(255),
   current_message               TEXT,
   advisory_message              TEXT,
@@ -37,7 +36,6 @@ create table agency_alerts.alerts (
   last_updated                  timestamp,
   constraint pk_alerts primary key (alert_id)
 );
-create sequence alerts_id_seq increment by 1;
 
 create table task_queue.messages (
   message_id                    integer not null,
@@ -53,28 +51,15 @@ create table task_queue.messages (
   endpoint_url                  varchar(255),
   constraint pk_messages primary key (message_id)
 );
-create sequence message_id_seq increment by 1;
-
-create table task_queue.accounts (
-  auth_token                    varchar(255) not null,
-  endpoint_url                  varchar(255),
-  constraint pk_accounts primary key (auth_token)
-);
-
-create table task_queue.accounts_messages (
-  auth_token                    varchar(255) not null,
-  message_id                    integer not null,
-  constraint pk_accounts_messages primary key (auth_token,message_id)
-);
+create sequence message_id_seq_gen;
 
 create table task_queue.payload_element (
-  element_id                    integer not null,
+  element_id                    serial not null,
   element_name                  varchar(255),
   element_value                 varchar(255),
   message_message_id            integer,
   constraint pk_payload_element primary key (element_id)
 );
-create sequence element_id_seq increment by 1;
 
 create table service_accounts.platform (
   platform_name                 varchar(255) not null,
@@ -82,18 +67,23 @@ create table service_accounts.platform (
   constraint pk_platform primary key (platform_name)
 );
 
+create table task_queue.platform_accounts (
+  auth_id                       serial not null,
+  endpoint_url                  varchar(255),
+  constraint pk_platform_accounts primary key (auth_id)
+);
+
 create table service_accounts.platform_account (
-  id                            integer not null,
+  id                            serial not null,
   account_account_id            integer,
   package_uri                   varchar(255),
   auth_token                    varchar(255),
   platform_platform_name        varchar(255),
   constraint pk_platform_account primary key (id)
 );
-create sequence platform_account_id_seq increment by 1;
 
 create table task_queue.recipients (
-  recipient_id                  integer not null,
+  recipient_id                  serial not null,
   token                         varchar(255),
   message_message_id            integer,
   state                         varchar(13),
@@ -102,16 +92,14 @@ create table task_queue.recipients (
   constraint ck_recipients_state check (state in ('WAITING_RETRY','COMPLETE','FAILED','IDLE','PROCESSING')),
   constraint pk_recipients primary key (recipient_id)
 );
-create sequence recipient_id_seq increment by 1;
 
 create table task_queue.recipient_failures (
-  id                            integer not null,
+  id                            serial not null,
   failure_reason                varchar(255),
   recipient_recipient_id        integer,
   fail_time                     timestamp,
   constraint pk_recipient_failures primary key (id)
 );
-create sequence failure_id_seq increment by 1;
 
 create table device_subscriptions.registrations (
   device_id                     varchar(255) not null,
@@ -129,12 +117,11 @@ create table agency_alerts.routes (
 );
 
 create table device_subscriptions.subscriptions (
-  subscription_id               integer not null,
+  subscription_id               serial not null,
   registration_device_id        varchar(255),
   time_subscribed               timestamp,
   constraint pk_subscriptions primary key (subscription_id)
 );
-create sequence subscriptions_id_seq increment by 1;
 
 create table device_subscriptions.subscription_route (
   subscription_id               integer not null,
@@ -143,28 +130,22 @@ create table device_subscriptions.subscription_route (
 );
 
 create table task_queue.tasks (
-  task_id                       integer not null,
+  task_id                       serial not null,
   retry_count                   integer,
-  process_state                 varchar(13),
+  name                          varchar(255),
+  state                         varchar(25),
   task_added                    timestamp,
   last_attempt                  timestamp,
   next_attempt                  timestamp,
-  constraint ck_tasks_process_state check (process_state in ('WAITING_RETRY','COMPLETE','FAILED','IDLE','PROCESSING')),
+  constraint ck_tasks_state check (state in ('COMPLETE','FAILED','STATE_PARTIALLY_PROCESSED','IDLE','PROCESSING')),
   constraint pk_tasks primary key (task_id)
 );
-create sequence task_id_seq increment by 1;
 
 alter table agency_alerts.alerts add constraint fk_alerts_route_route_id foreign key (route_route_id) references agency_alerts.routes (route_id) on delete restrict on update restrict;
 create index ix_alerts_route_route_id on agency_alerts.alerts (route_route_id);
 
 alter table task_queue.messages add constraint fk_messages_task_task_id foreign key (task_task_id) references task_queue.tasks (task_id) on delete restrict on update restrict;
 create index ix_messages_task_task_id on task_queue.messages (task_task_id);
-
-alter table task_queue.accounts_messages add constraint fk_accounts_messages_accounts foreign key (auth_token) references task_queue.accounts (auth_token) on delete restrict on update restrict;
-create index ix_accounts_messages_accounts on task_queue.accounts_messages (auth_token);
-
-alter table task_queue.accounts_messages add constraint fk_accounts_messages_messages foreign key (message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
-create index ix_accounts_messages_messages on task_queue.accounts_messages (message_id);
 
 alter table task_queue.payload_element add constraint fk_payload_element_message_message_id foreign key (message_message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
 create index ix_payload_element_message_message_id on task_queue.payload_element (message_message_id);
@@ -208,12 +189,6 @@ drop index if exists ix_alerts_route_route_id;
 alter table if exists task_queue.messages drop constraint if exists fk_messages_task_task_id;
 drop index if exists ix_messages_task_task_id;
 
-alter table if exists task_queue.accounts_messages drop constraint if exists fk_accounts_messages_accounts;
-drop index if exists ix_accounts_messages_accounts;
-
-alter table if exists task_queue.accounts_messages drop constraint if exists fk_accounts_messages_messages;
-drop index if exists ix_accounts_messages_messages;
-
 alter table if exists task_queue.payload_element drop constraint if exists fk_payload_element_message_message_id;
 drop index if exists ix_payload_element_message_message_id;
 
@@ -248,43 +223,33 @@ alter table if exists device_subscriptions.subscription_route drop constraint if
 drop index if exists ix_subscription_route_routes;
 
 drop table if exists service_accounts.account cascade;
-drop sequence if exists account_id_seq;
 
 drop table if exists agency_alerts.agencies cascade;
 
 drop table if exists agency_alerts.alerts cascade;
-drop sequence if exists alerts_id_seq;
 
 drop table if exists task_queue.messages cascade;
-drop sequence if exists message_id_seq;
-
-drop table if exists task_queue.accounts cascade;
-
-drop table if exists task_queue.accounts_messages cascade;
+drop sequence if exists message_id_seq_gen;
 
 drop table if exists task_queue.payload_element cascade;
-drop sequence if exists element_id_seq;
 
 drop table if exists service_accounts.platform cascade;
 
+drop table if exists task_queue.platform_accounts cascade;
+
 drop table if exists service_accounts.platform_account cascade;
-drop sequence if exists platform_account_id_seq;
 
 drop table if exists task_queue.recipients cascade;
-drop sequence if exists recipient_id_seq;
 
 drop table if exists task_queue.recipient_failures cascade;
-drop sequence if exists failure_id_seq;
 
 drop table if exists device_subscriptions.registrations cascade;
 
 drop table if exists agency_alerts.routes cascade;
 
 drop table if exists device_subscriptions.subscriptions cascade;
-drop sequence if exists subscriptions_id_seq;
 
 drop table if exists device_subscriptions.subscription_route cascade;
 
 drop table if exists task_queue.tasks cascade;
-drop sequence if exists task_id_seq;
 

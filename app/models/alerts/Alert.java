@@ -18,7 +18,7 @@ public class Alert extends Model implements Comparable {
     @Id
     @Column(name = "alert_id", updatable = true)
     @SequenceGenerator(name = "alerts_id_seq_gen", sequenceName = "alerts_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
     public Integer alertId;
 
     @ManyToOne(fetch = FetchType.EAGER)

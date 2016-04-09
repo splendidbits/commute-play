@@ -19,7 +19,7 @@ public class Subscription extends Model {
 
     @Id
     @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscriptions_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscriptions_id_seq_gen")
     @Column(name = "subscription_id")
     public Integer subscriptionId;
 

@@ -5,7 +5,7 @@ import models.registrations.Registration;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.AccountService;
-import services.PushMessageService;
+import dispatcher.processors.PushMessageService;
 
 import javax.inject.Inject;
 import java.util.Map;

@@ -20,7 +20,7 @@ public class RecipientFailure extends Model {
     @Id
     @Column(name = "id")
     @SequenceGenerator(name = "failure_id_seq_gen", sequenceName = "failure_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
     public Integer id;
 
     @OneToMany(mappedBy = "failure", fetch = FetchType.LAZY)

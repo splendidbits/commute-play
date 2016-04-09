@@ -8,7 +8,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import scala.concurrent.duration.Duration;
-import services.TaskQueue;
+import dispatcher.processors.TaskQueue;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,11 +38,12 @@ public class CommuteSchedulers {
         mTaskQueue = taskQueue;
 
         startAgencyUpdateSchedule(actorSystem, agencyActor);
-        //startTaskQueueSchedule(actorSystem);
     }
 
     /**
      * Start the TaskQueue system scheduler.
+     *
+     * @deprecated in favour of the TaskQueue running it's own polling thread.
      */
     private void startTaskQueueSchedule(ActorSystem actorSystem) {
         actorSystem.scheduler().schedule(
@@ -52,7 +53,7 @@ public class CommuteSchedulers {
                     @Override
                     public void run() {
                         mLog.d(TAG, "Sweeping TaskQueue Service" + System.currentTimeMillis());
-                        mTaskQueue.sweep();
+                        mTaskQueue.start();
                     }
                 },
                 actorSystem.dispatcher()

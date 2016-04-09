@@ -1,6 +1,5 @@
-package models.app;
+package dispatcher.models;
 
-import models.taskqueue.Message;
 import models.taskqueue.Recipient;
 
 import java.util.ArrayList;
@@ -13,32 +12,14 @@ import java.util.Map;
  * errors back from any platform provider.
  */
 public class MessageResult{
-    private Message mOriginalMessage = null;
     private List<Recipient> mRecipientsToRetry = new ArrayList<>();
     private List<Recipient> mSuccessfulRecipients = new ArrayList<>();
     private List<Recipient> mStaleRecipients = new ArrayList<>();
 
     private Map<Recipient, Recipient> mUpdatedRegistrationsMap = new HashMap<>();
     private Map<Recipient, String> mErrorResultsMap = new HashMap<>();
-    private boolean mHasCriticalErrors;
 
     public MessageResult() {
-    }
-
-    public boolean hasCriticalErrors() {
-        return mHasCriticalErrors;
-    }
-
-    public void setHasCriticalErrors(boolean hasCriticalErrors) {
-        mHasCriticalErrors = hasCriticalErrors;
-    }
-
-    public Message getOriginalMessage() {
-        return mOriginalMessage;
-    }
-
-    public void setOriginalMessage(Message originalMessage) {
-        mOriginalMessage = originalMessage;
     }
 
     public List<Recipient> getRecipientsToRetry() {
@@ -53,7 +34,7 @@ public class MessageResult{
         return mStaleRecipients;
     }
 
-    public Map<Recipient, Recipient> getUpdatedRegistrationsMap() {
+    public Map<Recipient, Recipient> getUpdatedRegistrations() {
         return mUpdatedRegistrationsMap;
     }
 

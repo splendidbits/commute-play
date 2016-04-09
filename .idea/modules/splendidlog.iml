@@ -40,11 +40,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: aopalliance:aopalliance:1.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.21:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm-cluster:1.1.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm:7.5.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje:avaje-datasource-api:1.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.avaje:avaje-datasource:1.1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.postgresql:postgresql:9.4.1208:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.16:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm:6.18.1:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: xalan:xalan:2.7.2:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: xalan:serializer:2.7.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.yaml:snakeyaml:1.16:jar" level="project" />
@@ -181,7 +179,6 @@
     <orderEntry type="library" name="SBT: tyrex:tyrex:1.0.1:jar" level="project" />
     <orderEntry type="library" name="SBT: xerces:xercesImpl:2.11.0:jar" level="project" />
     <orderEntry type="library" name="SBT: xml-apis:xml-apis:1.4.01:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.postgresql:postgresql:9.4.1207:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: junit:junit:4.12:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-ebean_2.11:3.0.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.avaje.ebeanorm:avaje-ebeanorm-agent:4.9.1:jar" level="project" />

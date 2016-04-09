@@ -4,7 +4,7 @@ import actors.AgencyUpdateActor;
 import com.avaje.ebean.EbeanServer;
 import com.google.inject.AbstractModule;
 import play.libs.akka.AkkaGuiceSupport;
-import services.TaskQueue;
+import dispatcher.processors.TaskQueue;
 
 /**
  * Runs on application startup.

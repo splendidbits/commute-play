@@ -2,7 +2,7 @@ package models.taskqueue;
 
 import com.avaje.ebean.Model;
 import main.Constants;
-import models.app.ProcessState;
+import dispatcher.types.RecipientState;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -15,7 +15,7 @@ public class Recipient extends Model {
     @Id
     @Column(name = "recipient_id")
     @SequenceGenerator(name = "recipient_id_seq_gen", sequenceName = "recipient_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipient_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipient_id_seq_gen")
     public Integer id;
 
     @Column(name = "token")
@@ -26,7 +26,7 @@ public class Recipient extends Model {
 
     @Column(name = "state")
     @Enumerated(EnumType.STRING)
-    public ProcessState state;
+    public RecipientState state;
 
     @Basic(fetch=FetchType.LAZY)
     @Column(name = "time_added")
@@ -39,7 +39,7 @@ public class Recipient extends Model {
     @PrePersist
     public void insertValues(){
         timeAdded = Calendar.getInstance();
-        state = ProcessState.STATE_IDLE;
+        state = RecipientState.STATE_IDLE;
     }
 
     @PreUpdate

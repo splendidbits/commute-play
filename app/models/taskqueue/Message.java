@@ -1,7 +1,7 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import interfaces.PlatformMessage;
+import dispatcher.interfaces.PlatformMessage;
 import main.Constants;
 
 import javax.annotation.Nonnull;
@@ -17,7 +17,7 @@ public class Message extends Model implements PlatformMessage {
 
     @Id
     @Column(name = "message_id")
-    @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
+    //@SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Integer messageId;
 

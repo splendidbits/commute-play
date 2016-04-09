@@ -1,4 +1,4 @@
-package models.app;
+package dispatcher.models;
 
 import com.google.gson.annotations.SerializedName;
 

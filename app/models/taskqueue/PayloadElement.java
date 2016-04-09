@@ -15,7 +15,7 @@ public class PayloadElement extends Model {
     @Id
     @Column(name = "element_id")
     @SequenceGenerator(name = "element_id_seq_gen", sequenceName = "element_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "element_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "element_id_seq_gen")
     public Integer elementId;
 
     @Column(name = "element_name")

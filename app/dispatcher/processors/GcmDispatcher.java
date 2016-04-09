@@ -1,13 +1,14 @@
-package services;
+package dispatcher.processors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
+import dispatcher.types.PushFailCause;
 import helpers.MessageHelper;
-import interfaces.MessageResponseListener;
+import dispatcher.interfaces.MessageResponse;
 import main.Log;
-import models.app.GoogleResponse;
-import models.app.MessageResult;
+import dispatcher.models.GoogleResponse;
+import dispatcher.models.MessageResult;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
 import play.libs.ws.WSClient;
@@ -50,17 +51,18 @@ public class GcmDispatcher {
      * @param responseListener The response listener.
      */
     @SuppressWarnings("Convert2Lambda")
-    public void dispatchMessageAsync(@Nonnull Message message, @Nonnull MessageResponseListener responseListener) {
+    public void dispatchMessageAsync(@Nonnull Message message,
+                                     @Nonnull MessageResponse responseListener) {
 
         // Return error on no recipients.
         if (message.recipients == null || message.recipients.isEmpty()) {
-            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.MISSING_RECIPIENTS);
+            responseListener.messageFailure(message, PushFailCause.MISSING_RECIPIENTS);
             return;
         }
 
         // Return error on no platform.
         if (message.endpointUrl == null || message.authToken == null) {
-            responseListener.messageFailed(message, MessageResponseListener.HardFailCause.ENDPOINT_NOT_FOUND);
+            responseListener.messageFailure(message, PushFailCause.MISSING_CREDENTIALS);
             return;
         }
 
@@ -75,14 +77,14 @@ public class GcmDispatcher {
                         GoogleCallException googleException = (GoogleCallException) exception;
                         switch (googleException.mStatusCode) {
                             case 400:
-                                responseListener.messageFailed(message,
-                                        MessageResponseListener.HardFailCause.GCM_MESSAGE_JSON_ERROR);
+                                responseListener.messageFailure(message,
+                                        PushFailCause.GCM_MESSAGE_JSON_ERROR);
                             case 401:
-                                responseListener.messageFailed(message,
-                                        MessageResponseListener.HardFailCause.AUTH_ERROR);
+                                responseListener.messageFailure(message,
+                                        PushFailCause.AUTH_ERROR);
                             default:
-                                responseListener.messageFailed(message,
-                                        MessageResponseListener.HardFailCause.UNKNOWN_ERROR);
+                                responseListener.messageFailure(message,
+                                        PushFailCause.UNKNOWN_ERROR);
                                 break;
                         }
                     }
@@ -102,7 +104,7 @@ public class GcmDispatcher {
             public Void apply(List<GoogleResponse> googleResponses) {
                 // The response from each message send.
                 MessageResult messageCompleteResult = combineMessageResponses(message, googleResponses);
-                responseListener.messageResult(messageCompleteResult);
+                responseListener.messageResult(message, messageCompleteResult);
 
                 return null;
             }
@@ -112,7 +114,7 @@ public class GcmDispatcher {
     /**
      * Get a list of Google message responses for a given list of message parts.
      *
-     * @param messageParts    The list of parts to get responses for.
+     * @param messageParts The list of parts to get responses for.
      * @return A list of google reposes.
      */
     private CompletionStage<List<GoogleResponse>> getMessageResponses(@Nonnull List<Message> messageParts) {
@@ -156,7 +158,7 @@ public class GcmDispatcher {
             for (int regCount = 0; regCount < allRecipients.size(); regCount++) {
 
                 // If there's ~1000 registrations, add the message to the pending messages
-                if (messageRegistrations == 1000) {
+                if (messageRegistrations == 999) {
                     returnedMessageParts.add(messagePart);
 
                     messagePart = MessageHelper.cloneMessage(originalMessage);
@@ -179,7 +181,7 @@ public class GcmDispatcher {
     /**
      * Send a message and get a synchronous application response in return.
      *
-     * @param messagePart     the message or message part to send.
+     * @param messagePart the message or message part to send.
      * @return WSResponse google request response.
      */
     @Nullable
@@ -190,15 +192,13 @@ public class GcmDispatcher {
                     .create()
                     .toJson(messagePart);
 
-            CompletionStage<WSResponse> response = mWsClient
+            return mWsClient
                     .url(messagePart.endpointUrl)
                     .setContentType("application/json")
                     .setHeader("Authorization", String.format("key=%s", messagePart.authToken))
                     .setRequestTimeout(GCM_REQUEST_TIMEOUT)
                     .setFollowRedirects(true)
                     .post(jsonBody);
-
-            return response;
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -267,7 +267,7 @@ public class GcmDispatcher {
                     for (GoogleResponse.ResponseError error : GoogleResponse.ResponseError.values()) {
 
                         // Check for an error in the response where the recipient is stale.
-                        if (error.equals(GoogleResponse.ResponseError.ERROR_NOT_REGISTERED)||
+                        if (error.equals(GoogleResponse.ResponseError.ERROR_NOT_REGISTERED) ||
                                 error.equals(GoogleResponse.ResponseError.ERROR_INVALID_REGISTRATION)) {
                             messageResult.addStaleRecipient(originalRecipient);
                         }
@@ -279,9 +279,6 @@ public class GcmDispatcher {
             }
         }
 
-        // Add the critical flag  into the response if there was one.
-        messageResult.setOriginalMessage(message);
-
         return messageResult;
     }
 
@@ -292,7 +289,7 @@ public class GcmDispatcher {
         int mStatusCode = -1;
         String mErrorMessage;
 
-        public GoogleCallException(String errorMessage, int statusCode) {
+        GoogleCallException(String errorMessage, int statusCode) {
             mErrorMessage = errorMessage;
             mStatusCode = statusCode;
         }

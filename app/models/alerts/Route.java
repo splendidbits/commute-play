@@ -28,7 +28,7 @@ public class Route extends Model implements Comparable<Route> {
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     public List<Subscription> subscriptions;
 
-    @OneToMany(mappedBy = "route", cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Alert> alerts;
 
     @Override
@@ -39,6 +39,7 @@ public class Route extends Model implements Comparable<Route> {
             boolean routeDetailsMatch =
                     routeId.equals(otherRoute.routeId) &&
                     routeName.equals(otherRoute.routeName);
+
             if (routeDetailsMatch) {
 
                 if (alerts == null && otherRoute.alerts == null) {
