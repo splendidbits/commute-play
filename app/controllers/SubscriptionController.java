@@ -24,9 +24,9 @@ import java.util.function.Function;
  */
 public class SubscriptionController extends Controller {
     private static final String API_KEY = "api_key";
-    private static final String DEVICE_UUID_KEY = "devuuid";
-    private static final String ROUTE_LIST_KEY = "routeslist";
-    private static final String AGENCY_NAME_KEY = "agencyname";
+    private static final String DEVICE_UUID_KEY = "device_uuid";
+    private static final String ROUTE_LIST_KEY = "route_list";
+    private static final String AGENCY_NAME_KEY = "agency_id";
 
     @Inject
     private AgencyService mAgencyService;

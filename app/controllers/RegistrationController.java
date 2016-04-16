@@ -19,8 +19,8 @@ import java.util.function.Function;
  */
 public class RegistrationController extends Controller {
     private static final String API_KEY = "api_key";
-    private static final String DEVICE_UUID_KEY = "devuuid";
-    private static final String REGISTRATION_TOKEN_KEY = "devregid";
+    private static final String DEVICE_UUID_KEY = "device_uuid";
+    private static final String REGISTRATION_TOKEN_KEY = "registration_id";
 
     @Inject
     private AccountService mAccountService;

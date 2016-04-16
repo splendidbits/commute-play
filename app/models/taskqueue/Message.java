@@ -17,8 +17,8 @@ public class Message extends Model implements PlatformMessage {
 
     @Id
     @Column(name = "message_id")
-    //@SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
+    @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Integer messageId;
 
     @ManyToOne(fetch = FetchType.EAGER)

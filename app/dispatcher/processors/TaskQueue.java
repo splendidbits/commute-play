@@ -34,7 +34,7 @@ import java.util.concurrent.TransferQueue;
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
     private static final int MAXIMUM_TASK_RETRIES = 10;
-    private static final long TASK_POLL_INTERVAL_MS = 5000;
+    private static final long TASK_POLL_INTERVAL_MS = 1000;
 
     private TransferQueue<Task> mPendingTaskQueue = new LinkedTransferQueue<>();
     private ConcurrentHashMap<Integer, PushMessageCallback> mTaskIdClientListeners = new ConcurrentHashMap<>();
@@ -66,9 +66,9 @@ public class TaskQueue {
      */
     private boolean isTaskIncomplete(@Nonnull Task newTask) {
         Calendar currentTime = Calendar.getInstance();
-        return  (!newTask.state.equals(TaskState.STATE_COMPLETE) &&
+        return (!newTask.state.equals(TaskState.STATE_COMPLETE) &&
                 !newTask.state.equals(TaskState.STATE_FAILED) &&
-                !newTask.nextAttempt.after(currentTime));
+                (newTask.nextAttempt == null || !newTask.nextAttempt.after(currentTime)));
     }
 
     /**
@@ -121,7 +121,7 @@ public class TaskQueue {
 
         // Add to the queue in a new thread.
         if (task.state == null || !task.state.equals(TaskState.STATE_COMPLETE) &&
-                        !task.state.equals(TaskState.STATE_FAILED)) {
+                !task.state.equals(TaskState.STATE_FAILED)) {
 
             // Insert the task entry and dd the client callback.
             updateTask(task);
@@ -164,6 +164,7 @@ public class TaskQueue {
 
                 if (persistedTask != null) {
                     updatedTask = true;
+                    persistedTask.name = task.name;
                     persistedTask.messages = task.messages;
                     persistedTask.state = task.state;
                     persistedTask.retryCount = task.retryCount;
@@ -181,7 +182,6 @@ public class TaskQueue {
             }
             taskTransaction.commit();
             taskTransaction.end();
-            mEbeanServer.refresh(task);
 
         } catch (Exception exception) {
             mLog.e(TAG, "Error saving new task state", exception);
@@ -206,7 +206,7 @@ public class TaskQueue {
         @Override
         public void messageResult(@NotNull Message message, @Nonnull MessageResult result) {
             super.messageResult(message, result);
-            mLog.d(TAG, String.format("200OK from dispatcher for message %d", message.messageId));
+            mLog.d(TAG, String.format("200-OK from dispatcher for message %d", message.messageId));
 
             PushMessageCallback clientTaskCallback = mTaskIdClientListeners.get(mTask.taskId);
 

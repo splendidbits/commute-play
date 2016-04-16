@@ -38,7 +38,7 @@ create table agency_alerts.alerts (
 );
 
 create table task_queue.messages (
-  message_id                    integer not null,
+  message_id                    serial not null,
   task_task_id                  integer,
   collapse_key                  varchar(255),
   sent_time                     timestamp,
@@ -51,7 +51,6 @@ create table task_queue.messages (
   endpoint_url                  varchar(255),
   constraint pk_messages primary key (message_id)
 );
-create sequence message_id_seq_gen;
 
 create table task_queue.payload_element (
   element_id                    serial not null,
@@ -229,7 +228,6 @@ drop table if exists agency_alerts.agencies cascade;
 drop table if exists agency_alerts.alerts cascade;
 
 drop table if exists task_queue.messages cascade;
-drop sequence if exists message_id_seq_gen;
 
 drop table if exists task_queue.payload_element cascade;
 

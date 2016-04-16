@@ -7,7 +7,6 @@ import models.accounts.Account;
 import models.accounts.Platform;
 import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.data.validation.ValidationError;
@@ -27,9 +26,6 @@ import java.util.Map;
  */
 public class SignupController extends Controller {
     private static final String TAG = SignupController.class.getSimpleName();
-
-    private static final String DEVICE_UUID_KEY = "devuuid";
-    private static final String REGISTRATION_TOKEN_KEY = "devregid";
 
     // Return results
     private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
@@ -91,7 +87,8 @@ public class SignupController extends Controller {
             pendingAccount.orgName = organisationName;
             pendingAccount.email = email;
             pendingAccount.passwordHash = DigestUtils.sha1Hex(password1);
-            pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
+//            pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
+            pendingAccount.apiKey = "UfhV6Lt";
             pendingAccount.dailyEstLimit = Long.valueOf(estDailyRegistrations);
             pendingAccount.dailySendLimit = 1000000L;
             pendingAccount.active = false;
