@@ -12,12 +12,12 @@ GET     /                      controllers.Application.index()
 #GET     /septa                 agency.SeptaAlertsController.downloadAlerts()
 
 # Public API endpoints
-POST    /register              controllers.RegistrationController.register()
-POST    /subscribe             controllers.SubscriptionController.subscribe()
+POST    /gcm/v1/register              controllers.RegistrationController.register()
+POST    /gcm/v1/subscribe             controllers.SubscriptionController.subscribe()
 
 # Signup
-GET     /signup                controllers.SignupController.signup()
-POST    /signup/adduser        controllers.SignupController.addUser()
+GET     /gcm/v1/signup                controllers.SignupController.signup()
+POST    /gcm/v1/signup/adduser        controllers.SignupController.addUser()
 
 #GET     /test                  controllers.Application.personsIndex()
 #POST    /person                controllers.Application.addPerson()

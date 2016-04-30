@@ -3,7 +3,6 @@ package models.accounts;
 import com.avaje.ebean.Model;
 import main.Constants;
 import models.registrations.Registration;
-import models.taskqueue.Message;
 
 import javax.persistence.*;
 import java.util.Calendar;

@@ -18,7 +18,7 @@ public class Task extends Model {
     @Id
     @Column(name = "task_id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
-    //@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Integer taskId;
 
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
@@ -48,7 +48,7 @@ public class Task extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
 
-    private Task() {
+    public Task() {
     }
 
     public Task(String name) {

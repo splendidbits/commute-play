@@ -26,6 +26,6 @@ public class Platform extends Model {
     @Column(name = "endpoint_url")
     public String endpointUrl;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "platform", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "platform", fetch = FetchType.LAZY)
     public List<PlatformAccount> platformAccounts;
 }

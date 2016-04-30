@@ -21,13 +21,13 @@ public class Message extends Model implements PlatformMessage {
 //    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Integer messageId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     public Task task;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
     public List<Recipient> recipients;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
     public List<PayloadElement> payloadData;
 
     @Column(name = "collapse_key")

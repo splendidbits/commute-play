@@ -1,8 +1,6 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 
 import javax.persistence.*;
@@ -24,7 +22,7 @@ public class PayloadElement extends Model {
     @Column(name = "element_value")
     public String value;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     public Message message;
 
     public PayloadElement() {

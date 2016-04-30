@@ -21,7 +21,7 @@ public class Recipient extends Model {
     @Column(name = "token")
     public String token;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
+    @ManyToOne(fetch = FetchType.LAZY)
     public Message message;
 
     @Column(name = "state")
@@ -33,7 +33,7 @@ public class Recipient extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeAdded;
 
-    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public RecipientFailure failure;
 
     @PrePersist

@@ -2,7 +2,7 @@ package dispatcher.processors;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
-import com.avaje.ebean.Transaction;
+import com.avaje.ebean.annotation.Transactional;
 import dispatcher.interfaces.PushMessageCallback;
 import dispatcher.models.MessageResult;
 import dispatcher.models.UpdatedRecipient;
@@ -124,7 +124,7 @@ public class TaskQueue {
                 !task.state.equals(TaskState.STATE_FAILED)) {
 
             // Insert the task entry and dd the client callback.
-            updateTask(task);
+            saveTask(task);
             if (pushMessageCallback != null) {
                 mTaskIdClientListeners.put(task.taskId, pushMessageCallback);
             }
@@ -147,14 +147,13 @@ public class TaskQueue {
      *
      * @param task the task to persist.
      */
-    private void updateTask(@Nonnull Task task) {
-        Transaction taskTransaction = mEbeanServer.createTransaction();
-        taskTransaction.setBatchGetGeneratedKeys(true);
-        try {
-            boolean updatedTask = false;
+    @Transactional
+    private void saveTask(@Nonnull Task task) {
+        boolean foundValidTask = false;
 
+        try {
             if (task.taskId != null) {
-                Task persistedTask = mEbeanServer
+                Task foundTask = mEbeanServer
                         .find(Task.class)
                         .fetch("messages")
                         .fetch("messages.recipients")
@@ -162,26 +161,25 @@ public class TaskQueue {
                         .idEq(task.taskId)
                         .findUnique();
 
-                if (persistedTask != null) {
-                    updatedTask = true;
-                    persistedTask.name = task.name;
-                    persistedTask.messages = task.messages;
-                    persistedTask.state = task.state;
-                    persistedTask.retryCount = task.retryCount;
-                    persistedTask.lastAttempt = task.lastAttempt;
-                    persistedTask.nextAttempt = task.nextAttempt;
-                    persistedTask.taskAdded = task.taskAdded;
+                if (foundTask != null) {
+                    foundValidTask = true;
 
-                    mEbeanServer.update(persistedTask, taskTransaction, false);
+                    foundTask.name = task.name;
+                    foundTask.messages = task.messages;
+                    foundTask.state = task.state;
+                    foundTask.retryCount = task.retryCount;
+                    foundTask.lastAttempt = task.lastAttempt;
+                    foundTask.nextAttempt = task.nextAttempt;
+                    foundTask.taskAdded = task.taskAdded;
+
+                    mEbeanServer.update(foundTask);
                 }
             }
 
             // If the task was not found, insert a new task.
-            if (!updatedTask) {
-                mEbeanServer.save(task, taskTransaction);
+            if (!foundValidTask) {
+                mEbeanServer.save(task);
             }
-            taskTransaction.commit();
-            taskTransaction.end();
 
         } catch (Exception exception) {
             mLog.e(TAG, "Error saving new task state", exception);
@@ -273,7 +271,7 @@ public class TaskQueue {
 
             // Update the task.
             Task updatedTask = updateTaskMessage(mTask, message);
-            updateTask(updatedTask);
+            saveTask(updatedTask);
         }
 
         @Override
@@ -294,7 +292,7 @@ public class TaskQueue {
 
             // Update the task.
             Task updatedTask = updateTaskMessage(mTask, message);
-            updateTask(updatedTask);
+            saveTask(updatedTask);
         }
 
         /**
@@ -364,7 +362,7 @@ public class TaskQueue {
                         }
 
                         // Persist the new task.
-                        updateTask(task);
+                        saveTask(task);
 
                         // Dispatch each message within the task..
                         for (Message message : task.messages) {
@@ -375,7 +373,7 @@ public class TaskQueue {
                     Thread.sleep(TASK_POLL_INTERVAL_MS);
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                mLog.d(TAG, "TaskQueue rotation consumer thread was interrupted and shut down.");
             }
         }
     }

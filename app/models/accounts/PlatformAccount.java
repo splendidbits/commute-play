@@ -2,13 +2,8 @@ package models.accounts;
 
 import com.avaje.ebean.Model;
 import main.Constants;
-import models.alerts.Agency;
-import models.registrations.Registration;
-import models.taskqueue.Message;
-import models.taskqueue.Recipient;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "platform_account", schema = "service_accounts")
@@ -25,7 +20,7 @@ public class PlatformAccount extends Model {
     @Column(name = "id")
     public Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     public Account account;
 
     @Column(name = "package_uri")
@@ -34,6 +29,6 @@ public class PlatformAccount extends Model {
     @Column(name = "auth_token")
     public String authToken;
 
-    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     public Platform platform;
 }
