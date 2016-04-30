@@ -18,10 +18,10 @@ public class RecipientFailure extends Model {
     public static Finder<Integer, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
 
     @Id
-    @Column(name = "id")
+    @Column(name = "recipient_failure_id")
     @SequenceGenerator(name = "failure_id_seq_gen", sequenceName = "failure_id_seq", allocationSize = 1)
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
-    public Integer id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
+    public Long id;
 
     @OneToMany(mappedBy = "failure", fetch = FetchType.LAZY)
     public List<Recipient> recipients;
@@ -33,7 +33,7 @@ public class RecipientFailure extends Model {
     public Recipient recipient;
 
     @Basic
-    @Column(name = "fail_time")
+    @Column(name = "fail_time", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar failTime;
 

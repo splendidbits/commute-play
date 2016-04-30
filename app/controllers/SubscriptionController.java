@@ -85,7 +85,7 @@ public class SubscriptionController extends Controller {
 
             // Check the agency name. If it's null, it's an older SEPTA Instant client, so add 'septa'.
             String[] agencyValue = formEncodedMap.get(AGENCY_NAME_KEY);
-            String agencyName = agencyValue != null ? agencyValue[0].trim().toLowerCase() : "septa";
+            int agencyId = agencyValue != null ? Integer.valueOf(agencyValue[0]) : -1;
 
             // Check that the device is already registered.
             Registration existingRegistration = mAccountService.getRegistration(deviceId);
@@ -107,7 +107,7 @@ public class SubscriptionController extends Controller {
             }
 
             // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-            List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyName, routes);
+            List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyId, routes);
             if (validRoutes != null) {
                 models.registrations.Subscription subscription = new Subscription();
                 subscription.registration = existingRegistration;

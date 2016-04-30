@@ -13,6 +13,7 @@
         <entry key="commutegcm">
           <value>
             <ProjectSettingsEntry>
+              <option name="sourceDir" value="$PROJECT_DIR$/app" />
               <option name="confDir" value="$PROJECT_DIR$/app" />
               <option name="templateImports">
                 <list>
@@ -38,13 +39,14 @@
                   <option value="play.libs.F" />
                 </list>
               </option>
-              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20SplendidBits/commute-gcm-server" />
+              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20Splendid%20Bits/commute-gcm-server" />
             </ProjectSettingsEntry>
           </value>
         </entry>
         <entry key="splendidlog">
           <value>
             <ProjectSettingsEntry>
+              <option name="sourceDir" value="$PROJECT_DIR$/modules/splendidlog/app" />
               <option name="confDir" value="$PROJECT_DIR$/modules/splendidlog/app" />
               <option name="templateImports">
                 <list>
@@ -70,7 +72,7 @@
                   <option value="play.libs.F" />
                 </list>
               </option>
-              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20SplendidBits/commute-gcm-server/modules/splendidlog" />
+              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20Splendid%20Bits/commute-gcm-server/modules/splendidlog" />
             </ProjectSettingsEntry>
           </value>
         </entry>

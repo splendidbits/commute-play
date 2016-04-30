@@ -44,7 +44,6 @@ playEbeanDebugLevel := 4
 playEbeanModels in Compile := Seq(
   "models.alerts.*",
   "models.accounts.*",
-  "models.persons.*",
   "models.taskqueue.*",
   "models.registrations.*"
 )

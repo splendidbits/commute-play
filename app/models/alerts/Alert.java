@@ -16,10 +16,10 @@ public class Alert extends Model implements Comparable {
     public static Finder<Integer, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
     @Id
-    @Column(name = "alert_id", updatable = true)
+    @Column(name = "alert_id")
     @SequenceGenerator(name = "alerts_id_seq_gen", sequenceName = "alerts_id_seq", allocationSize = 1)
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
-    public Integer alertId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
+    public Integer id;
 
     @ManyToOne(fetch = FetchType.EAGER)
     public Route route;
@@ -37,12 +37,12 @@ public class Alert extends Model implements Comparable {
     public String detourStartLocation;
 
     @Basic
-    @Column(name = "detour_start_date")
+    @Column(name = "detour_start_date", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar detourStartDate;
 
     @Basic
-    @Column(name = "detour_end_date")
+    @Column(name = "detour_end_date", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar detourEndDate;
 
@@ -53,7 +53,7 @@ public class Alert extends Model implements Comparable {
     public boolean isSnow;
 
     @Basic
-    @Column(name = "last_updated")
+    @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
 
@@ -63,7 +63,7 @@ public class Alert extends Model implements Comparable {
             Alert other = (Alert) obj;
 
             // Match potential routeIds first.
-            boolean bothRouteIdMatch = (other.route != null && route != null) && other.route.routeId.equals(route.routeId);
+            boolean bothRouteIdMatch = (other.route != null && route != null) && other.route.id.equals(route.id);
 
             // Match on everything else.
             boolean sameCurrentMessage = currentMessage.equals(other.currentMessage);
@@ -73,8 +73,13 @@ public class Alert extends Model implements Comparable {
             boolean sameDetourStartLocation = detourStartLocation != null && detourStartLocation.equals(other.detourStartLocation);
             boolean sameSnow = isSnow == other.isSnow;
 
-            boolean sameDetourStartDate = CompareUtils.equalsNullSafe(detourStartDate, other.detourStartDate);
-            boolean sameDetourEndDate =  CompareUtils.equalsNullSafe(detourEndDate, other.detourEndDate);
+            boolean sameDetourStartDate = detourStartDate == null && other.detourStartDate == null ||
+                    (detourStartDate != null && other.detourStartDate != null &&
+                    detourStartDate.getTimeInMillis() == other.detourStartDate.getTimeInMillis());
+
+            boolean sameDetourEndDate = detourEndDate == null && other.detourEndDate == null ||
+                    (detourEndDate != null && other.detourEndDate != null &&
+                    detourEndDate.getTimeInMillis() == other.detourEndDate.getTimeInMillis());
 
             // Match everything.
             return (bothRouteIdMatch && sameCurrentMessage && sameDetourMessage &&

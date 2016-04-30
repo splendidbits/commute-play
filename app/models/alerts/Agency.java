@@ -16,7 +16,7 @@ public class Agency extends Model {
 
     @Id
     @Column(name = "agency_id")
-    public Integer agencyId;
+    public Integer id;
 
     @Column(name = "agency_name")
     public String agencyName;

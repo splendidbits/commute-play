@@ -117,11 +117,14 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         // Create agency.
         Agency agency = new Agency();
         agency.agencyName = AGENCY_NAME;
-        agency.agencyId = 1;
+        agency.id = 1;
         agency.routes = new ArrayList<>();
 
         // Iterate through the collection of routes and add the alerts and route to the agency routes.
-        for (Route route : routeMap.values()) agency.routes.add(route);
+        for (Route route : routeMap.values()){
+            agency.routes.add(route);
+        }
+        Collections.sort(agency.routes);
 
         return agency;
     }

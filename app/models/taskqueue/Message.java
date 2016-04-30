@@ -1,6 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import dispatcher.interfaces.PlatformMessage;
 import main.Constants;
 
@@ -18,8 +20,8 @@ public class Message extends Model implements PlatformMessage {
     @Id
     @Column(name = "message_id")
     @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
-    public Integer messageId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
+    public Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     public Task task;
@@ -33,8 +35,8 @@ public class Message extends Model implements PlatformMessage {
     @Column(name = "collapse_key")
     public String collapseKey;
 
-    @Basic(fetch=FetchType.LAZY)
-    @Column(name = "sent_time")
+    @Basic
+    @Column(name = "sent_time", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar sentTime;
 

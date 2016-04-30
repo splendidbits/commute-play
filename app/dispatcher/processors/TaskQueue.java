@@ -37,7 +37,7 @@ public class TaskQueue {
     private static final long TASK_POLL_INTERVAL_MS = 1000;
 
     private TransferQueue<Task> mPendingTaskQueue = new LinkedTransferQueue<>();
-    private ConcurrentHashMap<Integer, PushMessageCallback> mTaskIdClientListeners = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, PushMessageCallback> mTaskIdClientListeners = new ConcurrentHashMap<>();
     private QueueConsumer mQueueConsumer = new QueueConsumer();
     private Thread mTaskConsumerThread;
 
@@ -114,7 +114,7 @@ public class TaskQueue {
     public boolean addTask(@Nonnull Task task, PushMessageCallback pushMessageCallback) {
         mLog.d(TAG, "Saving new task to TaskQueue and datastore.");
         for (Task currentTask : mPendingTaskQueue) {
-            if (Objects.equals(currentTask.taskId, task.taskId)) {
+            if (Objects.equals(currentTask.id, task.id)) {
                 return false;
             }
         }
@@ -126,7 +126,7 @@ public class TaskQueue {
             // Insert the task entry and dd the client callback.
             saveTask(task);
             if (pushMessageCallback != null) {
-                mTaskIdClientListeners.put(task.taskId, pushMessageCallback);
+                mTaskIdClientListeners.put(task.id, pushMessageCallback);
             }
 
             // Offer the task to the polling thread.
@@ -152,13 +152,13 @@ public class TaskQueue {
         boolean foundValidTask = false;
 
         try {
-            if (task.taskId != null) {
+            if (task.id != null) {
                 Task foundTask = mEbeanServer
                         .find(Task.class)
                         .fetch("messages")
                         .fetch("messages.recipients")
                         .where()
-                        .idEq(task.taskId)
+                        .idEq(task.id)
                         .findUnique();
 
                 if (foundTask != null) {
@@ -204,9 +204,9 @@ public class TaskQueue {
         @Override
         public void messageResult(@NotNull Message message, @Nonnull MessageResult result) {
             super.messageResult(message, result);
-            mLog.d(TAG, String.format("200-OK from dispatcher for message %d", message.messageId));
+            mLog.d(TAG, String.format("200-OK from dispatcher for message %d", message.id));
 
-            PushMessageCallback clientTaskCallback = mTaskIdClientListeners.get(mTask.taskId);
+            PushMessageCallback clientTaskCallback = mTaskIdClientListeners.get(mTask.id);
 
             // Update the time.
             mTask.lastAttempt = Calendar.getInstance();
@@ -244,6 +244,9 @@ public class TaskQueue {
             } else {
                 // If there were no retry recipients, mark the task as complete.
                 mTask.state = TaskState.STATE_COMPLETE;
+                for (Recipient messageRecipient : message.recipients) {
+                    messageRecipient.state = RecipientState.STATE_COMPLETE;
+                }
             }
 
             // Send back any recipients to be updated.
@@ -278,9 +281,9 @@ public class TaskQueue {
         public void messageFailure(@Nonnull Message message, PushFailCause failCause) {
             super.messageFailure(message, failCause);
             mLog.e(TAG, String.format("Failed. %s response from dispatcher for message %d",
-                    failCause.name(), message.messageId));
+                    failCause.name(), message.id));
 
-            PushMessageCallback clientTaskCallback = mTaskIdClientListeners.get(mTask.taskId);
+            PushMessageCallback clientTaskCallback = mTaskIdClientListeners.get(mTask.id);
 
             // Set the task as failed.
             mTask.state = TaskState.STATE_FAILED;
@@ -302,7 +305,7 @@ public class TaskQueue {
         private void removeClientListener(PushMessageCallback pushMessageCallback) {
             if (pushMessageCallback != null) {
                 if (mTask.state == TaskState.STATE_COMPLETE || mTask.state == TaskState.STATE_FAILED) {
-                    mTaskIdClientListeners.remove(mTask.taskId);
+                    mTaskIdClientListeners.remove(mTask.id);
                 }
             }
         }
@@ -321,7 +324,7 @@ public class TaskQueue {
             while (messageIterator.hasNext()) {
                 Message taskMessage = messageIterator.next();
 
-                if (taskMessage.messageId.equals(message.messageId)) {
+                if (taskMessage.id.equals(message.id)) {
                     messageIterator.remove();
                     taskMessages.add(message);
                     break;
@@ -345,7 +348,7 @@ public class TaskQueue {
                     mLog.d(TAG, "Consumer is waiting to take element...");
                     Task task = mPendingTaskQueue.take();
 
-                    mLog.d(TAG, "Consumer received Element: " + task.taskId);
+                    mLog.d(TAG, "Consumer received Element: " + task.id);
                     if (isTaskIncomplete(task)) {
 
                         // Set the timestamp for now.
@@ -353,9 +356,7 @@ public class TaskQueue {
 
                         // Set the task and recipients as processing
                         task.state = TaskState.STATE_PROCESSING;
-
                         for (Message message : task.messages) {
-                            // Set the message recipients as processing.
                             for (Recipient recipient : message.recipients) {
                                 recipient.state = RecipientState.STATE_PROCESSING;
                             }

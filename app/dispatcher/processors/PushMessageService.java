@@ -62,12 +62,12 @@ public class PushMessageService {
 
                     // Iterate through each sending API account.
                     mLog.d(TAG, String.format("Found %d accounts for alert %s",
-                            updatedAlerts.size(), alert.route.routeId));
+                            updatedAlerts.size(), alert.route.id));
 
                     if (accounts != null && !accounts.isEmpty()) {
 
                         // Create a new task and build 1 message per API account.
-                        Task messageTask = new Task(alert.route.routeName);
+                        Task messageTask = new Task(alert.route.id);
                         for (Account account : accounts) {
 
                             Message message = buildAlertMessage(alert,

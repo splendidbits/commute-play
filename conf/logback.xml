@@ -12,15 +12,15 @@
     The logger name is typically the Java/Scala package name.
     This configures the log level to log at for a package and its children packages.
   -->
-  <logger name="play" level="DEBUG" />
+  <logger name="play" level="ERROR" />
   <logger name="application" level="DEBUG" />
 
-  <root level="DEBUG">
+  <root level="ERROR">
     <appender-ref ref="STDOUT" />
   </root>
 
-  <logger name="org.avaje.ebean.SQL" level="DEBUG"/>
-  <logger name="org.avaje.ebean.TXN" level="DEBUG"/>
-  <logger name="org.avaje.ebean.SUM" level="DEBUG"/>
+  <logger name="org.avaje.ebean.SQL" level="ERROR"/>
+  <logger name="org.avaje.ebean.TXN" level="ERROR"/>
+  <logger name="org.avaje.ebean.SUM" level="ERROR"/>
 
 </configuration>

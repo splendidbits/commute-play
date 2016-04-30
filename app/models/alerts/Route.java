@@ -17,7 +17,7 @@ public class Route extends Model implements Comparable<Route> {
 
     @Id
     @Column(name = "route_id")
-    public String routeId;
+    public String id;
 
     @Column(name = "route_name")
     public String routeName;
@@ -28,7 +28,7 @@ public class Route extends Model implements Comparable<Route> {
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     public List<Subscription> subscriptions;
 
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     public List<Alert> alerts;
 
     @Override
@@ -36,21 +36,27 @@ public class Route extends Model implements Comparable<Route> {
         if (obj instanceof Route) {
             Route otherRoute = (Route) obj;
 
-            boolean routeDetailsMatch =
-                    routeId.equals(otherRoute.routeId) &&
+            boolean routeDetailsMatch = id.equals(otherRoute.id) &&
                     routeName.equals(otherRoute.routeName);
 
             if (routeDetailsMatch) {
 
+                // Both sets of route alerts are null.
                 if (alerts == null && otherRoute.alerts == null) {
                     return true;
                 }
 
+                // Both sets of route alerts are non-null.
                 if (alerts != null && otherRoute.alerts != null) {
-                    // If both alert sets are identical.
-                    return alerts.equals(otherRoute.alerts);
+                    for (Alert alert : alerts) {
+                        if (!otherRoute.alerts.contains(alert)) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
             }
+
             return false;
         }
         return obj.equals(this);
@@ -58,18 +64,18 @@ public class Route extends Model implements Comparable<Route> {
 
     @Override
     public int compareTo(Route o) {
-        return routeId.compareTo(o.routeId);
+        return routeName.compareTo(o.routeName);
     }
 
     public Route() {
     }
 
     public Route(String routeId) {
-        this.routeId = routeId;
+        this.id = routeId;
     }
 
     public Route(String routeId, String routeName) {
-        this.routeId = routeId;
+        this.id = routeId;
         this.routeName = routeName;
     }
 }

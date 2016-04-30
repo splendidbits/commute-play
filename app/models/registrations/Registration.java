@@ -11,7 +11,6 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "registrations", schema = "device_subscriptions")
 public class Registration extends Model {
     public static Finder<String, Registration> find = new Model.Finder<>(
@@ -19,7 +18,7 @@ public class Registration extends Model {
 
     @Id
     @Column(name = "device_id")
-	public String deviceId;
+	public String id;
 
     @Column(name = "registration_token")
     public String registrationToken;
@@ -31,7 +30,7 @@ public class Registration extends Model {
     public List<Subscription> subscriptions;
 
     @Basic
-    @Column(name = "time_registered")
+    @Column(name = "time_registered", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
@@ -40,7 +39,7 @@ public class Registration extends Model {
     }
 
     public Registration(String deviceId, String registrationToken) {
-        this.deviceId = deviceId;
+        this.id = deviceId;
         this.registrationToken = registrationToken;
     }
 

@@ -10,7 +10,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.data.validation.ValidationError;
-import play.db.ebean.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import views.html.signup;
@@ -50,7 +49,6 @@ public class SignupController extends Controller {
      *
      * @return a Result.
      */
-    @Transactional
     public Result addUser() {
         DynamicForm signupForm = mFormFactory.form().bindFromRequest();
 

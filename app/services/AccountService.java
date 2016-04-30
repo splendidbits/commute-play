@@ -111,12 +111,12 @@ public class AccountService {
                 .where()
                 .conjunction()
                 .eq("platformAccounts.platform.platformName", platformName)
-                .eq("registrations.subscriptions.routes.routeId", route.routeId)
-                .eq("registrations.subscriptions.routes.agency.agencyId", agencyId)
+                .eq("registrations.subscriptions.routes.id", route.id)
+                .eq("registrations.subscriptions.routes.agency.id", agencyId)
                 .endJunction()
                 .filterMany("platformAccounts").eq("platform.platformName", platformName)
-                .filterMany("registrations").eq("subscriptions.routes.agency.agencyId", agencyId)
-                .filterMany("registrations").eq("subscriptions.routes.routeId", route.routeId)
+                .filterMany("registrations").eq("subscriptions.routes.agency.id", agencyId)
+                .filterMany("registrations").eq("subscriptions.routes.id", route.id)
                 .findList();
     }
 
@@ -132,7 +132,7 @@ public class AccountService {
             Subscription existingSubscription = mEbeanServer.find(Subscription.class)
                     .fetch("registration")
                     .where()
-                    .eq("registration.deviceId", subscription.registration.deviceId)
+                    .eq("registration.id", subscription.registration.id)
                     .findUnique();
 
             if (existingSubscription != null) {
@@ -191,14 +191,14 @@ public class AccountService {
      * @return success boolean.
      */
     public boolean addRegistration(@Nonnull Registration newRegistration) {
-        if (newRegistration.registrationToken != null || newRegistration.deviceId != null) {
+        if (newRegistration.registrationToken != null || newRegistration.id != null) {
 
             // Build a query depending on if we have a token, and or device identifier.
             Registration existingDevice = mEbeanServer.createQuery(Registration.class)
                     .where()
                     .disjunction()
                     .eq("registration_token", newRegistration.registrationToken)
-                    .eq("device_id", newRegistration.deviceId)
+                    .eq("id", newRegistration.id)
                     .endJunction()
                     .findUnique();
 
@@ -207,7 +207,7 @@ public class AccountService {
             try {
                 // Update an existing registration if it exists.
                 if (existingDevice != null) {
-                    existingDevice.deviceId = newRegistration.deviceId;
+                    existingDevice.id = newRegistration.id;
                     existingDevice.registrationToken = newRegistration.registrationToken;
                     existingDevice.timeRegistered = Calendar.getInstance(Constants.DEFAULT_TIMEZONE);
                     mEbeanServer.update(existingDevice);
@@ -219,7 +219,7 @@ public class AccountService {
 
             } catch (Exception e) {
                 mLog.e(TAG, String.format("Error saving device registration for %s. Rolling back.",
-                        newRegistration.deviceId), e);
+                        newRegistration.id), e);
                 mEbeanServer.rollbackTransaction();
                 return false;
             }

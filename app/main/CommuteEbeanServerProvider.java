@@ -5,9 +5,6 @@ import com.avaje.ebean.EbeanServerFactory;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Provider;
-
-import java.util.ArrayList;
-
 import models.accounts.Account;
 import models.accounts.Platform;
 import models.accounts.PlatformAccount;
@@ -16,11 +13,9 @@ import models.alerts.Alert;
 import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
-import models.taskqueue.Message;
-import models.taskqueue.PayloadElement;
-import models.taskqueue.Recipient;
-import models.taskqueue.RecipientFailure;
-import models.taskqueue.Task;
+import models.taskqueue.*;
+
+import java.util.ArrayList;
 
 /**
  * GNU General Public License v3.0.
@@ -62,13 +57,12 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Task.class);
 
         ServerConfig serverConfig = new ServerConfig();
-        serverConfig.setDataSourceConfig(dataSourceConfig);
+        serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
         serverConfig.setName(name);
+        serverConfig.setDefaultServer(true);
         serverConfig.setRegister(true);
+        serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setClasses(models);
-        serverConfig.setDdlGenerate(false); // ddlGenerate drops all tables and create new tables
-        serverConfig.setDdlRun(false); // ddlRun run migration scripts
-        serverConfig.setDefaultServer(false);
 
         return EbeanServerFactory.create(serverConfig);
     }

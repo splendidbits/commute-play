@@ -1,6 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import dispatcher.types.TaskState;
 import main.Constants;
 
@@ -18,8 +20,8 @@ public class Task extends Model {
     @Id
     @Column(name = "task_id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
-    public Integer taskId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
+    public Long id;
 
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
@@ -34,7 +36,7 @@ public class Task extends Model {
     public TaskState state;
 
     @Basic(fetch=FetchType.LAZY)
-    @Column(name = "task_added")
+    @Column(name = "task_added", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar taskAdded;
 

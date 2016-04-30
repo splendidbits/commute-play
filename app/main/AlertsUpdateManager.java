@@ -73,19 +73,29 @@ public class AlertsUpdateManager {
      */
     @Nonnull
     private ModifiedAlerts getUpdatedRoutes(@Nonnull Agency updatedAgency) {
-        ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.agencyId);
+        ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.id);
 
         // Get all the current routes that exist for the agency.
-        List<Route> currentRouteAlerts = mAgencyService.getRouteAlerts(updatedAgency.agencyId);
+        List<Route> existingRouteAlerts = mAgencyService.getRouteAlerts(updatedAgency.id);
 
         // Get all the fresh routes that have been parsed.
         List<Route> freshRouteAlerts = updatedAgency.routes;
 
-        // If there are no current alerts, they are all new.
-        if (currentRouteAlerts == null || currentRouteAlerts.isEmpty()) {
+        // If there are no existing alerts saved, mark all fetched alerts as new.
+        if (existingRouteAlerts == null || existingRouteAlerts.isEmpty()) {
             for (Route freshRoute : freshRouteAlerts) {
                 for (Alert freshAlert : freshRoute.alerts) {
                     modifiedAlerts.addUpdatedRouteAlert(freshAlert);
+                }
+            }
+            return modifiedAlerts;
+        }
+
+        // If there are no fetched alerts at all, mark all existing alerts as stale.
+        if (freshRouteAlerts == null || freshRouteAlerts.isEmpty()) {
+            for (Route existingRoute : existingRouteAlerts) {
+                for (Alert existingAlert : existingRoute.alerts) {
+                    modifiedAlerts.addStaleRouteAlert(existingAlert);
                 }
             }
             return modifiedAlerts;
@@ -95,24 +105,24 @@ public class AlertsUpdateManager {
         for (Route freshRoute : freshRouteAlerts) {
 
             // Iterate through the existing routes.
-            for (Route currentRoute : currentRouteAlerts) {
-
-                // If both routes are the same, then check the alerts.
-                if (currentRoute.routeId.equals(freshRoute.routeId)) {
+            for (Route existingRoute : existingRouteAlerts) {
+                if (freshRoute.id.equals(existingRoute.id)) {
 
                     // Check if the fresh alert is new (updated properties).
                     for (Alert freshAlert : freshRoute.alerts) {
-                        if (!currentRoute.alerts.contains(freshAlert)) {
+                        if (!existingRoute.alerts.contains(freshAlert)) {
                             modifiedAlerts.addUpdatedRouteAlert(freshAlert);
                         }
                     }
 
                     // Check if a current alert is stale.
-                    for (Alert currentAlert : currentRoute.alerts) {
-                        if (!currentRoute.alerts.contains(currentAlert)) {
-                            modifiedAlerts.addStaleRouteAlert(currentAlert);
+                    for (Alert existingAlert : existingRoute.alerts) {
+                        if (!freshRoute.alerts.contains(existingAlert)) {
+                            modifiedAlerts.addStaleRouteAlert(existingAlert);
                         }
                     }
+
+                    break;
                 }
             }
         }

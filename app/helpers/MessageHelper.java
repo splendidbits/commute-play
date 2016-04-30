@@ -95,7 +95,7 @@ public class MessageHelper {
         if (gcmMessage != null) {
 
             gcmMessage.isDelayWhileIdle = true;
-            gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_ID.value, updatedAlert.route.routeId);
+            gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_ID.value, updatedAlert.route.id);
             gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_NAME.value, updatedAlert.route.routeName);
 
             for (Registration registration : registrations) {
@@ -125,19 +125,19 @@ public class MessageHelper {
                 // Detour alert if there is some detour information.
                 gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_DETOUR_MESSAGE.value);
                 gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.detourMessage);
-                gcmMessage.collapseKey = updatedAlert.route.routeId;
+                gcmMessage.collapseKey = updatedAlert.route.id;
 
             } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.currentMessage)) {
                 // Current Message has updated.
                 gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_CURRENT_MESSAGE.value);
                 gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.currentMessage);
-                gcmMessage.collapseKey = updatedAlert.route.routeId;
+                gcmMessage.collapseKey = updatedAlert.route.id;
 
             } else if (!messageDataEmpty && !CompareUtils.isEmptyNullSafe(updatedAlert.advisoryMessage)) {
                 // Advisory Message has updated.
                 gcmMessage.addData(MessageRoot.MESSAGE_TYPE.value, MessageType.ALERT_ADVISORY_MESSAGE.value);
                 gcmMessage.addData(MessageRoot.MESSAGE.value, updatedAlert.advisoryMessage);
-                gcmMessage.collapseKey = updatedAlert.route.routeId;
+                gcmMessage.collapseKey = updatedAlert.route.id;
             }
         }
         return gcmMessage;
@@ -176,7 +176,7 @@ public class MessageHelper {
     public static Message cloneMessage(Message message) {
         if (message != null) {
             Message clonedMessage = new Message();
-            clonedMessage.messageId = message.messageId;
+            clonedMessage.id = message.id;
             clonedMessage.authToken = message.authToken;
             clonedMessage.endpointUrl = message.endpointUrl;
             clonedMessage.recipients = new ArrayList<>();

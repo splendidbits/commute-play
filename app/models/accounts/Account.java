@@ -16,9 +16,9 @@ public class Account extends Model {
 
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
     @Column(name = "account_id")
-    public Integer accountId;
+    public Integer id;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
     public List<PlatformAccount> platformAccounts;
@@ -48,7 +48,7 @@ public class Account extends Model {
     public boolean active;
 
     @Basic
-    @Column(name = "time_enrolled")
+    @Column(name = "time_enrolled", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeEnrolled = Calendar.getInstance();
 
