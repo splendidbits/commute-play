@@ -2,6 +2,7 @@ package services;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
+import enums.PlatformType;
 import main.Constants;
 import main.Log;
 import models.accounts.Account;
@@ -100,9 +101,7 @@ public class AccountService {
      * @return list of subscribers.
      */
     @Nullable
-    public List<Account> getRegistrationAccounts(@Nonnull String platformName, int agencyId,
-                                                 @Nonnull Route route) {
-
+    public List<Account> getRegistrationAccounts(@Nonnull PlatformType platform, int agencyId, @Nonnull Route route) {
         return mEbeanServer.find(Account.class)
                 .fetch("registrations", new FetchConfig().query())
                 .fetch("platformAccounts", new FetchConfig().query())
@@ -110,13 +109,13 @@ public class AccountService {
                 .fetch("registrations.subscriptions", new FetchConfig().query())
                 .where()
                 .conjunction()
-                .eq("platformAccounts.platform.platformName", platformName)
-                .eq("registrations.subscriptions.routes.id", route.id)
+                .eq("platformAccounts.platform.platformName", platform)
+                .eq("registrations.subscriptions.routes.routeId", route.routeId)
                 .eq("registrations.subscriptions.routes.agency.id", agencyId)
                 .endJunction()
-                .filterMany("platformAccounts").eq("platform.platformName", platformName)
+                .filterMany("platformAccounts").eq("platform.platformName", platform)
                 .filterMany("registrations").eq("subscriptions.routes.agency.id", agencyId)
-                .filterMany("registrations").eq("subscriptions.routes.id", route.id)
+                .filterMany("registrations").eq("subscriptions.routes.routeId", route.routeId)
                 .findList();
     }
 

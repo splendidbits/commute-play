@@ -1,11 +1,11 @@
 package main;
 
+import dispatcher.processors.PushMessageService;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import models.app.ModifiedAlerts;
+import appmodels.ModifiedAlerts;
 import services.AgencyService;
-import dispatcher.processors.PushMessageService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -106,7 +106,7 @@ public class AlertsUpdateManager {
 
             // Iterate through the existing routes.
             for (Route existingRoute : existingRouteAlerts) {
-                if (freshRoute.id.equals(existingRoute.id)) {
+                if (freshRoute.routeId.equals(existingRoute.routeId)) {
 
                     // Check if the fresh alert is new (updated properties).
                     for (Alert freshAlert : freshRoute.alerts) {
@@ -115,13 +115,14 @@ public class AlertsUpdateManager {
                         }
                     }
 
-                    // Check if a current alert is stale.
+                    // Add the alert as stale if it no longer exists.
                     for (Alert existingAlert : existingRoute.alerts) {
                         if (!freshRoute.alerts.contains(existingAlert)) {
                             modifiedAlerts.addStaleRouteAlert(existingAlert);
                         }
                     }
 
+                    // Skip all the inner route iterations.
                     break;
                 }
             }

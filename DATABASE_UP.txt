@@ -1,7 +1,14 @@
 
 CREATE USER splendidbits;
+CREATE USER splendidlog;
+
 CREATE DATABASE commute_gcm;
 GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
+
+CREATE DATABASE splendidlog;
+GRANT ALL PRIVILEGES ON DATABASE splendidlog to splendidlog;
+
+-----
 
 CREATE SCHEMA agency_alerts;
 CREATE SCHEMA device_subscriptions;
@@ -38,11 +45,9 @@ GRANT ALL ON SCHEMA task_queue TO splendidbits;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
 
+
 -----
 
-CREATE USER splendidlog;
-CREATE DATABASE splendidlog;
-GRANT ALL PRIVILEGES ON DATABASE splendidlog to splendidlog;
 
 CREATE SCHEMA splendidlog;
 GRANT USAGE ON SCHEMA splendidlog TO splendidlog;
@@ -52,3 +57,4 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA splendidlog GRANT ALL ON TABLES TO postgres;
 GRANT ALL ON SCHEMA splendidlog TO splendidlog;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA splendidlog to splendidlog;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA splendidlog TO splendidlog;
+

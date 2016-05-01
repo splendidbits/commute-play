@@ -11,7 +11,7 @@ import javax.persistence.*;
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "payload_element", schema = "task_queue")
 public class PayloadElement extends Model {
-    public static Finder<Integer, PayloadElement> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, PayloadElement.class);
+    public static Finder<Long, PayloadElement> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, PayloadElement.class);
 
     @Id
     @Column(name = "element_id")

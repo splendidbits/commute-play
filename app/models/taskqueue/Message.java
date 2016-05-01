@@ -1,9 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import dispatcher.interfaces.PlatformMessage;
+import com.avaje.ebean.annotation.EnumValue;
+import enums.PlatformType;
 import main.Constants;
 
 import javax.annotation.Nonnull;
@@ -14,8 +13,19 @@ import java.util.List;
 
 @Entity
 @Table(name = "messages", schema = "task_queue")
-public class Message extends Model implements PlatformMessage {
-    public static Finder<Integer, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
+public class Message extends Model {
+    public static Finder<Long, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
+
+    public enum Priority {
+        @EnumValue("low")
+        PRIORITY_LOW,
+
+        @EnumValue("normal")
+        PRIORITY_NORMAL,
+
+        @EnumValue("high")
+        PRIORITY_HIGH,
+    }
 
     @Id
     @Column(name = "message_id")
@@ -41,7 +51,8 @@ public class Message extends Model implements PlatformMessage {
     public Calendar sentTime;
 
     @Column(name = "priority")
-    public String priority;
+    @Enumerated(EnumType.STRING)
+    public Priority priority;
 
     @Column(name = "time_to_live")
     public int ttl;
@@ -50,13 +61,17 @@ public class Message extends Model implements PlatformMessage {
     public String restrictedPackageName;
 
     @Column(name = "delay_while_idle")
-    public boolean isDelayWhileIdle;
+    public boolean shouldDelayWhileIdle;
 
     @Column(name = "dry_run")
     public boolean isDryRun;
 
     @Column(name = "auth_token")
     public String authToken;
+
+    @Column(name = "platform")
+    @Enumerated(EnumType.STRING)
+    public PlatformType platformType;
 
     @Column(name = "endpoint_url")
     public String endpointUrl;
@@ -80,19 +95,13 @@ public class Message extends Model implements PlatformMessage {
         recipients.add(recipient);
     }
 
-    @Transient
-    @Override
-    public PlatformType getPlatformType() {
-        return PlatformType.PLATFORM_TYPE_GCM;
-    }
-
     @PrePersist
     public void initialValues() {
         sentTime = Calendar.getInstance();
     }
 
     public Message() {
-        priority = "normal";
+        priority = Priority.PRIORITY_NORMAL;
         ttl = 86400;
     }
 }

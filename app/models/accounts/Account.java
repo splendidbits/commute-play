@@ -11,8 +11,7 @@ import java.util.List;
 @Entity
 @Table(name = "account", schema = "service_accounts")
 public class Account extends Model {
-    public static Finder<Integer, Account> find = new Finder<>(
-            Constants.COMMUTE_GCM_DB_SERVER, Account.class);
+    public static Finder<Integer, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
 
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)

@@ -1,14 +1,15 @@
 package dispatcher.processors;
 
+import appmodels.ModifiedAlerts;
 import dispatcher.interfaces.PushMessageCallback;
 import dispatcher.models.UpdatedRecipient;
 import dispatcher.types.PushFailCause;
+import enums.PlatformType;
 import helpers.MessageHelper;
 import main.Log;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Alert;
-import models.app.ModifiedAlerts;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
@@ -17,12 +18,12 @@ import services.AccountService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static helpers.MessageHelper.buildAlertMessage;
-import static models.accounts.Platform.PLATFORM_NAME_GCM;
+import static helpers.MessageHelper.buildPushMessage;
 
 /**
  * Application-wide service for sending information through the
@@ -43,54 +44,80 @@ public class PushMessageService {
     /**
      * Notify Push subscribers of the agency alerts that have changed.
      *
-     * @param alerts Collection of modified alerts including their routes.
+     * @param agencyUpdates Collection of modified route alerts.
      */
-    public CompletionStage<Boolean> notifyAlertSubscribers(@Nonnull ModifiedAlerts alerts) {
+    public CompletionStage<Boolean> notifyAlertSubscribers(@Nonnull ModifiedAlerts agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
         CompletableFuture.runAsync(new Runnable() {
+
             @Override
             public void run() {
-                List<Alert> updatedAlerts = alerts.getUpdatedAlerts();
+                List<Task> messageTasks = new ArrayList<>();
 
-                // Iterate through the Alerts to send.
-                mLog.d(TAG, String.format("Found %d alerts to be sent to subscribers", updatedAlerts.size()));
-                for (Alert alert : updatedAlerts) {
+                /** Iterate through the NEW Alerts to send. **/
+                for (Alert newAlert : agencyUpdates.getUpdatedAlerts()) {
 
                     // Get all accounts with registrations subscribed to that route.
                     List<Account> accounts = mAccountService.getRegistrationAccounts(
-                            PLATFORM_NAME_GCM, alerts.getAgencyId(), alert.route);
+                            PlatformType.SERVICE_GCM,
+                            agencyUpdates.getAgencyId(),
+                            newAlert.route);
 
                     // Iterate through each sending API account.
-                    mLog.d(TAG, String.format("Found %d accounts for alert %s",
-                            updatedAlerts.size(), alert.route.id));
-
                     if (accounts != null && !accounts.isEmpty()) {
+                        Task task = new Task(newAlert.route.routeId);
 
-                        // Create a new task and build 1 message per API account.
-                        Task messageTask = new Task(alert.route.id);
+                        // Build a new message for the platform task per API account.
                         for (Account account : accounts) {
-
-                            Message message = buildAlertMessage(alert,
-                                    account.registrations,
-                                    account.platformAccounts);
+                            Message message = buildPushMessage(newAlert, false,
+                                    account.registrations, account.platformAccounts);
 
                             if (message != null) {
-                                messageTask.addMessage(message);
+                                task.addMessage(message);
                             }
                         }
+                        // Add the task to the list of outbound jobs.
+                        messageTasks.add(task);
+                    }
+                }
 
-                        // Finally, if there are messages in the task, add it to the TaskQueue.
-                        if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
-                            mTaskQueue.addTask(messageTask, new SendAlertRecipientCallback());
-                            completableFuture.complete(true);
+                /** Iterate through the STALE (canceled) Alerts to send. **/
+                for (Alert staleAlert : agencyUpdates.getUpdatedAlerts()) {
 
-                        } else {
-                            completableFuture.complete(false);
+                    // Get all accounts with registrations subscribed to that route.
+                    List<Account> accounts = mAccountService.getRegistrationAccounts(
+                            PlatformType.SERVICE_GCM,
+                            agencyUpdates.getAgencyId(),
+                            staleAlert.route);
+
+                    // Iterate through each sending API account.
+                    if (accounts != null && !accounts.isEmpty()) {
+                        Task task = new Task(staleAlert.route.routeId);
+
+                        // Build a new message for the platform task per API account.
+                        for (Account account : accounts) {
+                            Message message = buildPushMessage(staleAlert,
+                                    true, account.registrations, account.platformAccounts);
+
+                            if (message != null) {
+                                task.addMessage(message);
+                            }
                         }
+                        // Add the task to the list of outbound jobs.
+                        messageTasks.add(task);
+                    }
+                }
+
+                // Finally, if there are messages in each task, add them to the queue.
+                for (Task outboundTask : messageTasks) {
+                    if (outboundTask.messages != null && !outboundTask.messages.isEmpty()) {
+                        mTaskQueue.addTask(outboundTask, new SendAlertRecipientCallback());
+                        completableFuture.complete(true);
                     }
                 }
             }
         });
+
         return completableFuture;
     }
 
@@ -122,7 +149,7 @@ public class PushMessageService {
     /**
      * Result Callbacks from the dispatcher.
      */
-    private class SendAlertRecipientCallback implements PushMessageCallback{
+    private class SendAlertRecipientCallback implements PushMessageCallback {
 
         @Override
         public void removeRecipients(List<Recipient> recipients) {

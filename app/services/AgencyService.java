@@ -52,66 +52,66 @@ public class AgencyService {
 
                 // Loop through each new route and persist.
                 for (Route newRoute : agency.routes) {
-                    Route existingRoute = mEbeanServer.find(Route.class)
-                            .fetch("agency")
-                            .where()
-                            .eq("id", newRoute.id)
-                            .eq("agency.id", agency.id)
-                            .findUnique();
+
+                    // Find the an existing agency route that matches the agency specific routeId.
+                    Route existingRoute = null;
+                    for (Route route : agency.routes) {
+                        if (route.routeId.equals(newRoute.routeId)) {
+                            existingRoute = route;
+                            break;
+                        }
+                    }
 
                     if (existingRoute != null) {
-                        mLog.d(TAG, String.format("Found $1%d existing routes for $2%s",
-                                existingAgency.routes.size(), existingAgency.agencyName));
+                        mLog.d(TAG, String.format("Found $1%d existing routes for $2%s.",
+                                existingAgency.routes.size(),
+                                existingAgency.name));
 
-                        if (existingRoute.id.equals(newRoute.id)) {
+                        // If something about the new route does not equal the existing route..
+                        if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
 
-                            // If something about the new route does not equal the existing route..
-                            if (!existingRoute.equals(newRoute)) {
+                            // Delete all old alerts.
+                            mLog.d(TAG, String.format("Deleting $1%d previous alerts for $2%s.",
+                                    existingRoute.alerts.size(),
+                                    existingRoute.routeName));
 
-                                // Delete all old alerts.
-                                mLog.d(TAG, String.format("Deleting $1%d previous alerts for $2%s .",
-                                        existingRoute.alerts.size(), existingRoute.routeName));
-
-                                for (Alert oldAlert : existingRoute.alerts) {
-                                    mEbeanServer.delete(oldAlert, transaction);
-                                }
-
-                                // Update the route properties
-                                existingRoute.routeName = newRoute.routeName;
-                                existingRoute.agency = agency;
-                                existingRoute.alerts = newRoute.alerts;
-
-                                // Delete the alerts for that route
-                                mLog.d(TAG, String.format("Saving $1%d alerts for $2%s .",
-                                        newRoute.alerts.size(), existingRoute.routeName));
-                                mEbeanServer.save(existingRoute, transaction);
+                            for (Alert oldAlert : existingRoute.alerts) {
+                                mEbeanServer.delete(oldAlert, transaction);
                             }
+
+                            // Update the route properties
+                            existingRoute.routeName = newRoute.routeName;
+                            existingRoute.agency = agency;
+                            existingRoute.alerts = newRoute.alerts;
+
+                            // Delete the alerts for that route
+                            mLog.d(TAG, String.format("Saving $1%d alerts for $2%s.",
+                                    newRoute.alerts.size(),
+                                    existingRoute.routeName));
+
+                            mEbeanServer.save(existingRoute, transaction);
                         }
 
                     } else {
-                        mLog.i(TAG, String.format("Route $1%s for $2%s doesn't exist. Saving new route.",
-                                newRoute.routeName,
-                                newRoute.agency.agencyName));
+                        mLog.i(TAG, String.format("Route $1%s for $2%s does not exist.",
+                                newRoute.routeId,
+                                newRoute.agency.name));
 
                         newRoute.agency = agency;
                         mEbeanServer.save(newRoute, transaction);
                     }
                 }
 
-            } else if (existingAgency != null) {
-                mLog.i(TAG, String.format("Agency $1%s exists with no routes. Saving all routes.", agency.agencyName));
-                mEbeanServer.update(agency, transaction);
-
             } else {
-                mLog.i(TAG, String.format("Agency $1%s doesn't exist. Inserting all alerts.", agency.agencyName));
-                mEbeanServer.save(agency);
+                mLog.i(TAG, String.format("Agency $1%s doesn't exist. Inserting all alerts.", agency.name));
+                mEbeanServer.save(agency, transaction);
             }
 
             // Commit all work.
             transaction.commit();
 
         } catch (Exception e) {
-            mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", agency.agencyName), e);
+            mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", agency.name), e);
             transaction.rollback();
             return false;
 
@@ -126,7 +126,7 @@ public class AgencyService {
      * Get all routes for a set of routeIds and an agency name.
      *
      * @param agencyId Id of agency.
-     * @param routeIds   list of routeIds to retrieve.
+     * @param routeIds list of routeIds to retrieve.
      * @return List of Routes.
      */
     public List<Route> getRouteAlerts(int agencyId, String... routeIds) {

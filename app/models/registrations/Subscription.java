@@ -1,8 +1,6 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import models.alerts.Route;
 
@@ -13,7 +11,7 @@ import java.util.List;
 @Entity
 @Table(name = "subscriptions", schema = "device_subscriptions")
 public class Subscription extends Model {
-    public static Finder<Integer, Subscription> find = new Model.Finder<>(
+    public static Finder<Long, Subscription> find = new Model.Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, Subscription.class);
 
     @Id
@@ -40,7 +38,8 @@ public class Subscription extends Model {
 
             inverseJoinColumns=@JoinColumn(
                     name="route_id",
-                    referencedColumnName="route_id",
+                    table = "agency_alerts.routes",
+                    referencedColumnName="id",
                     unique = true,
                     nullable = true,
                     insertable = true,

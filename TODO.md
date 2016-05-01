@@ -7,7 +7,7 @@
 
 * Add non-dispatch message listener callback from client.
 * Authenticate external app logging.
-* Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/
+* ~~Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/~~
 * Create json agency alert endpoints with caching
 * Change splendid log password
 * Test alerts removal sends cancel_message
@@ -17,27 +17,29 @@
 
 ## model updates
 ### subscriptions_registrations
-* allow for multiple device-subscriptions for different agencies
+* ~~allow for multiple device-subscriptions for different agencies~~
 
 ### agency
-* Make primary key to be composite of agency and routeid
-* Add agency phone number to agency
-* Add agency full name to agency
-* add timezone *(America/Los_Angeles)*
-* Add website URL to one agency
+* ~~Add agency phone number to agency~~
+* ~~add timezone *(America/Los_Angeles)*~~
+* ~~Add website URL to one agency~~
 
 ### route
-* Add websiteURL
-* Add transport_type
-* Add issticky
-* Add isdefaultsubscription
+* ~~Add websiteURL~~
+* ~~Add transport_type~~
+
+* ~~issticky~~
+* ~~isdefaultsubscription~~
+
 
 #### RouteFeature
-* Feature istemporary
-* Feature isowl
-* Feature privateService
+* ~~regular~~
+* ~~istemporary~~
+* ~~isowl~~
+* ~~privateService~~
 
-##Time permitting
+
+## Time permitting
 * Fix quotas / accounts?
 * Improve log display page css.
 

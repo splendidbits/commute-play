@@ -18,39 +18,58 @@ create table service_accounts.account (
 create sequence account_id_seq increment by 1;
 
 create table agency_alerts.agencies (
-  agency_id                     serial not null,
-  agency_name                   varchar(255),
-  constraint pk_agencies primary key (agency_id)
+  id                            serial not null,
+  name                          varchar(255),
+  phone                         varchar(255),
+  external_uri                  TEXT,
+  utc_offset                    float,
+  constraint pk_agencies primary key (id)
 );
 
 create table agency_alerts.alerts (
-  alert_id                      integer not null,
-  route_route_id                varchar(255),
-  current_message               TEXT,
-  advisory_message              TEXT,
-  detour_message                TEXT,
-  detour_start_location         TEXT,
-  detour_start_date             timestamp without time zone,
-  detour_end_date               timestamp without time zone,
-  detour_reason                 TEXT,
-  is_snow                       boolean,
+  alert_id                      bigint not null,
+  route_id                      varchar(255),
+  type                          varchar(11),
+  level                         varchar(8),
+  message_title                 TEXT,
+  message_subtitle              TEXT,
+  message_body                  TEXT,
+  external_uri                  TEXT,
   last_updated                  timestamp without time zone,
+  constraint ck_alerts_type check (type in ('DISRUPTION','APP','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
+  constraint ck_alerts_level check (level in ('HIGH','SILENT','CRITICAL','LOW','MEDIUM')),
   constraint pk_alerts primary key (alert_id)
 );
-create sequence alerts_id_seq increment by 1;
+create sequence alert_id_seq increment by 1;
+
+create table agency_alerts.locations (
+  location_id                   integer not null,
+  alert_id                      bigint,
+  name                          varchar(255),
+  latitude                      varchar(255),
+  longitude                     varchar(255),
+  message                       TEXT,
+  sequence                      integer,
+  date                          timestamp without time zone,
+  constraint pk_locations primary key (location_id)
+);
+create sequence location_id_seq increment by 1;
 
 create table task_queue.messages (
   message_id                    bigint not null,
   task_task_id                  bigint,
   collapse_key                  varchar(255),
   sent_time                     timestamp without time zone,
-  priority                      varchar(255),
+  priority                      varchar(6),
   time_to_live                  integer,
   restricted_package_name       varchar(255),
   delay_while_idle              boolean,
   dry_run                       boolean,
   auth_token                    varchar(255),
+  platform                      varchar(4),
   endpoint_url                  varchar(255),
+  constraint ck_messages_priority check (priority in ('normal','low','high')),
+  constraint ck_messages_platform check (platform in ('GCM','APNS')),
   constraint pk_messages primary key (message_id)
 );
 create sequence message_id_seq increment by 1;
@@ -65,9 +84,10 @@ create table task_queue.payload_element (
 create sequence element_id_seq increment by 1;
 
 create table service_accounts.platform (
-  platform_name                 varchar(255) not null,
+  platform                      varchar(4) not null,
   endpoint_url                  varchar(255),
-  constraint pk_platform primary key (platform_name)
+  constraint ck_platform_platform check (platform in ('GCM','APNS')),
+  constraint pk_platform primary key (platform)
 );
 
 create table service_accounts.platform_account (
@@ -75,13 +95,13 @@ create table service_accounts.platform_account (
   account_account_id            integer,
   package_uri                   varchar(255),
   auth_token                    varchar(255),
-  platform_platform_name        varchar(255),
+  platform_platform             varchar(4),
   constraint pk_platform_account primary key (id)
 );
 create sequence platform_account_id_seq increment by 1;
 
 create table task_queue.recipients (
-  recipient_id                  integer not null,
+  recipient_id                  bigint not null,
   token                         varchar(255),
   message_message_id            bigint,
   state                         varchar(13),
@@ -95,7 +115,7 @@ create sequence recipient_id_seq increment by 1;
 create table task_queue.recipient_failures (
   recipient_failure_id          bigint not null,
   failure_reason                varchar(255),
-  recipient_recipient_id        integer,
+  recipient_recipient_id        bigint,
   fail_time                     timestamp without time zone,
   constraint pk_recipient_failures primary key (recipient_failure_id)
 );
@@ -110,11 +130,20 @@ create table device_subscriptions.registrations (
 );
 
 create table agency_alerts.routes (
-  route_id                      varchar(255) not null,
+  id                            varchar(255) not null,
+  route_id                      varchar(255),
   route_name                    varchar(255),
-  agency_agency_id              integer,
-  constraint pk_routes primary key (route_id)
+  route_flag                    varchar(18),
+  transit_type                  varchar(10),
+  is_default                    boolean,
+  is_sticky                     boolean,
+  external_uri                  TEXT,
+  agency_id                     integer,
+  constraint ck_routes_route_flag check (route_flag in ('PRIVATE','TEMPORARY_ROUTE','OWL','CLOSED_PERMANENTLY','CLOSED_TEMPORARILY')),
+  constraint ck_routes_transit_type check (transit_type in ('SPECIAL','BUS','SUBWAY','CABLE','FERRY','BIKE_SHARE','RAIL','LIGHT_RAIL')),
+  constraint pk_routes primary key (id)
 );
+create sequence route_id_seq increment by 1;
 
 create table device_subscriptions.subscriptions (
   subscription_id               bigint not null,
@@ -143,8 +172,11 @@ create table task_queue.tasks (
 );
 create sequence task_id_seq increment by 1;
 
-alter table agency_alerts.alerts add constraint fk_alerts_route_route_id foreign key (route_route_id) references agency_alerts.routes (route_id) on delete restrict on update restrict;
-create index ix_alerts_route_route_id on agency_alerts.alerts (route_route_id);
+alter table agency_alerts.alerts add constraint fk_alerts_route_id foreign key (route_id) references agency_alerts.routes (id) on delete restrict on update restrict;
+create index ix_alerts_route_id on agency_alerts.alerts (route_id);
+
+alter table agency_alerts.locations add constraint fk_locations_alert_id foreign key (alert_id) references agency_alerts.alerts (alert_id) on delete restrict on update restrict;
+create index ix_locations_alert_id on agency_alerts.locations (alert_id);
 
 alter table task_queue.messages add constraint fk_messages_task_task_id foreign key (task_task_id) references task_queue.tasks (task_id) on delete restrict on update restrict;
 create index ix_messages_task_task_id on task_queue.messages (task_task_id);
@@ -155,8 +187,8 @@ create index ix_payload_element_message_message_id on task_queue.payload_element
 alter table service_accounts.platform_account add constraint fk_platform_account_account_account_id foreign key (account_account_id) references service_accounts.account (account_id) on delete restrict on update restrict;
 create index ix_platform_account_account_account_id on service_accounts.platform_account (account_account_id);
 
-alter table service_accounts.platform_account add constraint fk_platform_account_platform_platform_name foreign key (platform_platform_name) references service_accounts.platform (platform_name) on delete restrict on update restrict;
-create index ix_platform_account_platform_platform_name on service_accounts.platform_account (platform_platform_name);
+alter table service_accounts.platform_account add constraint fk_platform_account_platform_platform foreign key (platform_platform) references service_accounts.platform (platform) on delete restrict on update restrict;
+create index ix_platform_account_platform_platform on service_accounts.platform_account (platform_platform);
 
 alter table task_queue.recipients add constraint fk_recipients_message_message_id foreign key (message_message_id) references task_queue.messages (message_id) on delete restrict on update restrict;
 create index ix_recipients_message_message_id on task_queue.recipients (message_message_id);
@@ -170,8 +202,8 @@ create index ix_recipient_failures_recipient_recipient_id on task_queue.recipien
 alter table device_subscriptions.registrations add constraint fk_registrations_account_account_id foreign key (account_account_id) references service_accounts.account (account_id) on delete restrict on update restrict;
 create index ix_registrations_account_account_id on device_subscriptions.registrations (account_account_id);
 
-alter table agency_alerts.routes add constraint fk_routes_agency_agency_id foreign key (agency_agency_id) references agency_alerts.agencies (agency_id) on delete restrict on update restrict;
-create index ix_routes_agency_agency_id on agency_alerts.routes (agency_agency_id);
+alter table agency_alerts.routes add constraint fk_routes_agency_id foreign key (agency_id) references agency_alerts.agencies (id) on delete restrict on update restrict;
+create index ix_routes_agency_id on agency_alerts.routes (agency_id);
 
 alter table device_subscriptions.subscriptions add constraint fk_subscriptions_registration_device_id foreign key (registration_device_id) references device_subscriptions.registrations (device_id) on delete restrict on update restrict;
 create index ix_subscriptions_registration_device_id on device_subscriptions.subscriptions (registration_device_id);
@@ -179,14 +211,17 @@ create index ix_subscriptions_registration_device_id on device_subscriptions.sub
 alter table device_subscriptions.subscription_route add constraint fk_subscription_route_subscriptions foreign key (subscription_id) references device_subscriptions.subscriptions (subscription_id) on delete restrict on update restrict;
 create index ix_subscription_route_subscriptions on device_subscriptions.subscription_route (subscription_id);
 
-alter table device_subscriptions.subscription_route add constraint fk_subscription_route_routes foreign key (route_id) references agency_alerts.routes (route_id) on delete restrict on update restrict;
+alter table device_subscriptions.subscription_route add constraint fk_subscription_route_routes foreign key (route_id) references agency_alerts.routes (id) on delete restrict on update restrict;
 create index ix_subscription_route_routes on device_subscriptions.subscription_route (route_id);
 
 
 # --- !Downs
 
-alter table if exists agency_alerts.alerts drop constraint if exists fk_alerts_route_route_id;
-drop index if exists ix_alerts_route_route_id;
+alter table if exists agency_alerts.alerts drop constraint if exists fk_alerts_route_id;
+drop index if exists ix_alerts_route_id;
+
+alter table if exists agency_alerts.locations drop constraint if exists fk_locations_alert_id;
+drop index if exists ix_locations_alert_id;
 
 alter table if exists task_queue.messages drop constraint if exists fk_messages_task_task_id;
 drop index if exists ix_messages_task_task_id;
@@ -197,8 +232,8 @@ drop index if exists ix_payload_element_message_message_id;
 alter table if exists service_accounts.platform_account drop constraint if exists fk_platform_account_account_account_id;
 drop index if exists ix_platform_account_account_account_id;
 
-alter table if exists service_accounts.platform_account drop constraint if exists fk_platform_account_platform_platform_name;
-drop index if exists ix_platform_account_platform_platform_name;
+alter table if exists service_accounts.platform_account drop constraint if exists fk_platform_account_platform_platform;
+drop index if exists ix_platform_account_platform_platform;
 
 alter table if exists task_queue.recipients drop constraint if exists fk_recipients_message_message_id;
 drop index if exists ix_recipients_message_message_id;
@@ -212,8 +247,8 @@ drop index if exists ix_recipient_failures_recipient_recipient_id;
 alter table if exists device_subscriptions.registrations drop constraint if exists fk_registrations_account_account_id;
 drop index if exists ix_registrations_account_account_id;
 
-alter table if exists agency_alerts.routes drop constraint if exists fk_routes_agency_agency_id;
-drop index if exists ix_routes_agency_agency_id;
+alter table if exists agency_alerts.routes drop constraint if exists fk_routes_agency_id;
+drop index if exists ix_routes_agency_id;
 
 alter table if exists device_subscriptions.subscriptions drop constraint if exists fk_subscriptions_registration_device_id;
 drop index if exists ix_subscriptions_registration_device_id;
@@ -230,7 +265,10 @@ drop sequence if exists account_id_seq;
 drop table if exists agency_alerts.agencies cascade;
 
 drop table if exists agency_alerts.alerts cascade;
-drop sequence if exists alerts_id_seq;
+drop sequence if exists alert_id_seq;
+
+drop table if exists agency_alerts.locations cascade;
+drop sequence if exists location_id_seq;
 
 drop table if exists task_queue.messages cascade;
 drop sequence if exists message_id_seq;
@@ -252,6 +290,7 @@ drop sequence if exists failure_id_seq;
 drop table if exists device_subscriptions.registrations cascade;
 
 drop table if exists agency_alerts.routes cascade;
+drop sequence if exists route_id_seq;
 
 drop table if exists device_subscriptions.subscriptions cascade;
 drop sequence if exists subscriptions_id_seq;

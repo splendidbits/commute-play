@@ -15,12 +15,21 @@ public class Agency extends Model {
     public static Finder<Integer, Agency> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Agency.class);
 
     @Id
-    @Column(name = "agency_id")
+    @Column(name = "id")
     public Integer id;
 
-    @Column(name = "agency_name")
-    public String agencyName;
+    @Column(name = "name")
+    public String name;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "agency", fetch = FetchType.LAZY)
+    @Column(name = "phone")
+    public String phone;
+
+    @Column(name = "external_uri", columnDefinition = "TEXT")
+    public String externalUri;
+
+    @Column(name = "utc_offset")
+    public Float utcOffset;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
     public List<Route> routes;
 }

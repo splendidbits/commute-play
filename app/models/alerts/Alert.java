@@ -3,54 +3,52 @@ package models.alerts;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import helpers.CompareUtils;
+import enums.AlertLevel;
+import enums.AlertType;
 import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
+import java.util.List;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "alerts", schema = "agency_alerts")
 public class Alert extends Model implements Comparable {
-    public static Finder<Integer, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
+    public static Finder<Long, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
     @Id
     @Column(name = "alert_id")
-    @SequenceGenerator(name = "alerts_id_seq_gen", sequenceName = "alerts_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alerts_id_seq_gen")
-    public Integer id;
+    @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
+    public Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn (name = "route_id", referencedColumnName = "id")
     public Route route;
 
-    @Column(name = "current_message", columnDefinition = "TEXT")
-    public String currentMessage;
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    public AlertType type;
 
-    @Column(name = "advisory_message", columnDefinition = "TEXT")
-    public String advisoryMessage;
+    @Column(name = "level")
+    @Enumerated(EnumType.STRING)
+    public AlertLevel level;
 
-    @Column(name = "detour_message", columnDefinition = "TEXT")
-    public String detourMessage;
+    @Column(name = "message_title", columnDefinition = "TEXT")
+    public String messageTitle;
 
-    @Column(name = "detour_start_location", columnDefinition = "TEXT")
-    public String detourStartLocation;
+    @Column(name = "message_subtitle", columnDefinition = "TEXT")
+    public String messageSubtitle;
 
-    @Basic
-    @Column(name = "detour_start_date", columnDefinition = "timestamp without time zone")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar detourStartDate;
+    @Column(name = "message_body", columnDefinition = "TEXT")
+    public String messageBody;
 
-    @Basic
-    @Column(name = "detour_end_date", columnDefinition = "timestamp without time zone")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar detourEndDate;
+    @Column(name = "external_uri", columnDefinition = "TEXT")
+    public String externalUri;
 
-    @Column(name = "detour_reason", columnDefinition = "TEXT")
-    public String detourReason;
-
-    @Column(name = "is_snow")
-    public boolean isSnow;
+    @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER)
+    public List<Location> locations;
 
     @Basic
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
@@ -62,30 +60,47 @@ public class Alert extends Model implements Comparable {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
 
-            // Match potential routeIds first.
-            boolean bothRouteIdMatch = (other.route != null && route != null) && other.route.id.equals(route.id);
+            boolean sameId = (route == null && other.route == null) ||
+                    (route != null && other.route != null && route.routeId.equals(other.route.routeId));
 
-            // Match on everything else.
-            boolean sameCurrentMessage = currentMessage.equals(other.currentMessage);
-            boolean sameDetourMessage = detourMessage != null && detourMessage.equals(other.detourMessage);
-            boolean sameAdvisoryMessage = advisoryMessage != null && advisoryMessage.equals(other.advisoryMessage);
-            boolean sameDetourReason = detourReason != null && detourReason.equals(other.detourReason);
-            boolean sameDetourStartLocation = detourStartLocation != null && detourStartLocation.equals(other.detourStartLocation);
-            boolean sameSnow = isSnow == other.isSnow;
+            boolean sameType = (type == null && other.type == null) ||
+                    (type != null && other.type != null && type.equals(other.type));
 
-            boolean sameDetourStartDate = detourStartDate == null && other.detourStartDate == null ||
-                    (detourStartDate != null && other.detourStartDate != null &&
-                    detourStartDate.getTimeInMillis() == other.detourStartDate.getTimeInMillis());
+            boolean sameLevel = (level == null && other.level == null) ||
+                    (level != null && other.level != null && level.equals(other.level));
 
-            boolean sameDetourEndDate = detourEndDate == null && other.detourEndDate == null ||
-                    (detourEndDate != null && other.detourEndDate != null &&
-                    detourEndDate.getTimeInMillis() == other.detourEndDate.getTimeInMillis());
+            boolean sameTitle = (messageTitle == null && other.messageTitle == null) ||
+                    (messageTitle != null && other.messageTitle != null && messageTitle.equals(other.messageTitle));
+
+            boolean sameSubtitle = (messageSubtitle == null && other.messageSubtitle == null) ||
+                    (messageSubtitle != null && other.messageSubtitle != null && messageSubtitle.equals(other.messageSubtitle));
+
+            boolean sameBody = (messageBody == null && other.messageBody == null) ||
+                    (messageBody != null && other.messageBody != null && messageBody.equals(other.messageBody));
+
+            boolean sameUri = (externalUri == null && other.externalUri == null) ||
+                    (externalUri != null && other.externalUri != null && externalUri.equals(other.externalUri));
+
+            boolean sameUpdateTime = lastUpdated == null && other.lastUpdated == null ||
+                    (lastUpdated != null && other.lastUpdated != null &&
+                    lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
+
+            // Both sets of alert locations are null or the contents match.
+            boolean sameLocations = true;
+            if (locations != null && other.locations != null) {
+                for (Location location : locations) {
+                    if (!other.locations.contains(location)) {
+                        sameLocations = false;
+                        break;
+                    }
+                }
+            }
 
             // Match everything.
-            return (bothRouteIdMatch && sameCurrentMessage && sameDetourMessage &&
-                    sameAdvisoryMessage && sameDetourReason && sameDetourStartLocation &&
-                    sameDetourStartDate && sameDetourEndDate && sameSnow);
+            return (sameId && sameType && sameLevel && sameTitle && sameSubtitle &&
+                    sameBody && sameUri && sameUpdateTime && sameLocations);
         }
+
         return obj.equals(this);
     }
 

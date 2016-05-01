@@ -15,7 +15,7 @@ import java.util.List;
 @Entity
 @Table(name = "tasks", schema = "task_queue")
 public class Task extends Model {
-    public static Finder<Integer, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
+    public static Finder<Long, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
     @Id
     @Column(name = "task_id")

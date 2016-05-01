@@ -1,4 +1,4 @@
-package models.app;
+package enums;
 
 /**
  * GNU General Public License v3.0.

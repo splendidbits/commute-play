@@ -15,7 +15,7 @@ import java.util.List;
 @Entity
 @Table(name = "recipient_failures", schema = "task_queue")
 public class RecipientFailure extends Model {
-    public static Finder<Integer, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
+    public static Finder<Long, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
 
     @Id
     @Column(name = "recipient_failure_id")
@@ -37,7 +37,6 @@ public class RecipientFailure extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar failTime;
 
-    @PreUpdate
     @PrePersist
     public void updateValues() {
         failTime = Calendar.getInstance();

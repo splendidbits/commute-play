@@ -13,7 +13,6 @@
         <entry key="commutegcm">
           <value>
             <ProjectSettingsEntry>
-              <option name="sourceDir" value="$PROJECT_DIR$/app" />
               <option name="confDir" value="$PROJECT_DIR$/app" />
               <option name="templateImports">
                 <list>
@@ -46,7 +45,6 @@
         <entry key="splendidlog">
           <value>
             <ProjectSettingsEntry>
-              <option name="sourceDir" value="$PROJECT_DIR$/modules/splendidlog/app" />
               <option name="confDir" value="$PROJECT_DIR$/modules/splendidlog/app" />
               <option name="templateImports">
                 <list>

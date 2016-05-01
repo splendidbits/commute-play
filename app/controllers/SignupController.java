@@ -1,6 +1,7 @@
 package controllers;
 
 import com.avaje.ebean.EbeanServer;
+import enums.PlatformType;
 import helpers.ValidationHelper;
 import main.Log;
 import models.accounts.Account;
@@ -66,17 +67,19 @@ public class SignupController extends Controller {
         boolean requiresGcm = formData.get("platform_gcm") != null && formData.get("platform_gcm").equals("on");
         boolean requiresApns = formData.get("platform_apns") != null && formData.get("platform_apns").equals("on");
 
+        PlatformType gcmPlatform = PlatformType.SERVICE_GCM;
+
         List<PlatformAccount> platformAccounts = new ArrayList<>();
         if (requiresGcm) {
             PlatformAccount gcmAccount = new PlatformAccount();
             gcmAccount.packageUri = packageUri;
-            gcmAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_GCM);
+            gcmAccount.platform = Platform.find.byId(gcmPlatform.name);
             platformAccounts.add(gcmAccount);
         }
         if (requiresApns) {
             PlatformAccount apnsAccount = new PlatformAccount();
             apnsAccount.packageUri = packageUri;
-            apnsAccount.platform = Platform.find.byId(Platform.PLATFORM_NAME_APNS);
+            apnsAccount.platform = Platform.find.byId(gcmPlatform.name);
             platformAccounts.add(apnsAccount);
         }
 

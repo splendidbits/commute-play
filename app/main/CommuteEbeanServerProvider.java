@@ -10,6 +10,7 @@ import models.accounts.Platform;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
 import models.alerts.Alert;
+import models.alerts.Location;
 import models.alerts.Route;
 import models.registrations.Registration;
 import models.registrations.Subscription;
@@ -42,14 +43,23 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setCaptureStackTrace(true);
 
         ArrayList<Class<?>> models = new ArrayList<Class<?>>();
+
+        // client account models.
         models.add(Account.class);
         models.add(PlatformAccount.class);
         models.add(Platform.class);
+
+        // Agency alert models.
         models.add(Agency.class);
-        models.add(Alert.class);
         models.add(Route.class);
+        models.add(Alert.class);
+        models.add(Location.class);
+
+        // Client device models.
         models.add(Registration.class);
         models.add(Subscription.class);
+
+        // GCM Task models.
         models.add(Message.class);
         models.add(PayloadElement.class);
         models.add(RecipientFailure.class);
@@ -61,8 +71,11 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setName(name);
         serverConfig.setDefaultServer(true);
         serverConfig.setRegister(true);
-        serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setClasses(models);
+        serverConfig.setDataSourceConfig(dataSourceConfig);
+
+        // Remove missing children.
+        serverConfig.setUpdatesDeleteMissingChildren(true);
 
         return EbeanServerFactory.create(serverConfig);
     }

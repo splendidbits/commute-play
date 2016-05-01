@@ -12,13 +12,13 @@ import java.util.Calendar;
 @Entity
 @Table(name = "recipients", schema = "task_queue")
 public class Recipient extends Model {
-    public static Finder<Integer, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
+    public static Finder<Long, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
 
     @Id
     @Column(name = "recipient_id")
     @SequenceGenerator(name = "recipient_id_seq_gen", sequenceName = "recipient_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipient_id_seq_gen")
-    public Integer id;
+    public Long id;
 
     @Column(name = "token")
     public String token;
@@ -53,7 +53,7 @@ public class Recipient extends Model {
 
     }
 
-    public Recipient(int id, String token) {
+    public Recipient(Long id, String token) {
         this.id = id;
         this.token = token;
     }

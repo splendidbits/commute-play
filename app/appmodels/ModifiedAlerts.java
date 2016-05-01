@@ -1,4 +1,4 @@
-package models.app;
+package appmodels;
 
 import models.alerts.Alert;
 
@@ -22,7 +22,7 @@ public class ModifiedAlerts {
     }
 
     public boolean hasModifiedAlerts() {
-        return !mUpdatedRouteAlerts.isEmpty() || !mStaleRouteAlerts.isEmpty();
+        return !(mUpdatedRouteAlerts.isEmpty() && !mStaleRouteAlerts.isEmpty());
     }
 
     public void addUpdatedRouteAlert(@Nonnull Alert updatedAlert) {

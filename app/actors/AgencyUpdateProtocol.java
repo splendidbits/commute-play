@@ -1,6 +1,6 @@
 package actors;
 
-import models.app.AgencyUpdateType;
+import enums.AgencyUpdateType;
 
 /**
  * GNU General Public License v3.0.
