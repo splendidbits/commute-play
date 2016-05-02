@@ -65,15 +65,21 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
                     .setFollowRedirects(true)
                     .get();
 
-            resultPromise.thenAccept(new Consumer<WSResponse>() {
-                @Override
-                public void accept(WSResponse response) {
-                    updateAgencyData(response);
-                }
-            });
+            resultPromise.thenAccept(new JsonDownloadConsumer());
 
         } catch (Exception exception) {
             mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+        }
+    }
+
+    /**
+     * Promise result from agency json download.
+     */
+    private class JsonDownloadConsumer implements Consumer<WSResponse> {
+
+        @Override
+        public void accept(WSResponse response) {
+            updateAgencyData(response);
         }
     }
 
@@ -84,7 +90,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
         try {
             mLog.d(TAG, "Downloaded SEPTA alerts");
             final Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(mLog))
+                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(mLog, null))
                     .create();
 
             Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);

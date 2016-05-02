@@ -14,7 +14,7 @@ public class PayloadElement extends Model {
     public static Finder<Long, PayloadElement> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, PayloadElement.class);
 
     @Id
-    @Column(name = "element_id")
+    @Column(name = "id")
     @SequenceGenerator(name = "element_id_seq_gen", sequenceName = "element_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "element_id_seq_gen")
     public Long id;
@@ -26,10 +26,15 @@ public class PayloadElement extends Model {
     public String value;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "message_id",
+            referencedColumnName = "id",
+            unique = false,
+            updatable = false)
     public Message message;
 
+    @SuppressWarnings("unused")
     public PayloadElement() {
-
     }
 
     public PayloadElement(String name, String value) {

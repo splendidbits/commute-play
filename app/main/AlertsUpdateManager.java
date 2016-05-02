@@ -1,15 +1,14 @@
 package main;
 
+import appmodels.ModifiedAlerts;
 import dispatcher.processors.PushMessageService;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import appmodels.ModifiedAlerts;
 import services.AgencyService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,8 +47,7 @@ public class AlertsUpdateManager {
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
         List<Route> agencyRoutes = updatedAgency.routes;
-        if (agencyRoutes != null && !agencyRoutes.isEmpty()) {
-            Collections.sort(agencyRoutes);
+        if (!agencyRoutes.isEmpty()) {
 
             // Pass the Alert differences on to the GCM Pre-processor.
             ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
@@ -92,7 +90,7 @@ public class AlertsUpdateManager {
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
-        if (freshRouteAlerts == null || freshRouteAlerts.isEmpty()) {
+        if (freshRouteAlerts.isEmpty()) {
             for (Route existingRoute : existingRouteAlerts) {
                 for (Alert existingAlert : existingRoute.alerts) {
                     modifiedAlerts.addStaleRouteAlert(existingAlert);

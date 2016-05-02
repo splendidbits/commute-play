@@ -7,7 +7,9 @@ import enums.AlertLevel;
 import enums.AlertType;
 import main.Constants;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -18,13 +20,17 @@ public class Alert extends Model implements Comparable {
     public static Finder<Long, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
     @Id
-    @Column(name = "alert_id")
+    @Column(name = "id")
     @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
     public Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn (name = "route_id", referencedColumnName = "id")
+    @JoinColumn(
+            name = "route_id",
+            referencedColumnName = "id",
+            unique = true,
+            updatable = false)
     public Route route;
 
     @Column(name = "type")
@@ -47,8 +53,9 @@ public class Alert extends Model implements Comparable {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER)
-    public List<Location> locations;
+    @Nonnull
+    @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    public List<Location> locations = new ArrayList<>();
 
     @Basic
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
@@ -56,12 +63,46 @@ public class Alert extends Model implements Comparable {
     public Calendar lastUpdated;
 
     @Override
+    public int hashCode() {
+        int hashCode = type != null
+                ? type.hashCode()
+                : super.hashCode();
+
+        hashCode += level != null
+                ? level.hashCode()
+                : hashCode;
+
+        hashCode += messageTitle != null
+                ? messageTitle.hashCode()
+                : hashCode;
+
+        hashCode += messageSubtitle != null
+                ? messageSubtitle.hashCode()
+                : hashCode;
+
+        hashCode += messageBody != null
+                ? messageBody.hashCode()
+                : hashCode;
+
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += lastUpdated != null
+                ? lastUpdated.hashCode()
+                : hashCode;
+
+        hashCode += locations != null
+                ? locations.hashCode()
+                : hashCode;
+
+        return hashCode;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
-
-            boolean sameId = (route == null && other.route == null) ||
-                    (route != null && other.route != null && route.routeId.equals(other.route.routeId));
 
             boolean sameType = (type == null && other.type == null) ||
                     (type != null && other.type != null && type.equals(other.type));
@@ -83,35 +124,32 @@ public class Alert extends Model implements Comparable {
 
             boolean sameUpdateTime = lastUpdated == null && other.lastUpdated == null ||
                     (lastUpdated != null && other.lastUpdated != null &&
-                    lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
+                            lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
 
-            // Both sets of alert locations are null or the contents match.
-            boolean sameLocations = true;
-            if (locations != null && other.locations != null) {
-                for (Location location : locations) {
-                    if (!other.locations.contains(location)) {
-                        sameLocations = false;
-                        break;
-                    }
-                }
-            }
+            boolean bothLocationsNull = locations == null && other.locations == null;
+
+            boolean sameLocations = bothLocationsNull || (locations != null && other.locations != null &&
+                                locations.containsAll(other.locations) &&
+                                other.locations.containsAll(locations));
 
             // Match everything.
-            return (sameId && sameType && sameLevel && sameTitle && sameSubtitle &&
+            return (sameType && sameLevel && sameTitle && sameSubtitle &&
                     sameBody && sameUri && sameUpdateTime && sameLocations);
         }
 
         return obj.equals(this);
     }
 
+    @SuppressWarnings("unused")
+    public Alert() {
+    }
+
     @Override
     public int compareTo(Object o) {
         if (o instanceof Alert) {
             Alert other = (Alert) o;
-            if (lastUpdated.before(other.lastUpdated)) {
-                return -1;
-            } else {
-                return 1;
+            if (messageBody != null) {
+                return messageBody.equals(other.messageBody) ? -1 : 0;
             }
         }
         return 0;

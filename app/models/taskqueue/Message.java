@@ -28,19 +28,26 @@ public class Message extends Model {
     }
 
     @Id
-    @Column(name = "message_id")
+    @Column(name = "id")
     @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "task_id",
+            referencedColumnName = "id",
+            unique = false,
+            updatable = false)
     public Task task;
 
+    @Nonnull
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
-    public List<Recipient> recipients;
+    public List<Recipient> recipients = new ArrayList<>();
 
+    @Nonnull
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
-    public List<PayloadElement> payloadData;
+    public List<PayloadElement> payloadData = new ArrayList<>();
 
     @Column(name = "collapse_key")
     public String collapseKey;
@@ -78,9 +85,6 @@ public class Message extends Model {
 
     @Transient
     public void addData(String key, String value){
-        if (payloadData == null) {
-            payloadData = new ArrayList<>();
-        }
         PayloadElement payloadElement = new PayloadElement(key, value);
         payloadData.add(payloadElement);
     }
@@ -89,9 +93,6 @@ public class Message extends Model {
     public void addRegistrationToken(@Nonnull String token){
         Recipient recipient = new Recipient();
         recipient.token = token;
-        if (recipients == null) {
-            recipients = new ArrayList<>();
-        }
         recipients.add(recipient);
     }
 
@@ -100,6 +101,7 @@ public class Message extends Model {
         sentTime = Calendar.getInstance();
     }
 
+    @SuppressWarnings("unused")
     public Message() {
         priority = Priority.PRIORITY_NORMAL;
         ttl = 86400;

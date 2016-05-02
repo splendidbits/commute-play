@@ -27,10 +27,6 @@ import java.util.Map;
 public class SignupController extends Controller {
     private static final String TAG = SignupController.class.getSimpleName();
 
-    // Return results
-    private static final Result MISSING_PARAMS_RESULT = badRequest("Invalid registration parameters in request.");
-    private static final Result BAD_CLIENT_RESULT = badRequest("Calling client is invalid.");
-
     @Inject
     private EbeanServer mEbeanServer;
 

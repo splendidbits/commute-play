@@ -42,7 +42,7 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setPassword(password);
         dataSourceConfig.setCaptureStackTrace(true);
 
-        ArrayList<Class<?>> models = new ArrayList<Class<?>>();
+        ArrayList<Class<?>> models = new ArrayList<>();
 
         // client account models.
         models.add(Account.class);

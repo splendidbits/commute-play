@@ -8,7 +8,6 @@ import models.taskqueue.Message;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -212,7 +211,6 @@ public class MessageHelper {
             clonedMessage.id = message.id;
             clonedMessage.authToken = message.authToken;
             clonedMessage.endpointUrl = message.endpointUrl;
-            clonedMessage.recipients = new ArrayList<>();
             clonedMessage.payloadData = message.payloadData;
             clonedMessage.collapseKey = message.collapseKey;
             clonedMessage.ttl = message.ttl;

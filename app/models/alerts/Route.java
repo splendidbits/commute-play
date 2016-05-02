@@ -8,6 +8,7 @@ import enums.TransitType;
 import main.Constants;
 import models.registrations.Subscription;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,51 +48,113 @@ public class Route extends Model implements Comparable<Route> {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn (name = "agency_id", referencedColumnName = "id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "agency_id",
+            referencedColumnName = "id",
+            unique = true,
+            updatable = false)
     public Agency agency;
 
-    @ManyToMany(mappedBy = "routes", cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
-    public List<Subscription> subscriptions;
+    @Nonnull
+    @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
+    @JoinTable(
+            name="subscription_route",
+            schema = "device_subscriptions",
+            joinColumns=@JoinColumn(
+                    name="subscription_id",
+                    table = "device_subscriptions.subscriptions",
+                    referencedColumnName="id",
+                    unique = false,
+                    nullable = true,
+                    insertable = true,
+                    updatable = true),
 
+            inverseJoinColumns=@JoinColumn(
+                    name="route_id",
+                    referencedColumnName="id",
+                    unique = false,
+                    nullable = true,
+                    insertable = true,
+                    updatable = true))
+    public List<Subscription> subscriptions = new ArrayList<>();;
+
+    @Nonnull
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Alert> alerts = new ArrayList<>();
 
     @Override
+    public int hashCode() {
+        int hashCode = routeId != null
+                ? routeId.hashCode()
+                : super.hashCode();
+
+        hashCode += routeName != null
+                ? routeName.hashCode()
+                : hashCode;
+
+        hashCode += routeFlag != null
+                ? routeFlag.hashCode()
+                : hashCode;
+
+        hashCode += transitType != null
+                ? transitType.hashCode()
+                : hashCode;
+
+        hashCode += isDefault != null
+                ? isDefault.hashCode()
+                : hashCode;
+
+        hashCode += isSticky != null
+                ? isSticky.hashCode()
+                : hashCode;
+
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += alerts.hashCode();
+
+        return hashCode;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Route) {
-            Route otherRoute = (Route) obj;
+            Route other = (Route) obj;
 
-            boolean sameRouteId = routeId == null && otherRoute.routeId == null ||
-                    (routeId != null && routeId.equals(otherRoute.routeId));
+            boolean sameRouteId = routeId == null && other.routeId == null ||
+                    routeId != null && routeId.equals(other.routeId);
 
-            // There is the same basic routeId
-            if (sameRouteId) {
+            boolean sameRouteName = routeName == null && other.routeName == null ||
+                    routeName != null && routeName.equals(other.routeName);
 
-                if (alerts == null && otherRoute.alerts == null) {
-                    return true;
-                }
+            boolean sameRouteFlag = routeFlag == null && other.routeFlag == null ||
+                    routeFlag != null && routeFlag.equals(other.routeFlag);
 
-                if (alerts != null && otherRoute.alerts != null) {
-                    for (Alert alert : alerts) {
-                        if (!otherRoute.alerts.contains(alert)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            }
+            boolean sameTransitType = transitType == null && other.transitType == null ||
+                    transitType != null && transitType.equals(other.transitType);
 
-            return false;
+            boolean sameDefaults = isSticky == other.isSticky && isDefault == other.isDefault;
+
+            boolean sameUri = externalUri == null && other.externalUri == null ||
+                    externalUri != null && externalUri.equals(other.externalUri);
+
+            boolean sameAlerts = alerts.containsAll(other.alerts) &&
+                    other.alerts.containsAll(alerts);
+
+            return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType &&
+                    sameDefaults && sameUri && sameAlerts;
         }
         return obj.equals(this);
     }
 
     @Override
     public int compareTo(Route o) {
-        return routeName.compareTo(o.routeName);
+        return routeId.compareTo(o.routeId);
     }
 
+    @SuppressWarnings("unused")
     public Route() {
     }
 

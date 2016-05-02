@@ -4,7 +4,9 @@ import com.avaje.ebean.Model;
 import main.Constants;
 import models.registrations.Registration;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -16,14 +18,16 @@ public class Account extends Model {
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
-    @Column(name = "account_id")
+    @Column(name = "id")
     public Integer id;
 
+    @Nonnull
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
-    public List<PlatformAccount> platformAccounts;
+    public List<PlatformAccount> platformAccounts = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.REFRESH, mappedBy = "account", fetch = FetchType.LAZY)
-    public List<Registration> registrations;
+    @Nonnull
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
+    public List<Registration> registrations = new ArrayList<>();
 
     @Column(name = "organisation_name")
     public String orgName;

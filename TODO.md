@@ -5,6 +5,7 @@
 * ~~Make entire logging system dependency injectable~~
 * ~~Implement TaskQueue task~~.
 
+* Go through TODOs
 * Add non-dispatch message listener callback from client.
 * Authenticate external app logging.
 * ~~Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/~~

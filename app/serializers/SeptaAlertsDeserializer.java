@@ -11,6 +11,8 @@ import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,13 +24,24 @@ import java.util.*;
  */
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static final String TAG = SeptaAlertsDeserializer.class.getSimpleName();
-
-    private static final String AGENCY_NAME = "South-East Pennsylvania Transit Association";
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
-    private Log mLog;
 
-    public SeptaAlertsDeserializer(Log log) {
+    private Log mLog;
+    private Agency mAgency;
+
+    public SeptaAlertsDeserializer(@Nonnull Log log, @Nullable Agency partialAgency) {
         mLog = log;
+        mAgency = partialAgency;
+
+        // Create agency if there was no partially filled agency from the client.
+        if (mAgency == null) {
+            mAgency = new Agency();
+            mAgency.id = 1;
+            mAgency.name = "South East Pennsylvania Transit Association";
+            mAgency.phone = "12155807800";
+            mAgency.externalUri = "http://www.septa.org";
+            mAgency.utcOffset = -5f;
+        }
     }
 
     @Override
@@ -45,22 +58,21 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         SimpleDateFormat detourDateFormat = new SimpleDateFormat("mm/dd/yyyy hh:mm a", Locale.US);
         detourDateFormat.setLenient(true);
 
-        // Map of route alerts.
-        HashMap<Route, List<Alert>> routeAlertsMap = new HashMap<>();
-
-        // Create agency and add the mapped routes.
-        Agency agency = new Agency();
-        agency.id = 1;
-        agency.name = AGENCY_NAME;
-        agency.phone = "12155807800";
-        agency.externalUri = "http://www.septa.org";
-        agency.utcOffset = -5f;
+        // Map of route objects containing alerts. // [routeId, Route]
+        HashMap<String, Route> routesMap = new HashMap<>();
 
         final JsonArray schedulesArray = json.getAsJsonArray();
         if (schedulesArray != null) {
 
             try {
-                // Loop through each alert row.
+                /*
+                 * Loop through each alert row and separate each one into multiple possible alerts. This is
+                 * because SEPTA overload each "alert" row with possibly more than one alert type of alert
+                 * (advisory, current message, and detour.
+                 *
+                 * After all possible alerts in each row have been parsed for all rows, then loop through them
+                 * and add them to the correct route object.
+                 */
                 for (JsonElement scheduleRow : schedulesArray) {
                     JsonObject bucket = scheduleRow.getAsJsonObject();
 
@@ -76,87 +88,121 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                     String isSnow = bucket.get("isSnow").getAsString();
                     String lastUpdated = bucket.get("last_updated").getAsString();
 
-                    Calendar lastUpdateCalendar = Calendar.getInstance(timezone, Locale.US);
-                    if (lastUpdated != null && !lastUpdated.isEmpty()) {
-                        lastUpdateCalendar.setTime(lastUpdatedDateFormat.parse(lastUpdated));
-                    }
-
-                    // Instantiate the alert.
-                    Alert alert = new Alert();
-                    alert.lastUpdated = lastUpdateCalendar;
-
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
 
+                        // Keep hold of all the possible alerts FOR THIS ROW.
+                        List<Alert> rowAlerts = new ArrayList<>();
+
+                        Calendar lastUpdateCalendar = Calendar.getInstance(timezone, Locale.US);
+                        if (lastUpdated != null && !lastUpdated.isEmpty()) {
+                            lastUpdateCalendar.setTime(lastUpdatedDateFormat.parse(lastUpdated));
+                        }
+
                         // Parse the detour locations into the correct type.
                         if (!detourMessage.isEmpty()) {
+                            AlertType typeDetour = AlertType.TYPE_DETOUR;
 
+                            // Add the detour start and end locations if they exist.
+                            ArrayList<Location> detourLocations = new ArrayList<>();
                             Calendar detourStartCalendar = Calendar.getInstance(timezone, Locale.US);
+                            Calendar detourEndCalendar = Calendar.getInstance(timezone, Locale.US);
+
                             if (detourStartDate != null && !detourStartDate.isEmpty()) {
                                 detourStartCalendar.setTime(detourDateFormat.parse(detourStartDate));
+
+                                Location detourLocation = new Location();
+                                detourLocation.name = detourStartLocation;
+                                detourLocation.date = detourStartCalendar;
+                                detourLocation.sequence = 0;
+                                detourLocation.message = detourReason;
+                                detourLocations.add(detourLocation);
                             }
 
-                            Calendar detourEndCalendar = Calendar.getInstance(timezone, Locale.US);
                             if (detourEndDate != null && !detourEndDate.isEmpty()) {
                                 detourEndCalendar.setTime(detourDateFormat.parse(detourEndDate));
+
+                                Location detourLocation = new Location();
+                                detourLocation.date = detourEndCalendar;
+                                detourLocation.sequence = -1;
+                                detourLocation.message = detourReason;
+                                detourLocations.add(detourLocation);
                             }
 
-                            Location startLocation = new Location();
-                            startLocation.name = detourStartLocation;
-                            startLocation.date = detourStartCalendar;
-                            startLocation.sequence = 0;
-                            startLocation.message = detourReason;
-                            List<Location> detourLocations = new ArrayList<>();
-                            detourLocations.add(startLocation);
-
-                            AlertType typeDetour = AlertType.TYPE_DETOUR;
+                            Alert alert = new Alert();
+                            alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_LOW;
                             alert.type = typeDetour;
                             alert.messageTitle = typeDetour.title;
                             alert.messageSubtitle = detourReason;
                             alert.messageBody = detourMessage;
                             alert.locations = detourLocations;
+                            rowAlerts.add(alert);
                         }
 
                         // Snow Alerts
-                        else if (isSnow.toLowerCase().equals("y")) {
+                        if (isSnow.toLowerCase().equals("y")) {
                             AlertType typeWeather = AlertType.TYPE_WEATHER;
 
+                            Alert alert = new Alert();
+                            alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_MEDIUM;
                             alert.type = typeWeather;
                             alert.messageTitle = typeWeather.title;
                             alert.messageBody = currentMessage;
+                            rowAlerts.add(alert);
                         }
 
                         // Advisory Alerts
-                        else if (!advisoryMessage.isEmpty()) {
+                        if (!advisoryMessage.isEmpty()) {
                             AlertType typeInformation = AlertType.TYPE_INFORMATION;
 
+                            Alert alert = new Alert();
+                            alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_LOW;
                             alert.type = typeInformation;
                             alert.messageTitle = typeInformation.title;
                             alert.messageBody = advisoryMessage;
+                            rowAlerts.add(alert);
                         }
 
                         // Current Alerts
-                        else if (!currentMessage.isEmpty()) {
+                        if (!currentMessage.isEmpty()) {
                             AlertType typeCurrent = AlertType.TYPE_DISRUPTION;
 
+                            Alert alert = new Alert();
+                            alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_MEDIUM;
                             alert.type = typeCurrent;
                             alert.messageTitle = typeCurrent.title;
                             alert.messageBody = currentMessage;
+                            rowAlerts.add(alert);
                         }
 
-                        // One Route per multiple alerts, so get or add a route to a map.
+                        /*
+                         * If there were no populated alert attributes for this alert-row, add an empty alert
+                         * anyway, so the Route model is created and there's a record of the last time
+                         * this alert was updated.
+                         */
+                        if (rowAlerts.isEmpty()) {
+                            Alert alert = new Alert();
+                            alert.lastUpdated = lastUpdateCalendar;
+                            rowAlerts.add(alert);
+                        }
+
+                        /*
+                         * There's now a list of (possibly empty) alerts for this single array entry in the
+                         * json document. Check to see if there's already a Route model stored for this routeId.
+                         *
+                         * If a Route object doesn't exist; create it. If one exists; fetch it. Then add all the
+                         * above alerts to the Route, and progress to the next alert row of the document.
+                         */
                         Route route = new Route(routeId, routeName);
-                        List<Alert> alerts = new ArrayList<>();
-
-                        if (routeAlertsMap.containsKey(route)) {
-                            alerts = routeAlertsMap.get(route);
+                        if (routesMap.containsKey(route.routeId)) {
+                            route = routesMap.get(route.routeId);
                         }
 
-                        // Set route transit types.
+                        // Create the Route model, as it may be the first time this route has been seen.
                         if (routeId.contains("generic")) {
                             route.transitType = TransitType.TYPE_SPECIAL;
                             route.externalUri = "http://www.septa.org/service/";
@@ -199,22 +245,16 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             route.routeFlag = RouteFlag.TYPE_OWL;
                         }
 
-                        route.alerts.add(alert);
-                        route.isDefault = false;
-                        routeAlertsMap.put(route, alerts);
-                    }
-
-                    agency.routes = new ArrayList<>();
-
-                    // Add each route and alert set to the agency routes.
-                    for (Map.Entry<Route, List<Alert>> routeEntry : routeAlertsMap.entrySet()) {
-                        Route route = routeEntry.getKey();
-
-                        List<Alert> alerts = routeEntry.getValue();
-                        route.alerts.addAll(alerts);
-                        agency.routes.add(route);
+                        // Add the modified route back into the map.
+                        if (!rowAlerts.isEmpty()) {
+                            route.alerts.addAll(rowAlerts);
+                            routesMap.put(routeId, route);
+                        }
                     }
                 }
+
+                // Add all routes to the agency.
+                mAgency.routes.addAll(routesMap.values());
 
             } catch (IllegalStateException pe) {
                 mLog.c(TAG, "Error parsing json body into alert object", pe);
@@ -224,7 +264,9 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             }
         }
 
-        mLog.d(TAG, "Finished creating SEPTA route-alert map.");
-        return agency;
+        Collections.sort(mAgency.routes);
+        mLog.d(TAG, "Finished creating and sorting SEPTA route-alert map.");
+
+        return mAgency;
     }
 }

@@ -1,10 +1,8 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import main.Constants;
 import dispatcher.types.RecipientState;
+import main.Constants;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -15,7 +13,7 @@ public class Recipient extends Model {
     public static Finder<Long, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
 
     @Id
-    @Column(name = "recipient_id")
+    @Column(name = "id")
     @SequenceGenerator(name = "recipient_id_seq_gen", sequenceName = "recipient_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipient_id_seq_gen")
     public Long id;
@@ -35,7 +33,12 @@ public class Recipient extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeAdded;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(
+            name = "failure_id",
+            referencedColumnName = "id",
+            unique = true,
+            updatable = false)
     public RecipientFailure failure;
 
     @PrePersist
@@ -49,8 +52,8 @@ public class Recipient extends Model {
         timeAdded = Calendar.getInstance();
     }
 
+    @SuppressWarnings("unused")
     public Recipient() {
-
     }
 
     public Recipient(Long id, String token) {

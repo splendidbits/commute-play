@@ -1,12 +1,12 @@
 package models.registrations;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import models.accounts.Account;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -17,25 +17,31 @@ public class Registration extends Model {
             Constants.COMMUTE_GCM_DB_SERVER, Registration.class);
 
     @Id
-    @Column(name = "device_id")
+    @Column(name = "id")
 	public String id;
 
     @Column(name = "registration_token")
     public String registrationToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(
+            name = "account_id",
+            referencedColumnName = "id",
+            unique = false,
+            updatable = false)
     public Account account;
 
-    @OneToMany(mappedBy = "registration", cascade = CascadeType.REMOVE)
-    public List<Subscription> subscriptions;
+    @Nonnull
+    @OneToMany(mappedBy = "registration", cascade = CascadeType.ALL)
+    public List<Subscription> subscriptions = new ArrayList<>();
 
     @Basic
     @Column(name = "time_registered", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeRegistered = Calendar.getInstance();
 
+    @SuppressWarnings("unused")
     public Registration() {
-        
     }
 
     public Registration(String deviceId, String registrationToken) {

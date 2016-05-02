@@ -12,13 +12,13 @@ create table splendidlog.applications (
 create sequence splendidlog_app_id_seq increment by 1;
 
 create table splendidlog.logs (
-  log_id                        bigint not null,
+  id                            bigint not null,
   application_id                integer,
   log_time                      timestamp without time zone,
   log_level                     varchar(255),
   log_tag                       varchar(255),
   log_message                   TEXT,
-  constraint pk_logs primary key (log_id)
+  constraint pk_logs primary key (id)
 );
 create sequence splendidlog_entry_gen increment by 1;
 

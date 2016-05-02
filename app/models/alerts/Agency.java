@@ -5,7 +5,9 @@ import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,6 +32,11 @@ public class Agency extends Model {
     @Column(name = "utc_offset")
     public Float utcOffset;
 
+    @Nonnull
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
-    public List<Route> routes;
+    public List<Route> routes = new ArrayList<>();
+
+    @SuppressWarnings("unused")
+    public Agency() {
+    }
 }

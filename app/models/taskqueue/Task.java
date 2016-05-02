@@ -1,8 +1,6 @@
 package models.taskqueue;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import dispatcher.types.TaskState;
 import main.Constants;
 
@@ -18,13 +16,14 @@ public class Task extends Model {
     public static Finder<Long, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
     @Id
-    @Column(name = "task_id")
+    @Column(name = "id")
     @SequenceGenerator(name = "task_id_seq_gen", sequenceName = "task_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Long id;
 
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "task", fetch = FetchType.EAGER)
-    public List<Message> messages;
+    @Nonnull
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.EAGER)
+    public List<Message> messages = new ArrayList<>();
 
     @Column(name = "retry_count")
     public int retryCount;
@@ -35,21 +34,22 @@ public class Task extends Model {
     @Column(name = "state")
     public TaskState state;
 
-    @Basic(fetch=FetchType.LAZY)
+    @Basic
     @Column(name = "task_added", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar taskAdded;
 
-    @Basic(fetch=FetchType.LAZY)
+    @Basic
     @Column(name = "last_attempt")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastAttempt;
 
-    @Basic(fetch=FetchType.LAZY)
+    @Basic
     @Column(name = "next_attempt")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
 
+    @SuppressWarnings("unused")
     public Task() {
     }
 
@@ -59,9 +59,6 @@ public class Task extends Model {
 
     @Transient
     public void addMessage(@Nonnull Message platformMessage) {
-        if (messages == null) {
-            messages = new ArrayList<>();
-        }
         messages.add(platformMessage);
     }
 
