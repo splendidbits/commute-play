@@ -1,7 +1,7 @@
 package main;
 
 import appmodels.AgencyModifications;
-import dispatcher.processors.PushMessageService;
+import dispatcher.processors.PushMessageManager;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -26,14 +26,14 @@ public class AlertsUpdateManager {
     private static final String TAG = AlertsUpdateManager.class.getSimpleName();
 
     private AgencyService mAgencyService;
-    private PushMessageService mPushMessageService;
+    private PushMessageManager mPushMessageManager;
     private Log mLog;
 
     @Inject
-    public AlertsUpdateManager(Log log, AgencyService agencyService, PushMessageService pushMessageService) {
+    public AlertsUpdateManager(Log log, AgencyService agencyService, PushMessageManager pushMessageManager) {
         mAgencyService = agencyService;
         mLog = log;
-        mPushMessageService = pushMessageService;
+        mPushMessageManager = pushMessageManager;
     }
 
     /**
@@ -62,7 +62,7 @@ public class AlertsUpdateManager {
                 // alerts if there's an issue with database persistence.
                 if (alertsPersisted) {
                     mLog.d(TAG, "New Agency Alerts persisted. Sending to subscribers.");
-                    mPushMessageService.notifyAlertSubscribers(modifiedAlerts);
+                    mPushMessageManager.dispatchAlerts(modifiedAlerts);
                 }
             }
         }
@@ -100,11 +100,13 @@ public class AlertsUpdateManager {
         // Iterate through the fresh routes that have been parsed.
         for (Route freshRoute : freshRoutes) {
 
-            // Iterate through the existing routes.
+            // Iterate through the existing persisted routes.
             for (Route existingRoute : existingRoutes) {
 
                 // Routes are the same.
-                if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                if (freshRoute.routeId.equals(existingRoute.routeId) &&
+                        freshRoute.alerts != null &&
+                        existingRoute.alerts != null) {
 
                     // Check if the fresh alert is new (updated properties).
                     List<Alert> updatedRouteAlerts = new ArrayList<>();
@@ -131,6 +133,9 @@ public class AlertsUpdateManager {
                         existingRoute.alerts = updatedRouteAlerts;
                         updatedRoutes.add(existingRoute);
                     }
+
+                    // As we found a route match, skip out of the inner existing route.
+                    break;
                 }
             }
         }

@@ -7,9 +7,7 @@ import enums.AlertLevel;
 import enums.AlertType;
 import main.Constants;
 
-import javax.annotation.Nonnull;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -34,12 +32,10 @@ public class Alert extends Model implements Comparable {
             updatable = true)
     public Route route;
 
-    @Nonnull
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
     public AlertType type = AlertType.TYPE_NONE;
 
-    @Nonnull
     @Column(name = "level")
     @Enumerated(EnumType.STRING)
     public AlertLevel level = AlertLevel.LEVEL_SILENT;
@@ -56,9 +52,8 @@ public class Alert extends Model implements Comparable {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @Nonnull
     @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    public List<Location> locations = new ArrayList<>();
+    public List<Location> locations;
 
     @Basic
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
@@ -127,10 +122,10 @@ public class Alert extends Model implements Comparable {
                     (lastUpdated != null && other.lastUpdated != null &&
                             lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
 
-            boolean bothLocationsEmpty = locations.isEmpty() && other.locations.isEmpty();
+            boolean bothLocationsEmpty = locations == null && other.locations == null;
 
-            boolean sameLocations = bothLocationsEmpty || (locations.containsAll(other.locations) &&
-                    other.locations.containsAll(locations));
+            boolean sameLocations = bothLocationsEmpty || (locations != null && other.locations != null &&
+                    locations.containsAll(other.locations) && other.locations.containsAll(locations));
 
             // Match everything.
             return (sameType && sameLevel && sameTitle && sameSubtitle &&

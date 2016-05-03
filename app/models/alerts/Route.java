@@ -7,10 +7,11 @@ import enums.RouteFlag;
 import enums.TransitType;
 import main.Constants;
 import models.registrations.Subscription;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -56,6 +57,7 @@ public class Route extends Model implements Comparable<Route> {
             updatable = true)
     public Agency agency;
 
+    @Nullable
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinTable(
             name = "route_subscriptions",
@@ -77,12 +79,11 @@ public class Route extends Model implements Comparable<Route> {
                     nullable = true,
                     insertable = true,
                     updatable = true))
+    public List<Subscription> subscriptions;
 
-    public List<Subscription> subscriptions = new ArrayList<>();
-
-    @Nonnull
+    @Nullable
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    public List<Alert> alerts = new ArrayList<>();
+    public List<Alert> alerts;
 
     @Override
     public int hashCode() {
@@ -114,7 +115,9 @@ public class Route extends Model implements Comparable<Route> {
                 ? externalUri.hashCode()
                 : hashCode;
 
-        hashCode += alerts.hashCode();
+        hashCode += alerts != null
+                ? alerts.hashCode()
+                : hashCode;
 
         return hashCode;
     }
@@ -141,10 +144,10 @@ public class Route extends Model implements Comparable<Route> {
             boolean sameUri = externalUri == null && other.externalUri == null ||
                     externalUri != null && externalUri.equals(other.externalUri);
 
-            boolean bothAlertsEmpty = alerts.isEmpty() && other.alerts.isEmpty();
+            boolean bothAlertsEmpty = alerts == null && other.alerts == null;
 
-            boolean sameAlerts = bothAlertsEmpty || (alerts.containsAll(other.alerts) &&
-                    other.alerts.containsAll(alerts));
+            boolean sameAlerts = bothAlertsEmpty || (alerts != null && other.alerts != null &&
+                    alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
 
             return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType &&
                     sameDefaults && sameUri && sameAlerts;
@@ -153,19 +156,22 @@ public class Route extends Model implements Comparable<Route> {
     }
 
     @Override
-    public int compareTo(Route o) {
-        return routeId.compareTo(o.routeId);
+    public int compareTo(@NotNull Route other) {
+        if (routeId != null && other.routeId != null) {
+            return routeId.compareTo(other.routeId);
+        }
+        return 0;
     }
 
     @SuppressWarnings("unused")
     public Route() {
     }
 
-    public Route(String routeId) {
+    public Route(@Nonnull String routeId) {
         this.routeId = routeId;
     }
 
-    public Route(String routeId, String routeName) {
+    public Route(@Nonnull String routeId, @Nonnull String routeName) {
         this.routeId = routeId;
         this.routeName = routeName;
     }

@@ -6,9 +6,11 @@
 * ~~Implement TaskQueue task~~.
 
 * Go through TODOs
-* Add non-dispatch message listener callback from client.
-* Authenticate external app logging.
+* ~~Add non-dispatch message listener callback from client~~.
+
 * ~~Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/~~
+* Refresh device tokens on response from GCM.
+* Authenticate external app logging.
 * Create json agency alert endpoints with caching
 * Change splendid log password
 * Test alerts removal sends cancel_message
@@ -29,18 +31,18 @@
 * ~~Add websiteURL~~
 * ~~Add transport_type~~
 
-* ~~issticky~~
-* ~~isdefaultsubscription~~
+* ~~isSticky~~
+* ~~isDefaultSubscription~~
 
 
 #### RouteFeature
 * ~~regular~~
 * ~~istemporary~~
-* ~~isowl~~
+* ~~isOwl~~
 * ~~privateService~~
 
 
-## Time permitting
+## TODO:
 * Fix quotas / accounts?
 * Improve log display page css.
 

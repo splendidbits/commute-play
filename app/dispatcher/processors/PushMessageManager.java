@@ -28,11 +28,11 @@ import java.util.concurrent.CompletionStage;
 import static helpers.MessageHelper.buildPushMessage;
 
 /**
- * Application-wide service for sending information through the
- * platform push channels.
+ * Intermediate Push Service manager for building and sending alert messages via
+ * the platform push services such as APNS or GCM.
  */
-public class PushMessageService {
-    private static final String TAG = PushMessageService.class.getSimpleName();
+public class PushMessageManager {
+    private static final String TAG = PushMessageManager.class.getSimpleName();
 
     @Inject
     private AccountService mAccountService;
@@ -48,7 +48,7 @@ public class PushMessageService {
      *
      * @param agencyUpdates Collection of modified route alerts.
      */
-    public CompletionStage<Boolean> notifyAlertSubscribers(@Nonnull AgencyModifications agencyUpdates) {
+    public CompletionStage<Boolean> dispatchAlerts(@Nonnull AgencyModifications agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
         CompletableFuture.runAsync(new Runnable() {
 
@@ -58,74 +58,109 @@ public class PushMessageService {
 
                 // Iterate through the NEW Alerts to send.
                 for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
-
-                    // Get all accounts with registrations subscribed to that route.
-                    List<Account> accounts = mAccountService.getRegistrationAccounts(
-                            PlatformType.SERVICE_GCM,
-                            agencyUpdates.getAgencyId(),
-                            updatedRoute);
-
-                    // Iterate through each sending API account.
-                    if (accounts != null && !accounts.isEmpty()) {
-                        Task task = new Task(updatedRoute.routeId);
-
-                        // Build a new message for the platform task per API account.
-                        for (Account account : accounts) {
-
-                            for (Alert alert : updatedRoute.alerts) {
-                                Message message = buildPushMessage(alert, false,
-                                        account.registrations, account.platformAccounts);
-
-                                if (message != null) {
-                                    task.addMessage(message);
-                                }
-                            }
-                        }
-                        // Add the task to the list of outbound jobs.
-                        messageTasks.add(task);
-                    }
+                    messageTasks.addAll(createAlertUpdateMessages(updatedRoute, agencyUpdates.getAgencyId()));
                 }
 
                 // Iterate through the STALE (canceled) Alerts to send.
                 for (Route staleRoute: agencyUpdates.getStaleAlertRoutes()) {
-
-                    // Get all accounts with registrations subscribed to that route.
-                    List<Account> accounts = mAccountService.getRegistrationAccounts(
-                            PlatformType.SERVICE_GCM,
-                            agencyUpdates.getAgencyId(),
-                            staleRoute);
-
-                    // Iterate through each sending API account.
-                    if (accounts != null && !accounts.isEmpty()) {
-                        Task task = new Task(staleRoute.routeId);
-
-                        // Build a new message for the platform task per API account.
-                        for (Account account : accounts) {
-                            for (Alert alert : staleRoute.alerts) {
-                                Message message = buildPushMessage(alert, true, account.registrations,
-                                        account.platformAccounts);
-
-                                if (message != null) {
-                                    task.addMessage(message);
-                                }
-                            }
-                        }
-                        // Add the task to the list of outbound jobs.
-                        messageTasks.add(task);
-                    }
+                    messageTasks.addAll(createAlertCancelMessages(staleRoute, agencyUpdates.getAgencyId()));
                 }
 
                 // Finally, if there are messages in each task, add them to the queue.
                 for (Task outboundTask : messageTasks) {
-                    if (!outboundTask.messages.isEmpty()) {
-                        mTaskQueue.addTask(outboundTask, new SendAlertRecipientCallback());
-                        completableFuture.complete(true);
-                    }
+                    mTaskQueue.addTask(outboundTask, new SendAlertRecipientCallback());
+                    completableFuture.complete(true);
                 }
             }
         });
 
         return completableFuture;
+    }
+
+    /**
+     * Send updated {@link models.alerts.Agency} route alerts to subscribed clients
+     * by fetching the subscriptions, registrations, and the sender API accost.
+     *
+     * @param updatedRoute A route which contains updated alerts to dispatch.
+     * @param agencyId The agencyId for the route
+     *
+     * @return A list of push service {@link Task}s to send.
+     */
+    @Nonnull
+    private List<Task> createAlertUpdateMessages(@Nonnull Route updatedRoute, int agencyId) {
+        List<Task> tasksList = new ArrayList<>();
+
+        // Get all accounts with registrations subscribed to that route.
+        List<Account> accounts = mAccountService.getRegistrationAccounts(
+                PlatformType.SERVICE_GCM, agencyId, updatedRoute);
+
+        // Iterate through each sending API account.
+        if (accounts != null && updatedRoute.alerts != null) {
+            Task task = new Task(updatedRoute.routeId);
+
+            // Build a new message for the platform task per API account.
+            for (Account account : accounts) {
+                for (Alert alert : updatedRoute.alerts) {
+
+                    if (account.registrations != null && account.platformAccounts != null) {
+                        Message message = buildPushMessage(
+                                alert, false,
+                                account.registrations,
+                                account.platformAccounts);
+
+                        if (message != null) {
+                            task.addMessage(message);
+                        }
+                    }
+                }
+            }
+            // Add the task to the list of outbound jobs.
+            tasksList.add(task);
+        }
+        return tasksList;
+    }
+
+    /**
+     * Send {@link models.alerts.Agency} route(s) notification cancellations flags to
+     * subscribed clients by fetching the subscriptions, registrations, and
+     * the sender API accost.
+     *
+     * @param cancelledRoute A route which contains cancelled route alerts to dispatch.
+     * @param agencyId The agencyId for the route
+     *
+     * @return A list of push service {@link Task}s to send.
+     */
+    @Nonnull
+    private List<Task> createAlertCancelMessages(@Nonnull Route cancelledRoute, int agencyId) {
+        List<Task> tasksList = new ArrayList<>();
+
+        // Get all accounts with registrations subscribed to that route.
+        List<Account> accounts = mAccountService.getRegistrationAccounts(
+                PlatformType.SERVICE_GCM, agencyId, cancelledRoute);
+
+        // Iterate through each sending API account.
+        if (accounts != null && cancelledRoute.alerts != null) {
+            Task task = new Task(cancelledRoute.routeId);
+
+            // Build a new message for the platform task per API account.
+            for (Account account : accounts) {
+                for (Alert alert : cancelledRoute.alerts) {
+                    if (account.registrations != null && account.platformAccounts != null) {
+                        Message message = buildPushMessage(
+                                alert, true,
+                                account.registrations,
+                                account.platformAccounts);
+
+                        if (message != null) {
+                            task.addMessage(message);
+                        }
+                    }
+                }
+            }
+            // Add the task to the list of outbound jobs.
+            tasksList.add(task);
+        }
+        return tasksList;
     }
 
     /**
@@ -148,7 +183,7 @@ public class PushMessageService {
             }
 
             // Add the message task to the TaskQueue.
-            if (!messageTask.messages.isEmpty()) {
+            if (messageTask.messages != null) {
                 mTaskQueue.addTask(messageTask, new SendAlertRecipientCallback());
             }
         }

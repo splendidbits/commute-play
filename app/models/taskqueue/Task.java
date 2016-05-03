@@ -5,6 +5,7 @@ import dispatcher.types.TaskState;
 import main.Constants;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -21,9 +22,9 @@ public class Task extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Long id;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.EAGER)
-    public List<Message> messages = new ArrayList<>();
+    public List<Message> messages;
 
     @Column(name = "retry_count")
     public int retryCount;
@@ -49,17 +50,19 @@ public class Task extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar nextAttempt;
 
+    public void addMessage(@Nonnull Message platformMessage) {
+        if (messages == null) {
+            messages = new ArrayList<>();
+        }
+        messages.add(platformMessage);
+    }
+
     @SuppressWarnings("unused")
     public Task() {
     }
 
-    public Task(String name) {
+    public Task(@Nonnull String name) {
         this.name = name;
-    }
-
-    @Transient
-    public void addMessage(@Nonnull Message platformMessage) {
-        messages.add(platformMessage);
     }
 
     @PrePersist

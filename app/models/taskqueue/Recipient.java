@@ -4,6 +4,7 @@ import com.avaje.ebean.Model;
 import dispatcher.types.RecipientState;
 import main.Constants;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.Calendar;
 
@@ -45,7 +46,7 @@ public class Recipient extends Model {
     public Recipient() {
     }
 
-    public Recipient(Long id, String token) {
+    public Recipient(@Nonnull Long id, @Nonnull String token) {
         this.id = id;
         this.token = token;
     }

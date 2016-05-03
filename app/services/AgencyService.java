@@ -136,10 +136,9 @@ public class AgencyService {
 
                 try {
                     List<Route> routes = mEbeanServer.find(Route.class)
-                            .fetch("routes")
                             .where()
-                            .eq("id", agencyId)
-                            .eq("routes.routeId", routeId.toLowerCase())
+                            .eq("agency_id", agencyId)
+                            .eq("routeId", routeId.toLowerCase())
                             .findList();
 
                     foundRoutes.addAll(routes);
@@ -161,13 +160,11 @@ public class AgencyService {
     @Nullable
     public List<Route> getRouteAlerts(int agencyId) {
         try {
-            List<Route> routes = mEbeanServer.find(Route.class)
+            return mEbeanServer.find(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .where()
-                    .eq("agency.id", agencyId)
+                    .eq("agency_id", agencyId)
                     .findList();
-
-            return routes;
 
         } catch (Exception e) {
             mLog.e(TAG, "Error getting routes for agency.", e);

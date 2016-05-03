@@ -6,7 +6,7 @@ import main.Constants;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "platform_account", schema = "api_accounts")
+@Table(name = "platform_accounts", schema = "api_accounts")
 public class PlatformAccount extends Model {
     public static Finder<String, PlatformAccount> find = new Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, PlatformAccount.class);
@@ -21,6 +21,12 @@ public class PlatformAccount extends Model {
     public Integer id;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(
+            name = "account_id",
+            table = "api_accounts.accounts",
+            referencedColumnName = "id",
+            unique = false,
+            updatable = true)
     public Account account;
 
     @Column(name = "package_uri")
@@ -30,5 +36,11 @@ public class PlatformAccount extends Model {
     public String authToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(
+            name = "platform_id",
+            table = "api_accounts.platforms",
+            referencedColumnName = "platform",
+            unique = false,
+            updatable = true)
     public Platform platform;
 }

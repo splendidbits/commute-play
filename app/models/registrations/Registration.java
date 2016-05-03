@@ -5,8 +5,8 @@ import main.Constants;
 import models.accounts.Account;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -32,9 +32,9 @@ public class Registration extends Model {
             updatable = false)
     public Account account;
 
-    @Nonnull
+    @Nullable
     @OneToMany(mappedBy = "registration", cascade = CascadeType.ALL)
-    public List<Subscription> subscriptions = new ArrayList<>();
+    public List<Subscription> subscriptions;
 
     @Basic
     @Column(name = "time_registered", columnDefinition = "timestamp without time zone")
@@ -45,7 +45,7 @@ public class Registration extends Model {
     public Registration() {
     }
 
-    public Registration(String deviceId, String registrationToken) {
+    public Registration(@Nonnull String deviceId, @Nonnull String registrationToken) {
         this.id = deviceId;
         this.registrationToken = registrationToken;
     }

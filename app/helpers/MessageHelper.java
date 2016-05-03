@@ -70,7 +70,7 @@ public class MessageHelper {
         final int ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
         Message gcmMessage = addMessagePlatformAccounts(new Message(), platformAccounts);
-        if (gcmMessage != null) {
+        if (gcmMessage != null && registration.registrationToken != null) {
             gcmMessage.collapseKey = MessageType.REGISTERED_ON_NETWORK.value;
             gcmMessage.ttl = ONE_WEEK_IN_SECONDS;
             gcmMessage.shouldDelayWhileIdle = true;
@@ -93,7 +93,7 @@ public class MessageHelper {
                                            @Nonnull List<PlatformAccount> platformAccounts) {
 
         Message gcmMessage = addMessagePlatformAccounts(new Message(), platformAccounts);
-        if (gcmMessage != null) {
+        if (gcmMessage != null && updatedAlert.route != null) {
 
             gcmMessage.shouldDelayWhileIdle = true;
             gcmMessage.addData(AlertMessage.GCM_KEY_ROUTE_ID.value, updatedAlert.route.routeId);

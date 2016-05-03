@@ -4,8 +4,8 @@ import com.avaje.ebean.Model;
 import main.Constants;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -25,9 +25,9 @@ public class RecipientFailure extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
     public Long id;
 
-    @Nonnull
+    @Nullable
     @OneToMany(mappedBy = "failure", fetch = FetchType.LAZY)
-    public List<Recipient> recipients = new ArrayList<>();
+    public List<Recipient> recipients;
 
     @Column(name = "failure_reason")
     public String failureReason;
@@ -55,7 +55,7 @@ public class RecipientFailure extends Model {
     public RecipientFailure() {
     }
 
-    public RecipientFailure(String failureReason) {
+    public RecipientFailure(@Nonnull String failureReason) {
         this.failureReason = failureReason;
     }
 }

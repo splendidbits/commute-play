@@ -4,9 +4,8 @@ import com.avaje.ebean.Model;
 import main.Constants;
 import models.alerts.Route;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -25,18 +24,22 @@ public class Subscription extends Model {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "registration_id",
-            table = "api_accounts.registrations",
+            table = "device_information.registrations",
             referencedColumnName = "id",
             unique = false,
             updatable = false)
     public Registration registration;
 
-    @Nonnull
+    @Nullable
     @ManyToMany(fetch = FetchType.EAGER)
-    public List<Route> routes = new ArrayList<>();
+    public List<Route> routes;
 
     @Basic
     @Column(name = "time_subscribed", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed = Calendar.getInstance();
+
+    @SuppressWarnings("unused")
+    public Subscription() {
+    }
 }

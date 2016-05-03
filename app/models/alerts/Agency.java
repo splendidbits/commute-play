@@ -32,9 +32,10 @@ public class Agency extends Model {
     public Float utcOffset;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
-    public List<Route> routes = new ArrayList<>();
+    public List<Route> routes;
 
     @SuppressWarnings("unused")
     public Agency() {
+        routes = new ArrayList<>();
     }
 }

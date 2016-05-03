@@ -182,20 +182,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         }
 
                         /*
-                         * If there were no populated alert attributes for this alert-row, add an empty alert
-                         * anyway, so the Route model is created and there's a record of the last time
-                         * this alert was updated.
-
-                        if (rowAlerts.isEmpty()) {
-                            Alert alert = new Alert();
-                            alert.lastUpdated = lastUpdateCalendar;
-                            alert.type = AlertType.TYPE_NONE;
-                            alert.level = AlertLevel.LEVEL_NORMAL;
-                            rowAlerts.add(alert);
-                        }
-                        */
-
-                        /*
                          * There's now a list of (possibly empty) alerts for this single array entry in the
                          * json document. Check to see if there's already a Route model stored for this routeId.
                          *

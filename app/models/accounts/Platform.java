@@ -4,13 +4,12 @@ import com.avaje.ebean.Model;
 import enums.PlatformType;
 import main.Constants;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "platform", schema = "api_accounts")
+@Table(name = "platforms", schema = "api_accounts")
 public class Platform extends Model {
     public static Finder<String, Platform> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Platform.class);
 
@@ -22,9 +21,9 @@ public class Platform extends Model {
     @Column(name = "endpoint_url")
     public String endpointUrl;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "platform", fetch = FetchType.LAZY)
-    public List<PlatformAccount> platformAccounts = new ArrayList<>();
+    public List<PlatformAccount> platformAccounts;
 
     @SuppressWarnings("unused")
     public Platform() {

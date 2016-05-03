@@ -1,13 +1,11 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.PrivateOwned;
 import main.Constants;
 import models.registrations.Registration;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -22,13 +20,13 @@ public class Account extends Model {
     @Column(name = "id")
     public Integer id;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
-    public List<PlatformAccount> platformAccounts = new ArrayList<>();
+    public List<PlatformAccount> platformAccounts;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
-    public List<Registration> registrations = new ArrayList<>();
+    public List<Registration> registrations;
 
     @Column(name = "organisation_name")
     public String orgName;
@@ -56,9 +54,8 @@ public class Account extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeEnrolled = Calendar.getInstance();
 
-
+    @SuppressWarnings("unused")
     public Account() {
-
     }
 
     @PrePersist

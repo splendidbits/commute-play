@@ -5,7 +5,7 @@ import models.registrations.Registration;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.AccountService;
-import dispatcher.processors.PushMessageService;
+import dispatcher.processors.PushMessageManager;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class RegistrationController extends Controller {
     private AccountService mAccountService;
 
     @Inject
-    private PushMessageService mPushMessageService;
+    private PushMessageManager mPushMessageManager;
 
     // Return results enum
     private enum RegistrationResult {
@@ -98,8 +98,8 @@ public class RegistrationController extends Controller {
         newRegistration.account = account;
         boolean persistSuccess = mAccountService.addRegistration(newRegistration);
 
-        if (persistSuccess) {
-            mPushMessageService.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
+        if (persistSuccess && account.platformAccounts != null) {
+            mPushMessageManager.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
             return CompletableFuture.completedFuture(RegistrationResult.OK);
 
         } else {

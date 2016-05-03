@@ -5,6 +5,7 @@ import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 
+import javax.annotation.Nonnull;
 import javax.persistence.*;
 
 @Entity
@@ -38,7 +39,7 @@ public class PayloadElement extends Model {
     public PayloadElement() {
     }
 
-    public PayloadElement(String name, String value) {
+    public PayloadElement(@Nonnull String name, @Nonnull String value) {
         this.name = name;
         this.value = value;
     }

@@ -6,6 +6,7 @@ import enums.PlatformType;
 import main.Constants;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -16,6 +17,10 @@ import java.util.List;
 public class Message extends Model {
     public static Finder<Long, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
 
+    /**
+     * The poirot attribute for the push message. Has an effect on device
+     * notification sound, vibration, visibility, etc.
+     */
     public enum Priority {
         @EnumValue("low")
         PRIORITY_LOW,
@@ -33,6 +38,7 @@ public class Message extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Long id;
 
+    @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "task_id",
@@ -42,13 +48,13 @@ public class Message extends Model {
             updatable = false)
     public Task task;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
-    public List<Recipient> recipients = new ArrayList<>();
+    public List<Recipient> recipients;
 
-    @Nonnull
+    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
-    public List<PayloadElement> payloadData = new ArrayList<>();
+    public List<PayloadElement> payloadData;
 
     @Column(name = "collapse_key")
     public String collapseKey;
@@ -85,13 +91,19 @@ public class Message extends Model {
     public String endpointUrl;
 
     @Transient
-    public void addData(String key, String value){
+    public void addData(@Nonnull String key, @Nonnull String value){
+        if (payloadData == null) {
+            payloadData = new ArrayList<>();
+        }
         PayloadElement payloadElement = new PayloadElement(key, value);
         payloadData.add(payloadElement);
     }
 
     @Transient
     public void addRegistrationToken(@Nonnull String token){
+        if (recipients == null) {
+            recipients = new ArrayList<>();
+        }
         Recipient recipient = new Recipient();
         recipient.token = token;
         recipients.add(recipient);

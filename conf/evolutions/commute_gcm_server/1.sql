@@ -83,20 +83,20 @@ create table task_queue.payload_element (
 );
 create sequence element_id_seq increment by 1;
 
-create table api_accounts.platform (
+create table api_accounts.platforms (
   platform                      varchar(4) not null,
   endpoint_url                  varchar(255),
-  constraint ck_platform_platform check (platform in ('GCM','APNS')),
-  constraint pk_platform primary key (platform)
+  constraint ck_platforms_platform check (platform in ('GCM','APNS')),
+  constraint pk_platforms primary key (platform)
 );
 
-create table api_accounts.platform_account (
+create table api_accounts.platform_accounts (
   id                            integer not null,
   account_id                    integer,
   package_uri                   varchar(255),
   auth_token                    varchar(255),
-  platform_platform             varchar(4),
-  constraint pk_platform_account primary key (id)
+  platform_id                   varchar(4),
+  constraint pk_platform_accounts primary key (id)
 );
 create sequence platform_account_id_seq increment by 1;
 
@@ -186,11 +186,11 @@ create index ix_messages_task_id on task_queue.messages (task_id);
 alter table task_queue.payload_element add constraint fk_payload_element_message_id foreign key (message_id) references task_queue.messages (id) on delete restrict on update restrict;
 create index ix_payload_element_message_id on task_queue.payload_element (message_id);
 
-alter table api_accounts.platform_account add constraint fk_platform_account_account_id foreign key (account_id) references api_accounts.accounts (id) on delete restrict on update restrict;
-create index ix_platform_account_account_id on api_accounts.platform_account (account_id);
+alter table api_accounts.platform_accounts add constraint fk_platform_accounts_account_id foreign key (account_id) references api_accounts.accounts (id) on delete restrict on update restrict;
+create index ix_platform_accounts_account_id on api_accounts.platform_accounts (account_id);
 
-alter table api_accounts.platform_account add constraint fk_platform_account_platform_platform foreign key (platform_platform) references api_accounts.platform (platform) on delete restrict on update restrict;
-create index ix_platform_account_platform_platform on api_accounts.platform_account (platform_platform);
+alter table api_accounts.platform_accounts add constraint fk_platform_accounts_platform_id foreign key (platform_id) references api_accounts.platforms (platform) on delete restrict on update restrict;
+create index ix_platform_accounts_platform_id on api_accounts.platform_accounts (platform_id);
 
 alter table task_queue.recipients add constraint fk_recipients_message_id foreign key (message_id) references task_queue.messages (id) on delete restrict on update restrict;
 create index ix_recipients_message_id on task_queue.recipients (message_id);
@@ -229,11 +229,11 @@ drop index if exists ix_messages_task_id;
 alter table if exists task_queue.payload_element drop constraint if exists fk_payload_element_message_id;
 drop index if exists ix_payload_element_message_id;
 
-alter table if exists api_accounts.platform_account drop constraint if exists fk_platform_account_account_id;
-drop index if exists ix_platform_account_account_id;
+alter table if exists api_accounts.platform_accounts drop constraint if exists fk_platform_accounts_account_id;
+drop index if exists ix_platform_accounts_account_id;
 
-alter table if exists api_accounts.platform_account drop constraint if exists fk_platform_account_platform_platform;
-drop index if exists ix_platform_account_platform_platform;
+alter table if exists api_accounts.platform_accounts drop constraint if exists fk_platform_accounts_platform_id;
+drop index if exists ix_platform_accounts_platform_id;
 
 alter table if exists task_queue.recipients drop constraint if exists fk_recipients_message_id;
 drop index if exists ix_recipients_message_id;
@@ -274,9 +274,9 @@ drop sequence if exists message_id_seq;
 drop table if exists task_queue.payload_element cascade;
 drop sequence if exists element_id_seq;
 
-drop table if exists api_accounts.platform cascade;
+drop table if exists api_accounts.platforms cascade;
 
-drop table if exists api_accounts.platform_account cascade;
+drop table if exists api_accounts.platform_accounts cascade;
 drop sequence if exists platform_account_id_seq;
 
 drop table if exists task_queue.recipients cascade;
