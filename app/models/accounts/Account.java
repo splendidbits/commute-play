@@ -1,6 +1,7 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.PrivateOwned;
 import main.Constants;
 import models.registrations.Registration;
 
@@ -11,7 +12,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "account", schema = "service_accounts")
+@Table(name = "accounts", schema = "service_accounts")
 public class Account extends Model {
     public static Finder<Integer, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
 

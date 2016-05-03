@@ -28,6 +28,7 @@ public class PayloadElement extends Model {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "message_id",
+            table = "task_queue.messages",
             referencedColumnName = "id",
             unique = false,
             updatable = false)

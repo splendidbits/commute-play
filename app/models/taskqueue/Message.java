@@ -36,6 +36,7 @@ public class Message extends Model {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "task_id",
+            table = "task_queue.tasks",
             referencedColumnName = "id",
             unique = false,
             updatable = false)

@@ -101,8 +101,7 @@ public class AgencyService {
                             existingRoute.transitType = newRoute.transitType;
 
                             // Delete the alerts for that route
-                            mLog.d(TAG, String.format("Saving $1%d alerts for $2%s.",
-                                    newRoute.alerts.size(),
+                            mLog.d(TAG, String.format("Saving $1%d alerts for $2%s.", newRoute.alerts.size(),
                                     existingRoute.routeId));
 
                             mEbeanServer.save(existingRoute, transaction);

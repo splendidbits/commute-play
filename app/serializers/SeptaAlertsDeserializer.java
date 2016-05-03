@@ -41,6 +41,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             mAgency.phone = "12155807800";
             mAgency.externalUri = "http://www.septa.org";
             mAgency.utcOffset = -5f;
+            mAgency.routes = new ArrayList<>();
         }
     }
 

@@ -35,6 +35,7 @@ public class RecipientFailure extends Model {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "recipient_id",
+            table = "task_queue.recipients",
             referencedColumnName = "id",
             unique = true,
             updatable = false)

@@ -14,6 +14,7 @@ import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
 import models.taskqueue.Task;
+import org.jetbrains.annotations.NotNull;
 import services.AccountService;
 
 import javax.annotation.Nonnull;
@@ -110,7 +111,7 @@ public class PushMessageService {
 
                 // Finally, if there are messages in each task, add them to the queue.
                 for (Task outboundTask : messageTasks) {
-                    if (outboundTask.messages != null && !outboundTask.messages.isEmpty()) {
+                    if (!outboundTask.messages.isEmpty()) {
                         mTaskQueue.addTask(outboundTask, new SendAlertRecipientCallback());
                         completableFuture.complete(true);
                     }
@@ -135,11 +136,13 @@ public class PushMessageService {
             Task messageTask = new Task("registration_success");
 
             Message message = MessageHelper.buildConfirmDeviceMessage(registration, platformAccounts);
-            message.addRegistrationToken(registration.registrationToken);
-            messageTask.addMessage(message);
+            if (message != null) {
+                message.addRegistrationToken(registration.registrationToken);
+                messageTask.addMessage(message);
+            }
 
             // Add the message task to the TaskQueue.
-            if (messageTask.messages != null && !messageTask.messages.isEmpty()) {
+            if (!messageTask.messages.isEmpty()) {
                 mTaskQueue.addTask(messageTask, new SendAlertRecipientCallback());
             }
         }
@@ -152,7 +155,7 @@ public class PushMessageService {
     private class SendAlertRecipientCallback implements PushMessageCallback {
 
         @Override
-        public void removeRecipients(List<Recipient> recipients) {
+        public void removeRecipients(@NotNull List<Recipient> recipients) {
             mLog.d(TAG, String.format("There are %d recipients to delete locally.", recipients.size()));
             for (Recipient recipientToRemove : recipients) {
                 mAccountService.deleteRegistration(recipientToRemove.token);
@@ -160,7 +163,7 @@ public class PushMessageService {
         }
 
         @Override
-        public void updateRecipients(List<UpdatedRecipient> recipients) {
+        public void updateRecipients(@NotNull List<UpdatedRecipient> recipients) {
             mLog.d(TAG, String.format("There are %d recipients to delete locally.", recipients.size()));
             for (UpdatedRecipient recipientToUpdate : recipients) {
                 // TODO: Implement this.

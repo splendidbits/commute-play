@@ -26,26 +26,15 @@ public class Recipient extends Model {
 
     @Column(name = "state")
     @Enumerated(EnumType.STRING)
-    public RecipientState state;
+    public RecipientState state = RecipientState.STATE_IDLE;
 
     @Basic(fetch=FetchType.LAZY)
     @Column(name = "time_added", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar timeAdded;
+    public Calendar timeAdded = Calendar.getInstance();
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(
-            name = "failure_id",
-            referencedColumnName = "id",
-            unique = true,
-            updatable = false)
     public RecipientFailure failure;
-
-    @PrePersist
-    public void insertValues(){
-        timeAdded = Calendar.getInstance();
-        state = RecipientState.STATE_IDLE;
-    }
 
     @PreUpdate
     public void updateValues() {

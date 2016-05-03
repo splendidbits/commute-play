@@ -83,7 +83,7 @@ public class AlertsUpdateManager {
         if (existingRouteAlerts == null || existingRouteAlerts.isEmpty()) {
             for (Route freshRoute : freshRouteAlerts) {
                 for (Alert freshAlert : freshRoute.alerts) {
-                    modifiedAlerts.addUpdatedRouteAlert(freshAlert);
+                    modifiedAlerts.addUpdatedAlert(freshAlert);
                 }
             }
             return modifiedAlerts;
@@ -93,7 +93,7 @@ public class AlertsUpdateManager {
         if (freshRouteAlerts.isEmpty()) {
             for (Route existingRoute : existingRouteAlerts) {
                 for (Alert existingAlert : existingRoute.alerts) {
-                    modifiedAlerts.addStaleRouteAlert(existingAlert);
+                    modifiedAlerts.addStaleAlert(existingAlert);
                 }
             }
             return modifiedAlerts;
@@ -109,14 +109,14 @@ public class AlertsUpdateManager {
                     // Check if the fresh alert is new (updated properties).
                     for (Alert freshAlert : freshRoute.alerts) {
                         if (!existingRoute.alerts.contains(freshAlert)) {
-                            modifiedAlerts.addUpdatedRouteAlert(freshAlert);
+                            modifiedAlerts.addUpdatedAlert(freshAlert);
                         }
                     }
 
                     // Add the alert as stale if it no longer exists.
                     for (Alert existingAlert : existingRoute.alerts) {
                         if (!freshRoute.alerts.contains(existingAlert)) {
-                            modifiedAlerts.addStaleRouteAlert(existingAlert);
+                            modifiedAlerts.addStaleAlert(existingAlert);
                         }
                     }
 

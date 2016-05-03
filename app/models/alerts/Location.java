@@ -23,6 +23,7 @@ public class Location extends Model implements Comparable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "alert_id",
+            table = "agency_alerts.alerts",
             referencedColumnName = "id",
             unique = false,
             updatable = true)

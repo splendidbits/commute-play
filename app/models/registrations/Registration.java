@@ -26,6 +26,7 @@ public class Registration extends Model {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "account_id",
+            table = "service_accounts.accounts",
             referencedColumnName = "id",
             unique = false,
             updatable = false)

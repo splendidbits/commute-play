@@ -28,18 +28,21 @@ public class Alert extends Model implements Comparable {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "route_id",
+            table = "agency_alerts.routes",
             referencedColumnName = "id",
-            unique = true,
-            updatable = false)
+            unique = false,
+            updatable = true)
     public Route route;
 
+    @Nonnull
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    public AlertType type;
+    public AlertType type = AlertType.TYPE_INFORMATION;
 
+    @Nonnull
     @Column(name = "level")
     @Enumerated(EnumType.STRING)
-    public AlertLevel level;
+    public AlertLevel level = AlertLevel.LEVEL_SILENT;
 
     @Column(name = "message_title", columnDefinition = "TEXT")
     public String messageTitle;

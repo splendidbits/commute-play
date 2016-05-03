@@ -3,7 +3,7 @@
 
 # --- !Ups
 
-create table service_accounts.account (
+create table service_accounts.accounts (
   id                            integer not null,
   organisation_name             varchar(255),
   account_email                 varchar(255),
@@ -13,7 +13,7 @@ create table service_accounts.account (
   message_limit_day             bigint,
   active                        boolean default false,
   time_enrolled                 timestamp without time zone,
-  constraint pk_account primary key (id)
+  constraint pk_accounts primary key (id)
 );
 create sequence account_id_seq increment by 1;
 
@@ -186,7 +186,7 @@ create index ix_messages_task_id on task_queue.messages (task_id);
 alter table task_queue.payload_element add constraint fk_payload_element_message_id foreign key (message_id) references task_queue.messages (id) on delete restrict on update restrict;
 create index ix_payload_element_message_id on task_queue.payload_element (message_id);
 
-alter table service_accounts.platform_account add constraint fk_platform_account_account_id foreign key (account_id) references service_accounts.account (id) on delete restrict on update restrict;
+alter table service_accounts.platform_account add constraint fk_platform_account_account_id foreign key (account_id) references service_accounts.accounts (id) on delete restrict on update restrict;
 create index ix_platform_account_account_id on service_accounts.platform_account (account_id);
 
 alter table service_accounts.platform_account add constraint fk_platform_account_platform_platform foreign key (platform_platform) references service_accounts.platform (platform) on delete restrict on update restrict;
@@ -199,7 +199,7 @@ alter table task_queue.recipients add constraint fk_recipients_failure_id foreig
 
 alter table task_queue.recipient_failures add constraint fk_recipient_failures_recipient_id foreign key (recipient_id) references task_queue.recipients (id) on delete restrict on update restrict;
 
-alter table device_subscriptions.registrations add constraint fk_registrations_account_id foreign key (account_id) references service_accounts.account (id) on delete restrict on update restrict;
+alter table device_subscriptions.registrations add constraint fk_registrations_account_id foreign key (account_id) references service_accounts.accounts (id) on delete restrict on update restrict;
 create index ix_registrations_account_id on device_subscriptions.registrations (account_id);
 
 alter table agency_alerts.routes add constraint fk_routes_agency_id foreign key (agency_id) references agency_alerts.agencies (id) on delete restrict on update restrict;
@@ -257,7 +257,7 @@ drop index if exists ix_subscriptions_routes_subscriptions;
 alter table if exists device_subscriptions.subscriptions_routes drop constraint if exists fk_subscriptions_routes_routes;
 drop index if exists ix_subscriptions_routes_routes;
 
-drop table if exists service_accounts.account cascade;
+drop table if exists service_accounts.accounts cascade;
 drop sequence if exists account_id_seq;
 
 drop table if exists agency_alerts.agencies cascade;
