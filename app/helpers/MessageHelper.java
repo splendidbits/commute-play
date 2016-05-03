@@ -109,7 +109,7 @@ public class MessageHelper {
             // Default push service priorities based on what the deserializer assigned.
             AlertLevel alertLevel = updatedAlert.level;
 
-            if (alertLevel.equals(AlertLevel.LEVEL_MEDIUM)) {
+            if (alertLevel.equals(AlertLevel.LEVEL_NORMAL)) {
                 gcmMessage.priority = Message.Priority.PRIORITY_NORMAL;
 
             } else if (alertLevel.equals(AlertLevel.LEVEL_HIGH)) {

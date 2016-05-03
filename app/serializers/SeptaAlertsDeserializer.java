@@ -103,13 +103,12 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                         // Parse the detour locations into the correct type.
                         if (!detourMessage.isEmpty()) {
-                            AlertType typeDetour = AlertType.TYPE_DETOUR;
 
-                            // Add the detour start and end locations if they exist.
-                            ArrayList<Location> detourLocations = new ArrayList<>();
                             Calendar detourStartCalendar = Calendar.getInstance(timezone, Locale.US);
                             Calendar detourEndCalendar = Calendar.getInstance(timezone, Locale.US);
 
+                            // Add the detour start and end locations if they exist.
+                            ArrayList<Location> detourLocations = new ArrayList<>();
                             if (detourStartDate != null && !detourStartDate.isEmpty()) {
                                 detourStartCalendar.setTime(detourDateFormat.parse(detourStartDate));
 
@@ -131,11 +130,12 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                                 detourLocations.add(detourLocation);
                             }
 
+                            AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_LOW;
-                            alert.type = typeDetour;
-                            alert.messageTitle = typeDetour.title;
+                            alert.type = type;
+                            alert.messageTitle = type.title;
                             alert.messageSubtitle = detourReason;
                             alert.messageBody = detourMessage;
                             alert.locations = detourLocations;
@@ -144,11 +144,11 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                         // Snow Alerts
                         if (isSnow.toLowerCase().equals("y")) {
-                            AlertType typeWeather = AlertType.TYPE_WEATHER;
 
+                            AlertType typeWeather = AlertType.TYPE_WEATHER;
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
-                            alert.level = AlertLevel.LEVEL_MEDIUM;
+                            alert.level = AlertLevel.LEVEL_NORMAL;
                             alert.type = typeWeather;
                             alert.messageTitle = typeWeather.title;
                             alert.messageBody = currentMessage;
@@ -157,8 +157,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                         // Advisory Alerts
                         if (!advisoryMessage.isEmpty()) {
-                            AlertType typeInformation = AlertType.TYPE_INFORMATION;
 
+                            AlertType typeInformation = AlertType.TYPE_INFORMATION;
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.level = AlertLevel.LEVEL_LOW;
@@ -170,11 +170,11 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                         // Current Alerts
                         if (!currentMessage.isEmpty()) {
-                            AlertType typeCurrent = AlertType.TYPE_DISRUPTION;
 
+                            AlertType typeCurrent = AlertType.TYPE_DISRUPTION;
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
-                            alert.level = AlertLevel.LEVEL_MEDIUM;
+                            alert.level = AlertLevel.LEVEL_NORMAL;
                             alert.type = typeCurrent;
                             alert.messageTitle = typeCurrent.title;
                             alert.messageBody = currentMessage;
@@ -189,6 +189,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (rowAlerts.isEmpty()) {
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
+                            alert.type = AlertType.TYPE_NONE;
+                            alert.level = AlertLevel.LEVEL_NORMAL;
                             rowAlerts.add(alert);
                         }
 

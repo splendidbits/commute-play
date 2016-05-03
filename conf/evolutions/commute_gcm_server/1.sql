@@ -36,8 +36,8 @@ create table agency_alerts.alerts (
   message_body                  TEXT,
   external_uri                  TEXT,
   last_updated                  timestamp without time zone,
-  constraint ck_alerts_type check (type in ('DISRUPTION','APP','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
-  constraint ck_alerts_level check (level in ('HIGH','SILENT','CRITICAL','LOW','MEDIUM')),
+  constraint ck_alerts_type check (type in ('NONE','DISRUPTION','APP','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
+  constraint ck_alerts_level check (level in ('NORMAL','HIGH','SILENT','CRITICAL','LOW')),
   constraint pk_alerts primary key (id)
 );
 create sequence alert_id_seq increment by 1;

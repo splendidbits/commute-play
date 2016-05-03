@@ -17,8 +17,8 @@ public enum AlertLevel {
     @EnumValue("LOW")
     LEVEL_LOW(5),
 
-    @EnumValue("MEDIUM")
-    LEVEL_MEDIUM(25),
+    @EnumValue("NORMAL")
+    LEVEL_NORMAL(25),
 
     @EnumValue("HIGH")
     LEVEL_HIGH(70),

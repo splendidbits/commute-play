@@ -59,7 +59,7 @@ public class AgencyService {
                 // Loop through each route and persist if anything is new.
                 for (Route newRoute : newAgency.routes) {
 
-                    // Find the an existing agency route that matches the agency specific routeId.
+                    // Find an existing route id that matches the updated route.
                     Route existingRoute = null;
                     for (Route route : existingAgency.routes) {
                         if (route.routeId.equals(newRoute.routeId)) {
