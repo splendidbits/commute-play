@@ -185,7 +185,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          * If there were no populated alert attributes for this alert-row, add an empty alert
                          * anyway, so the Route model is created and there's a record of the last time
                          * this alert was updated.
-                         */
+
                         if (rowAlerts.isEmpty()) {
                             Alert alert = new Alert();
                             alert.lastUpdated = lastUpdateCalendar;
@@ -193,6 +193,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.level = AlertLevel.LEVEL_NORMAL;
                             rowAlerts.add(alert);
                         }
+                        */
 
                         /*
                          * There's now a list of (possibly empty) alerts for this single array entry in the
@@ -249,11 +250,13 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             route.routeFlag = RouteFlag.TYPE_OWL;
                         }
 
-                        // Add the modified route back into the map.
+                        // Add alerts to route.
                         if (!rowAlerts.isEmpty()) {
                             route.alerts.addAll(rowAlerts);
-                            routesMap.put(routeId, route);
                         }
+
+                        // Add the modified route back into the map.
+                        routesMap.put(routeId, route);
                     }
                 }
 

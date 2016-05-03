@@ -1,6 +1,6 @@
 package main;
 
-import appmodels.ModifiedAlerts;
+import appmodels.AgencyModifications;
 import dispatcher.processors.PushMessageService;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -9,6 +9,7 @@ import services.AgencyService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,15 +51,19 @@ public class AlertsUpdateManager {
         if (!agencyRoutes.isEmpty()) {
 
             // Pass the Alert differences on to the GCM Pre-processor.
-            ModifiedAlerts modifiedAlerts = getUpdatedRoutes(updatedAgency);
-            if (modifiedAlerts.hasModifiedAlerts()) {
-
-                mLog.d(TAG, "Found new alerts in agency routes.");
-                mPushMessageService.notifyAlertSubscribers(modifiedAlerts);
+            AgencyModifications modifiedAlerts = getUpdatedRoutes(updatedAgency);
+            if (modifiedAlerts.hasModifiedRoutes()) {
 
                 // Save the agency in the datastore.
                 mLog.d(TAG, "Saving new or updated agency data.");
-                mAgencyService.saveAgencyAlerts(updatedAgency);
+                boolean alertsPersisted = mAgencyService.saveAgencyAlerts(updatedAgency);
+
+                // NOTE: This is a sanity-check to ensure we don't bombard clients with
+                // alerts if there's an issue with database persistence.
+                if (alertsPersisted) {
+                    mLog.d(TAG, "New Agency Alerts persisted. Sending to subscribers.");
+                    mPushMessageService.notifyAlertSubscribers(modifiedAlerts);
+                }
             }
         }
     }
@@ -70,62 +75,69 @@ public class AlertsUpdateManager {
      * @return A list of removed and added alerts for that agency.
      */
     @Nonnull
-    private ModifiedAlerts getUpdatedRoutes(@Nonnull Agency updatedAgency) {
-        ModifiedAlerts modifiedAlerts = new ModifiedAlerts(updatedAgency.id);
+    private AgencyModifications getUpdatedRoutes(@Nonnull Agency updatedAgency) {
+        AgencyModifications modifiedRouteAlerts = new AgencyModifications(updatedAgency.id);
 
-        // Get all the current routes that exist for the agency.
-        List<Route> existingRouteAlerts = mAgencyService.getRouteAlerts(updatedAgency.id);
-
-        // Get all the fresh routes that have been parsed.
-        List<Route> freshRouteAlerts = updatedAgency.routes;
+        // Get all new routes, and the current routes that exist for the agency.
+        List<Route> freshRoutes = updatedAgency.routes;
+        List<Route> existingRoutes = mAgencyService.getRouteAlerts(updatedAgency.id);
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
-        if (existingRouteAlerts == null || existingRouteAlerts.isEmpty()) {
-            for (Route freshRoute : freshRouteAlerts) {
-                for (Alert freshAlert : freshRoute.alerts) {
-                    modifiedAlerts.addUpdatedAlert(freshAlert);
-                }
-            }
-            return modifiedAlerts;
+        if (existingRoutes == null || existingRoutes.isEmpty()) {
+            modifiedRouteAlerts.addUpdatedRouteAlert(updatedAgency.routes);
+            return modifiedRouteAlerts;
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
-        if (freshRouteAlerts.isEmpty()) {
-            for (Route existingRoute : existingRouteAlerts) {
-                for (Alert existingAlert : existingRoute.alerts) {
-                    modifiedAlerts.addStaleAlert(existingAlert);
-                }
-            }
-            return modifiedAlerts;
+        if (freshRoutes.isEmpty()) {
+            modifiedRouteAlerts.addStaleRouteAlert(updatedAgency.routes);
+            return modifiedRouteAlerts;
         }
 
+        List<Route> updatedRoutes = new ArrayList<>();
+        List<Route> staleRoutes = new ArrayList<>();
+
         // Iterate through the fresh routes that have been parsed.
-        for (Route freshRoute : freshRouteAlerts) {
+        for (Route freshRoute : freshRoutes) {
 
             // Iterate through the existing routes.
-            for (Route existingRoute : existingRouteAlerts) {
+            for (Route existingRoute : existingRoutes) {
+
+                // Routes are the same.
                 if (freshRoute.routeId.equals(existingRoute.routeId)) {
 
                     // Check if the fresh alert is new (updated properties).
+                    List<Alert> updatedRouteAlerts = new ArrayList<>();
                     for (Alert freshAlert : freshRoute.alerts) {
                         if (!existingRoute.alerts.contains(freshAlert)) {
-                            modifiedAlerts.addUpdatedAlert(freshAlert);
+                            updatedRouteAlerts.add(freshAlert);
                         }
                     }
 
                     // Add the alert as stale if it no longer exists.
+                    List<Alert> staleRouteAlerts = new ArrayList<>();
                     for (Alert existingAlert : existingRoute.alerts) {
                         if (!freshRoute.alerts.contains(existingAlert)) {
-                            modifiedAlerts.addStaleAlert(existingAlert);
+                            staleRouteAlerts.add(existingAlert);
                         }
                     }
 
-                    // Skip all the inner route iterations.
-                    break;
+                    if (!staleRouteAlerts.isEmpty()) {
+                        existingRoute.alerts = staleRouteAlerts;
+                        staleRoutes.add(existingRoute);
+                    }
+
+                    if (!updatedRoutes.isEmpty()) {
+                        existingRoute.alerts = updatedRouteAlerts;
+                        updatedRoutes.add(existingRoute);
+                    }
                 }
             }
         }
 
-        return modifiedAlerts;
+        modifiedRouteAlerts.addUpdatedRouteAlert(updatedRoutes);
+        modifiedRouteAlerts.addStaleRouteAlert(staleRoutes);
+
+        return modifiedRouteAlerts;
     }
 }

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "platform", schema = "service_accounts")
+@Table(name = "platform", schema = "api_accounts")
 public class Platform extends Model {
     public static Finder<String, Platform> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Platform.class);
 

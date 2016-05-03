@@ -10,7 +10,7 @@ import com.avaje.ebean.annotation.EnumValue;
  * Copyright 4/30/16 Splendid Bits.
  */
 public enum AlertType {
-    @EnumValue("NONE")
+    @EnumValue("")
     TYPE_NONE(""),
 
     @EnumValue("MAINTENANCE")

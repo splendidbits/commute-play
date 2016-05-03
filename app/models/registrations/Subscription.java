@@ -25,7 +25,7 @@ public class Subscription extends Model {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "registration_id",
-            table = "service_accounts.registrations",
+            table = "api_accounts.registrations",
             referencedColumnName = "id",
             unique = false,
             updatable = false)

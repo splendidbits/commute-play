@@ -107,6 +107,7 @@ public class AgencyService {
 
             // Commit all work.
             transaction.commit();
+            return true;
 
         } catch (Exception e) {
             mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
@@ -116,8 +117,6 @@ public class AgencyService {
         } finally {
             transaction.end();
         }
-
-        return true;
     }
 
     /**

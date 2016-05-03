@@ -12,7 +12,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "accounts", schema = "service_accounts")
+@Table(name = "accounts", schema = "api_accounts")
 public class Account extends Model {
     public static Finder<Integer, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
 

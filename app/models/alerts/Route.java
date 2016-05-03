@@ -141,8 +141,10 @@ public class Route extends Model implements Comparable<Route> {
             boolean sameUri = externalUri == null && other.externalUri == null ||
                     externalUri != null && externalUri.equals(other.externalUri);
 
-            boolean sameAlerts = alerts.containsAll(other.alerts) &&
-                    other.alerts.containsAll(alerts);
+            boolean bothAlertsEmpty = alerts.isEmpty() && other.alerts.isEmpty();
+
+            boolean sameAlerts = bothAlertsEmpty || (alerts.containsAll(other.alerts) &&
+                    other.alerts.containsAll(alerts));
 
             return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType &&
                     sameDefaults && sameUri && sameAlerts;

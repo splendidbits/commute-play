@@ -1,6 +1,6 @@
 package dispatcher.processors;
 
-import appmodels.ModifiedAlerts;
+import appmodels.AgencyModifications;
 import dispatcher.interfaces.PushMessageCallback;
 import dispatcher.models.UpdatedRecipient;
 import dispatcher.types.PushFailCause;
@@ -10,6 +10,7 @@ import main.Log;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Alert;
+import models.alerts.Route;
 import models.registrations.Registration;
 import models.taskqueue.Message;
 import models.taskqueue.Recipient;
@@ -47,7 +48,7 @@ public class PushMessageService {
      *
      * @param agencyUpdates Collection of modified route alerts.
      */
-    public CompletionStage<Boolean> notifyAlertSubscribers(@Nonnull ModifiedAlerts agencyUpdates) {
+    public CompletionStage<Boolean> notifyAlertSubscribers(@Nonnull AgencyModifications agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
         CompletableFuture.runAsync(new Runnable() {
 
@@ -55,26 +56,29 @@ public class PushMessageService {
             public void run() {
                 List<Task> messageTasks = new ArrayList<>();
 
-                /** Iterate through the NEW Alerts to send. **/
-                for (Alert newAlert : agencyUpdates.getUpdatedAlerts()) {
+                // Iterate through the NEW Alerts to send.
+                for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
 
                     // Get all accounts with registrations subscribed to that route.
                     List<Account> accounts = mAccountService.getRegistrationAccounts(
                             PlatformType.SERVICE_GCM,
                             agencyUpdates.getAgencyId(),
-                            newAlert.route);
+                            updatedRoute);
 
                     // Iterate through each sending API account.
                     if (accounts != null && !accounts.isEmpty()) {
-                        Task task = new Task(newAlert.route.routeId);
+                        Task task = new Task(updatedRoute.routeId);
 
                         // Build a new message for the platform task per API account.
                         for (Account account : accounts) {
-                            Message message = buildPushMessage(newAlert, false,
-                                    account.registrations, account.platformAccounts);
 
-                            if (message != null) {
-                                task.addMessage(message);
+                            for (Alert alert : updatedRoute.alerts) {
+                                Message message = buildPushMessage(alert, false,
+                                        account.registrations, account.platformAccounts);
+
+                                if (message != null) {
+                                    task.addMessage(message);
+                                }
                             }
                         }
                         // Add the task to the list of outbound jobs.
@@ -82,26 +86,28 @@ public class PushMessageService {
                     }
                 }
 
-                /** Iterate through the STALE (canceled) Alerts to send. **/
-                for (Alert staleAlert : agencyUpdates.getUpdatedAlerts()) {
+                // Iterate through the STALE (canceled) Alerts to send.
+                for (Route staleRoute: agencyUpdates.getStaleAlertRoutes()) {
 
                     // Get all accounts with registrations subscribed to that route.
                     List<Account> accounts = mAccountService.getRegistrationAccounts(
                             PlatformType.SERVICE_GCM,
                             agencyUpdates.getAgencyId(),
-                            staleAlert.route);
+                            staleRoute);
 
                     // Iterate through each sending API account.
                     if (accounts != null && !accounts.isEmpty()) {
-                        Task task = new Task(staleAlert.route.routeId);
+                        Task task = new Task(staleRoute.routeId);
 
                         // Build a new message for the platform task per API account.
                         for (Account account : accounts) {
-                            Message message = buildPushMessage(staleAlert,
-                                    true, account.registrations, account.platformAccounts);
+                            for (Alert alert : staleRoute.alerts) {
+                                Message message = buildPushMessage(alert, true, account.registrations,
+                                        account.platformAccounts);
 
-                            if (message != null) {
-                                task.addMessage(message);
+                                if (message != null) {
+                                    task.addMessage(message);
+                                }
                             }
                         }
                         // Add the task to the list of outbound jobs.

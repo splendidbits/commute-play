@@ -107,11 +107,9 @@ public class Alert extends Model implements Comparable {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
 
-            boolean sameType = (type == null && other.type == null) ||
-                    (type != null && other.type != null && type.equals(other.type));
+            boolean sameType = (type.equals(other.type));
 
-            boolean sameLevel = (level == null && other.level == null) ||
-                    (level != null && other.level != null && level.equals(other.level));
+            boolean sameLevel = (level.equals(other.level));
 
             boolean sameTitle = (messageTitle == null && other.messageTitle == null) ||
                     (messageTitle != null && other.messageTitle != null && messageTitle.equals(other.messageTitle));
@@ -129,10 +127,9 @@ public class Alert extends Model implements Comparable {
                     (lastUpdated != null && other.lastUpdated != null &&
                             lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
 
-            boolean bothLocationsNull = locations == null && other.locations == null;
+            boolean bothLocationsEmpty = locations.isEmpty() && other.locations.isEmpty();
 
-            boolean sameLocations = bothLocationsNull || (locations != null && other.locations != null &&
-                    locations.containsAll(other.locations) &&
+            boolean sameLocations = bothLocationsEmpty || (locations.containsAll(other.locations) &&
                     other.locations.containsAll(locations));
 
             // Match everything.

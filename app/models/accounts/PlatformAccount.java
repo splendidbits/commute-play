@@ -6,7 +6,7 @@ import main.Constants;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "platform_account", schema = "service_accounts")
+@Table(name = "platform_account", schema = "api_accounts")
 public class PlatformAccount extends Model {
     public static Finder<String, PlatformAccount> find = new Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, PlatformAccount.class);
