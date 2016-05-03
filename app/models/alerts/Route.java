@@ -15,7 +15,7 @@ import java.util.List;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "routes", schema = "agency_alerts")
+@Table(name = "routes", schema = "agency_updates")
 public class Route extends Model implements Comparable<Route> {
     public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
 
@@ -58,11 +58,11 @@ public class Route extends Model implements Comparable<Route> {
 
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinTable(
-            name = "subscription_route",
-            schema = "device_subscriptions",
+            name = "route_subscriptions",
+            schema = "device_information",
             joinColumns = @JoinColumn(
                     name = "subscription_id",
-                    table = "device_subscriptions.subscriptions",
+                    table = "device_information.subscriptions",
                     referencedColumnName = "id",
                     unique = false,
                     nullable = true,
@@ -71,13 +71,14 @@ public class Route extends Model implements Comparable<Route> {
 
             inverseJoinColumns = @JoinColumn(
                     name = "route_id",
+                    table = "agency_updates.routes",
                     referencedColumnName = "id",
                     unique = false,
                     nullable = true,
                     insertable = true,
                     updatable = true))
+
     public List<Subscription> subscriptions = new ArrayList<>();
-    ;
 
     @Nonnull
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)

@@ -11,7 +11,7 @@ import java.util.List;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "agencies", schema = "agency_alerts")
+@Table(name = "agencies", schema = "agency_updates")
 public class Agency extends Model {
     public static Finder<Integer, Agency> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Agency.class);
 

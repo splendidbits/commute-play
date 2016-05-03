@@ -10,30 +10,30 @@ GRANT ALL PRIVILEGES ON DATABASE splendidlog to splendidlog;
 
 -----
 
-CREATE SCHEMA agency_alerts;
-CREATE SCHEMA device_subscriptions;
+CREATE SCHEMA agency_updates;
+CREATE SCHEMA device_information;
 CREATE SCHEMA service_accounts;
 CREATE SCHEMA task_queue;
 
-GRANT USAGE ON SCHEMA agency_alerts TO splendidbits;
-GRANT USAGE ON SCHEMA device_subscriptions TO splendidbits;
+GRANT USAGE ON SCHEMA agency_updates TO splendidbits;
+GRANT USAGE ON SCHEMA device_information TO splendidbits;
 GRANT USAGE ON SCHEMA service_accounts TO splendidbits;
 GRANT USAGE ON SCHEMA task_queue TO splendidbits;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA device_subscriptions TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_updates TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA device_information TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA service_accounts TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA agency_alerts GRANT ALL ON TABLES TO postgres;
-GRANT ALL ON SCHEMA agency_alerts TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA agency_alerts to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA agency_updates GRANT ALL ON TABLES TO postgres;
+GRANT ALL ON SCHEMA agency_updates TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA agency_updates to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA agency_updates TO splendidbits;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA device_subscriptions GRANT ALL ON TABLES TO postgres;
-GRANT ALL ON SCHEMA device_subscriptions TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA device_subscriptions to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA device_subscriptions TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA device_information GRANT ALL ON TABLES TO postgres;
+GRANT ALL ON SCHEMA device_information TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA device_information to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA device_information TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA service_accounts GRANT ALL ON TABLES TO postgres;
 GRANT ALL ON SCHEMA service_accounts TO splendidbits;

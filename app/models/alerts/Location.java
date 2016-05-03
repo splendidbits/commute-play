@@ -10,7 +10,7 @@ import java.util.Calendar;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "locations", schema = "agency_alerts")
+@Table(name = "locations", schema = "agency_updates")
 public class Location extends Model implements Comparable {
     public static Finder<Long, Location> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Location.class);
 
@@ -23,7 +23,7 @@ public class Location extends Model implements Comparable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "alert_id",
-            table = "agency_alerts.alerts",
+            table = "agency_updates.alerts",
             referencedColumnName = "id",
             unique = false,
             updatable = true)

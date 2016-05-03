@@ -11,7 +11,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "registrations", schema = "device_subscriptions")
+@Table(name = "registrations", schema = "device_information")
 public class Registration extends Model {
     public static Finder<String, Registration> find = new Model.Finder<>(
             Constants.COMMUTE_GCM_DB_SERVER, Registration.class);

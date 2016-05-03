@@ -15,7 +15,7 @@ import java.util.List;
 
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "alerts", schema = "agency_alerts")
+@Table(name = "alerts", schema = "agency_updates")
 public class Alert extends Model implements Comparable {
     public static Finder<Long, Alert> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Alert.class);
 
@@ -28,7 +28,7 @@ public class Alert extends Model implements Comparable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "route_id",
-            table = "agency_alerts.routes",
+            table = "agency_updates.routes",
             referencedColumnName = "id",
             unique = false,
             updatable = true)

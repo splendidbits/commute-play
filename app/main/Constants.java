@@ -7,7 +7,11 @@ import java.util.TimeZone;
  */
 public class Constants {
     // Timeout for Agency alerts download requests in MS.
-    public static final int AGENCY_ALERTS_DOWNLOAD_MS = 100 * 10 * 10;
+    public static final int TASK_QUEUE_INITIAL_DELAY_SECONDS = 60;
+    public static final int TASK_QUEUE_INTERVAL_SECONDS = 15;
+    public static final int AGENCY_UPDATE_INITIAL_DELAY_SECONDS = 5;
+    public static final int AGENCY_UPDATE_INTERVAL_SECONDS = 45;
+
     public static final String COMMUTE_GCM_DB_SERVER = "commute_gcm_server";
     public static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("UTC");
 }
