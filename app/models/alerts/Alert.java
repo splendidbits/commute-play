@@ -37,7 +37,7 @@ public class Alert extends Model implements Comparable {
     @Nonnull
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    public AlertType type = AlertType.TYPE_INFORMATION;
+    public AlertType type = AlertType.TYPE_NONE;
 
     @Nonnull
     @Column(name = "level")
