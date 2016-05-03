@@ -5,7 +5,6 @@ import com.avaje.ebean.OrderBy;
 import com.avaje.ebean.Transaction;
 import main.Log;
 import models.alerts.Agency;
-import models.alerts.Alert;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
@@ -43,6 +42,7 @@ public class AgencyService {
 
         // Start the transaction.
         Transaction transaction = mEbeanServer.beginTransaction();
+        transaction.setPersistCascade(true);
 
         // Fetch [any] the persisted agency that matches the new agency
         mLog.d(TAG, "Persisting agency routes in database.");
@@ -80,40 +80,22 @@ public class AgencyService {
                                 !existingRoute.equals(newRoute)) {
 
                             // Delete all old alerts.
-                            mLog.d(TAG, String.format("Deleting $1%d previous alerts for $2%s.",
-                                    existingRoute.alerts.size(),
-                                    existingRoute.routeName));
+                            mLog.d(TAG, String.format("Replacing previous route: $1%s.", existingRoute.routeName));
 
-                            // TODO: Is this necessary? Research a good way to remove orphaned alerts.
-                            for (Alert oldAlert : existingRoute.alerts) {
-                                mEbeanServer.delete(oldAlert, transaction);
-                            }
-
-                            // Copy the new route properties.
-                            existingRoute.routeId = newRoute.routeId;
-                            existingRoute.routeName = newRoute.routeName;
-                            existingRoute.agency = newAgency;
-                            existingRoute.alerts = newRoute.alerts;
-                            existingRoute.isSticky = newRoute.isSticky;
-                            existingRoute.isDefault = newRoute.isDefault;
-                            existingRoute.externalUri = newRoute.externalUri;
-                            existingRoute.routeFlag = newRoute.routeFlag;
-                            existingRoute.transitType = newRoute.transitType;
+                            // Assign the existing route id to the new route.
+                            newRoute.id = existingRoute.id;
 
                             // Delete the alerts for that route
                             mLog.d(TAG, String.format("Saving $1%d alerts for $2%s.", newRoute.alerts.size(),
                                     existingRoute.routeId));
 
-                            mEbeanServer.save(existingRoute, transaction);
+                            mEbeanServer.update(newRoute, transaction);
                         }
 
                     } else {
-                        mLog.i(TAG, String.format("Route $1%s for $2%s does not exist.",
-                                newRoute.routeId,
-                                newRoute.agency.name));
-
                         newRoute.agency = newAgency;
                         mEbeanServer.save(newRoute, transaction);
+                        mLog.i(TAG, String.format("Agency Route $1%s does not exist. Inserting.", newRoute.routeId));
                     }
                 }
 

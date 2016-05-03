@@ -52,32 +52,32 @@ public class Route extends Model implements Comparable<Route> {
     @JoinColumn(
             name = "agency_id",
             referencedColumnName = "id",
-            unique = true,
-            updatable = false)
+            unique = false,
+            updatable = true)
     public Agency agency;
 
-    @Nonnull
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinTable(
-            name="subscription_route",
+            name = "subscription_route",
             schema = "device_subscriptions",
-            joinColumns=@JoinColumn(
-                    name="subscription_id",
+            joinColumns = @JoinColumn(
+                    name = "subscription_id",
                     table = "device_subscriptions.subscriptions",
-                    referencedColumnName="id",
+                    referencedColumnName = "id",
                     unique = false,
                     nullable = true,
                     insertable = true,
                     updatable = true),
 
-            inverseJoinColumns=@JoinColumn(
-                    name="route_id",
-                    referencedColumnName="id",
+            inverseJoinColumns = @JoinColumn(
+                    name = "route_id",
+                    referencedColumnName = "id",
                     unique = false,
                     nullable = true,
                     insertable = true,
                     updatable = true))
-    public List<Subscription> subscriptions = new ArrayList<>();;
+    public List<Subscription> subscriptions = new ArrayList<>();
+    ;
 
     @Nonnull
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)

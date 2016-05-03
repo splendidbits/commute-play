@@ -73,6 +73,7 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setRegister(true);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);
+        serverConfig.setUpdatesDeleteMissingChildren(true);
 
         // Remove missing children.
         serverConfig.setUpdatesDeleteMissingChildren(true);

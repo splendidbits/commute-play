@@ -25,7 +25,7 @@ public class Alert extends Model implements Comparable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
     public Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "route_id",
             table = "agency_alerts.routes",
@@ -132,8 +132,8 @@ public class Alert extends Model implements Comparable {
             boolean bothLocationsNull = locations == null && other.locations == null;
 
             boolean sameLocations = bothLocationsNull || (locations != null && other.locations != null &&
-                                locations.containsAll(other.locations) &&
-                                other.locations.containsAll(locations));
+                    locations.containsAll(other.locations) &&
+                    other.locations.containsAll(locations));
 
             // Match everything.
             return (sameType && sameLevel && sameTitle && sameSubtitle &&

@@ -62,10 +62,11 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
 
-        final JsonArray schedulesArray = json.getAsJsonArray();
-        if (schedulesArray != null) {
+        try {
+            final JsonArray schedulesArray = json.getAsJsonArray();
+            if (schedulesArray != null) {
 
-            try {
+
                 /*
                  * Loop through each alert row and separate each one into multiple possible alerts. This is
                  * because SEPTA overload each "alert" row with possibly more than one alert type of alert
@@ -256,13 +257,13 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                 // Add all routes to the agency.
                 mAgency.routes.addAll(routesMap.values());
-
-            } catch (IllegalStateException pe) {
-                mLog.c(TAG, "Error parsing json body into alert object", pe);
-
-            } catch (ParseException e) {
-                mLog.c(TAG, "Error parsing json date(s) into alert object", e);
             }
+
+        } catch (IllegalStateException pe) {
+            mLog.c(TAG, "Error parsing json body into alert object", pe);
+
+        } catch (ParseException e) {
+            mLog.c(TAG, "Error parsing json date(s) into alert object", e);
         }
 
         Collections.sort(mAgency.routes);
