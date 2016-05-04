@@ -59,12 +59,10 @@ public class Route extends Model implements Comparable<Route> {
 
     @Nullable
     @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "route_subscriptions",
-            schema = "device_information",
+    @JoinTable(name = "route_subscriptions", schema = "device_information",
             joinColumns = @JoinColumn(
-                    name = "subscription_id",
-                    table = "device_information.subscriptions",
+                    name = "route_id",
+                    table = "agency_updates.routes",
                     referencedColumnName = "id",
                     unique = false,
                     nullable = true,
@@ -72,13 +70,14 @@ public class Route extends Model implements Comparable<Route> {
                     updatable = true),
 
             inverseJoinColumns = @JoinColumn(
-                    name = "route_id",
-                    table = "agency_updates.routes",
+                    name = "subscription_id",
+                    table = "device_information.subscriptions",
                     referencedColumnName = "id",
                     unique = false,
                     nullable = true,
                     insertable = true,
                     updatable = true))
+
     public List<Subscription> subscriptions;
 
     @Nullable

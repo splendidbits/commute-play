@@ -109,11 +109,11 @@ public class AccountService {
                 .fetch("registrations.subscriptions", new FetchConfig().query())
                 .where()
                 .conjunction()
-                .eq("platformAccounts.platform.platformName", platform)
+                .eq("platformAccounts.platform.platform", platform)
                 .eq("registrations.subscriptions.routes.routeId", route.routeId)
                 .eq("registrations.subscriptions.routes.agency.id", agencyId)
                 .endJunction()
-                .filterMany("platformAccounts").eq("platform.platformName", platform)
+                .filterMany("platformAccounts").eq("platform.platform", platform)
                 .filterMany("registrations").eq("subscriptions.routes.agency.id", agencyId)
                 .filterMany("registrations").eq("subscriptions.routes.routeId", route.routeId)
                 .findList();

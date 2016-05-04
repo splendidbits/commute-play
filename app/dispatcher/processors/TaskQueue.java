@@ -165,7 +165,7 @@ public class TaskQueue {
                     foundValidTask = true;
 
                     foundTask.name = task.name;
-                    foundTask.messages = (ArrayList<Message>) task.messages;
+                    foundTask.messages = task.messages;
                     foundTask.state = task.state;
                     foundTask.retryCount = task.retryCount;
                     foundTask.lastAttempt = task.lastAttempt;
@@ -349,7 +349,7 @@ public class TaskQueue {
                     Task task = mPendingTaskQueue.take();
 
                     mLog.d(TAG, "Consumer received Element: " + task.id);
-                    if (isTaskIncomplete(task)) {
+                    if (isTaskIncomplete(task) && task.messages != null) {
                         task.lastAttempt = Calendar.getInstance();
 
                         // Set the task and recipients as processing

@@ -129,7 +129,7 @@ public class AlertsUpdateManager {
                         staleRoutes.add(existingRoute);
                     }
 
-                    if (!updatedRoutes.isEmpty()) {
+                    if (!updatedRouteAlerts.isEmpty()) {
                         existingRoute.alerts = updatedRouteAlerts;
                         updatedRoutes.add(existingRoute);
                     }

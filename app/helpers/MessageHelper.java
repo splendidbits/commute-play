@@ -33,11 +33,11 @@ public class MessageHelper {
     private enum MessageType {
         REGISTERED_ON_NETWORK("registered_on_network"),
         RESEND_SUBSCRIPTIONS("resend_subscriptions"),
-        ALERT_CURRENT_MESSAGE("current_alert"),
-        ALERT_DETOUR_MESSAGE("detour_alert"),
-        ALERT_ADVISORY_MESSAGE("advisory_alert"),
-        ALERT_APP_MESSAGE("app_alert"),
-        ALERT_CANCEL("cancel_alert");
+        ALERT_CURRENT_MESSAGE("current_message"),
+        ALERT_DETOUR_MESSAGE("detour_message"),
+        ALERT_ADVISORY_MESSAGE("advisory_message"),
+        ALERT_APP_MESSAGE("app_message"),
+        ALERT_CANCEL("cancel_message");
 
         public String value;
 
