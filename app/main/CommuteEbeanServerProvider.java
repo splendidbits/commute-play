@@ -12,9 +12,9 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import models.registrations.Registration;
-import models.registrations.Subscription;
-import models.taskqueue.*;
+import models.devices.Device;
+import models.devices.Subscription;
+import pushservices.models.database.*;
 
 import java.util.ArrayList;
 
@@ -56,10 +56,11 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Location.class);
 
         // Client device models.
-        models.add(Registration.class);
+        models.add(Device.class);
         models.add(Subscription.class);
 
         // GCM Task models.
+        models.add(Credentials.class);
         models.add(Message.class);
         models.add(PayloadElement.class);
         models.add(RecipientFailure.class);

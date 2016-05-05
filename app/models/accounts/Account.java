@@ -2,7 +2,7 @@ package models.accounts;
 
 import com.avaje.ebean.Model;
 import main.Constants;
-import models.registrations.Registration;
+import models.devices.Device;
 
 import javax.annotation.Nullable;
 import javax.persistence.*;
@@ -25,8 +25,8 @@ public class Account extends Model {
     public List<PlatformAccount> platformAccounts;
 
     @Nullable
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
-    public List<Registration> registrations;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.LAZY)
+    public List<Device> devices;
 
     @Column(name = "organisation_name")
     public String orgName;

@@ -18,7 +18,7 @@ public class RouteAlertsHelper {
      * @param alert Alert to escape into sql.
      * @return SQL safe escaped alert.
      */
-    public static Alert escapedAlert(@Nonnull Alert alert) {
+    public static Alert escapeAlert(@Nonnull Alert alert) {
 
         // Escape the alert title.
         if (alert.messageTitle != null) {

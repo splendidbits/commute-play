@@ -1,9 +1,9 @@
 package serializers;
 
 import com.google.gson.*;
-import models.taskqueue.Message;
-import models.taskqueue.PayloadElement;
-import models.taskqueue.Recipient;
+import pushservices.models.database.Message;
+import pushservices.models.database.PayloadElement;
+import pushservices.models.database.Recipient;
 
 import java.lang.reflect.Type;
 
@@ -21,8 +21,10 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
         }
 
         JsonArray registrationIdArray = new JsonArray();
-        for (Recipient recipient : message.recipients) {
-            registrationIdArray.add(new JsonPrimitive(recipient.token));
+        if (message.recipients != null) {
+            for (Recipient recipient : message.recipients) {
+                registrationIdArray.add(new JsonPrimitive(recipient.token));
+            }
         }
 
         // Serialise the main elements.
@@ -32,8 +34,9 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
         jsonMessage.add("dry_run", new JsonPrimitive(message.isDryRun));
         jsonMessage.add("registration_ids", registrationIdArray);
         jsonMessage.add("data", jsonPayloadData);
-        if (message.restrictedPackageName != null) {
-            jsonMessage.add("restricted_package_name", new JsonPrimitive(message.restrictedPackageName));
+        if (message.credentials.restrictedPackage != null) {
+            jsonMessage.add("restricted_package_name",
+                    new JsonPrimitive(message.credentials.restrictedPackage));
         }
 
         return jsonMessage;

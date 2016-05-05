@@ -1,12 +1,14 @@
 package controllers;
 
 import models.accounts.Account;
-import models.registrations.Registration;
+import models.devices.Device;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.AccountService;
-import dispatcher.processors.PushMessageManager;
+import services.AccountsDao;
+import helpers.PushMessageManager;
+import services.DeviceDao;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -18,12 +20,12 @@ import java.util.function.Function;
  * with the commute server.
  */
 public class RegistrationController extends Controller {
-    private static final String API_KEY = "api_key";
-    private static final String DEVICE_UUID_KEY = "device_uuid";
-    private static final String REGISTRATION_TOKEN_KEY = "registration_id";
 
     @Inject
-    private AccountService mAccountService;
+    private AccountsDao mAccountsDao;
+
+    @Inject
+    private DeviceDao mDeviceDao;
 
     @Inject
     private PushMessageManager mPushMessageManager;
@@ -32,9 +34,9 @@ public class RegistrationController extends Controller {
     private enum RegistrationResult {
         OK(ok("Success")),
         MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request")),
-        BAD_CLIENT_RESULT(badRequest("Calling client is invalid")),
         BAD_ACCOUNT(badRequest("No account for api_key")),
-        OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co"));
+        OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co")),
+        BAD_REGISTRATION_REQUEST(badRequest("Error adding device registration"));
 
         public Result mResultValue;
 
@@ -49,7 +51,7 @@ public class RegistrationController extends Controller {
      *
      * @return A Result.
      */
-    @SuppressWarnings("Convert2Lambda")
+    @SuppressWarnings("Convert2Lambda,unused")
     public CompletionStage<Result> register() {
         CompletionStage<RegistrationResult> promiseOfRegistration = initiateRegistration();
 
@@ -66,44 +68,66 @@ public class RegistrationController extends Controller {
      *
      * @return CompletionStage<RegistrationResult> result of registration action.
      */
+    @Nonnull
     private CompletionStage<RegistrationResult> initiateRegistration() {
-        Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
-        if (clientRequestBody == null) {
+        final String API_KEY = "api_key";
+        final String DEVICE_UUID_KEY = "device_uuid";
+        final String REGISTRATION_TOKEN_KEY = "registration_id";
+        final String APP_ID_KEY = "app_id";
+        final String APP_USER_ID_KEY = "user_id";
+
+        Map<String, String[]> requestMap = request().body().asFormUrlEncoded();
+        if (requestMap == null) {
             return CompletableFuture.completedFuture(RegistrationResult.MISSING_PARAMS_RESULT);
         }
 
-        String deviceId = clientRequestBody.get(DEVICE_UUID_KEY)[0];
-        String registrationId = clientRequestBody.get(REGISTRATION_TOKEN_KEY)[0];
+        String deviceId = requestMap.get(DEVICE_UUID_KEY) != null
+                ? requestMap.get(DEVICE_UUID_KEY)[0]
+                : null;
+
+        String registrationId = requestMap.get(REGISTRATION_TOKEN_KEY) != null
+                ? requestMap.get(REGISTRATION_TOKEN_KEY)[0]
+                : null;
+
+        String apiKey = requestMap.get(API_KEY) != null
+                ? requestMap.get(API_KEY)[0]
+                : null;
+
+        String appKey = requestMap.get(APP_ID_KEY) != null
+                ? requestMap.get(APP_ID_KEY)[0]
+                : null;
+
+        String userKey = requestMap.get(APP_USER_ID_KEY) != null
+                ? requestMap.get(APP_USER_ID_KEY)[0]
+                : null;
 
         // Check that there was a valid registration token and device uuid.
-        if ((registrationId == null || registrationId.isEmpty()) ||
-                (deviceId == null || deviceId.isEmpty())) {
+        if (registrationId == null || deviceId == null || apiKey == null) {
             return CompletableFuture.completedFuture(RegistrationResult.MISSING_PARAMS_RESULT);
         }
 
-        /*
-         * For now, get the default commute account for all requests.
-         * TODO: Remove this when all clients have been upgraded to send API key.
-         */
-        String apiKey = clientRequestBody.get(API_KEY) == null ? null : clientRequestBody.get(API_KEY)[0];
-        Account account = apiKey != null
-                ? mAccountService.getAccountByApi(apiKey)
-                : mAccountService.getAccountByEmail("daniel@staticfish.com");
-
+        Account account = mAccountsDao.getAccountForKey(apiKey);
         if (account == null || !account.active) {
             return CompletableFuture.completedFuture(RegistrationResult.BAD_ACCOUNT);
         }
 
-        Registration newRegistration = new Registration(deviceId, registrationId);
-        newRegistration.account = account;
-        boolean persistSuccess = mAccountService.addRegistration(newRegistration);
+        Device device = new Device(deviceId, registrationId);
+        device.account = account;
+        if (appKey != null) {
+            device.appKey = appKey;
+        }
+        if (userKey != null) {
+            device.userKey = userKey;
+        }
+
+        boolean persistSuccess = mDeviceDao.saveDevice(device);
 
         if (persistSuccess && account.platformAccounts != null) {
-            mPushMessageManager.sendRegistrationConfirmation(newRegistration, account.platformAccounts);
+            mPushMessageManager.sendRegistrationConfirmation(device, account.platformAccounts);
             return CompletableFuture.completedFuture(RegistrationResult.OK);
 
         } else {
-            return CompletableFuture.completedFuture(RegistrationResult.BAD_CLIENT_RESULT);
+            return CompletableFuture.completedFuture(RegistrationResult.BAD_REGISTRATION_REQUEST);
         }
     }
 }

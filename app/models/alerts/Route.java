@@ -3,10 +3,11 @@ package models.alerts;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.RouteFlag;
 import enums.TransitType;
 import main.Constants;
-import models.registrations.Subscription;
+import models.devices.Subscription;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -49,35 +50,19 @@ public class Route extends Model implements Comparable<Route> {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinColumn(
             name = "agency_id",
+            table = "agency_updates.agencies",
             referencedColumnName = "id",
             unique = false,
             updatable = true)
     public Agency agency;
 
+    @JsonIgnore
     @Nullable
-    @ManyToMany(mappedBy = "routes", cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
-    @JoinTable(name = "route_subscriptions", schema = "device_information",
-            joinColumns = @JoinColumn(
-                    name = "route_id",
-                    table = "agency_updates.routes",
-                    referencedColumnName = "id",
-                    unique = false,
-                    nullable = true,
-                    insertable = true,
-                    updatable = true),
-
-            inverseJoinColumns = @JoinColumn(
-                    name = "subscription_id",
-                    table = "device_information.subscriptions",
-                    referencedColumnName = "id",
-                    unique = false,
-                    nullable = true,
-                    insertable = true,
-                    updatable = true))
-
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "route")
     public List<Subscription> subscriptions;
 
     @Nullable

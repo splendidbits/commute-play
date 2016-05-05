@@ -1,16 +1,16 @@
 package controllers;
 
-import models.accounts.Account;
 import models.alerts.Route;
-import models.registrations.Registration;
-import models.registrations.Subscription;
+import models.devices.Device;
+import models.devices.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.AccountService;
-import services.AgencyService;
+import services.AgencyDao;
+import services.DeviceDao;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -29,15 +29,15 @@ public class SubscriptionController extends Controller {
     private static final String AGENCY_NAME_KEY = "agency_id";
 
     @Inject
-    private AgencyService mAgencyService;
+    private AgencyDao mAgencyService;
 
     @Inject
-    private AccountService mAccountService;
+    private DeviceDao mDeviceDao;
 
     // Return results enum
     private enum SubscriptionResult {
         OK(ok("Success")),
-        BAD_REQUEST(badRequest("Unknown error")),
+        BAD_SUBSCRIPTION_REQUEST(badRequest("Error adding device subscriptions")),
         MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
         BAD_ACCOUNT(badRequest("No account for api_key")),
         NO_REGISTRATION_RESULT(badRequest("No registered device found for device ID."));
@@ -73,54 +73,51 @@ public class SubscriptionController extends Controller {
      */
     private CompletionStage<SubscriptionResult> initiateSubscription() {
         Http.RequestBody requestBody = request().body();
-        SubscriptionResult subscriptionResult = validateInputData(requestBody);
 
-        if (subscriptionResult.equals(SubscriptionResult.OK)) {
+        if (validateInputData(requestBody)) {
             Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
 
-            String deviceId = formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase();
+            Integer agencyId = formEncodedMap.get(AGENCY_NAME_KEY) != null
+                    ? Integer.valueOf(formEncodedMap.get(AGENCY_NAME_KEY)[0])
+                    : null;
+
+            String deviceId = formEncodedMap.get(DEVICE_UUID_KEY) != null
+                    ? formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase()
+                    : null;
+
             String[] routes = formEncodedMap.get(ROUTE_LIST_KEY) != null
                     ? formEncodedMap.get(ROUTE_LIST_KEY)[0].trim().split(" ")
                     : null;
 
-            // Check the agency name. If it's null, it's an older SEPTA Instant client, so add 'septa'.
-            String[] agencyValue = formEncodedMap.get(AGENCY_NAME_KEY);
-            int agencyId = agencyValue != null ? Integer.valueOf(agencyValue[0]) : -1;
+            if (agencyId != null && deviceId != null && routes != null) {
 
-            // Check that the device is already registered.
-            Registration existingRegistration = mAccountService.getRegistration(deviceId);
-            if (existingRegistration == null) {
-                return CompletableFuture.completedFuture(SubscriptionResult.NO_REGISTRATION_RESULT);
-            }
+                // Check that the device is already registered.
+                Device device = mDeviceDao.getDevice(deviceId);
+                if (device == null) {
+                    return CompletableFuture.completedFuture(SubscriptionResult.NO_REGISTRATION_RESULT);
+                }
 
-            /*
-            * For now, get the default commute account for all requests.
-            * TODO: Remove this when all clients have been upgraded to send API key.
-            */
-            String apiKey = formEncodedMap.get(API_KEY) == null ? null : formEncodedMap.get(API_KEY)[0];
-            Account account = apiKey != null
-                    ? mAccountService.getAccountByApi(apiKey)
-                    : mAccountService.getAccountByEmail("daniel@staticfish.com");
+                // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
+                List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyId, routes);
+                List<Subscription> subscriptions = new ArrayList<>();
+                if (validRoutes != null) {
 
-            if (account == null || !account.active) {
-                return CompletableFuture.completedFuture(SubscriptionResult.BAD_ACCOUNT);
-            }
+                    for (Route route : validRoutes) {
+                        Subscription subscription = new Subscription();
+                        subscription.device = device;
+                        subscription.route = route;
+                        subscription.timeSubscribed = Calendar.getInstance();
+                        subscriptions.add(subscription);
+                    }
 
-            // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-            List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyId, routes);
-            if (validRoutes != null) {
-                models.registrations.Subscription subscription = new Subscription();
-                subscription.registration = existingRegistration;
-                subscription.routes = validRoutes;
-                subscription.timeSubscribed = Calendar.getInstance();
-
-                // Persist the subscription.
-                subscriptionResult = mAccountService.addSubscription(subscription)
-                        ? SubscriptionResult.OK
-                        : SubscriptionResult.BAD_REQUEST;
+                    // Persist the subscriptions
+                    device.subscriptions = subscriptions;
+                    mDeviceDao.saveDevice(device);
+                    return CompletableFuture.completedFuture(SubscriptionResult.OK);
+                }
             }
         }
-        return CompletableFuture.completedFuture(subscriptionResult);
+        return CompletableFuture.completedFuture(SubscriptionResult.BAD_SUBSCRIPTION_REQUEST);
     }
 
     /**
@@ -129,22 +126,15 @@ public class SubscriptionController extends Controller {
      * @param requestBody the body of the incoming request.
      * @return enum success result type.
      */
-    private SubscriptionResult validateInputData(Http.RequestBody requestBody) {
+    private boolean validateInputData(Http.RequestBody requestBody) {
         if (requestBody != null) {
-            Map<String, String[]> clientRequestBody = request().body().asFormUrlEncoded();
+            Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
 
-            if (clientRequestBody == null) {
-                return SubscriptionResult.MISSING_PARAMS_RESULT;
-            }
-
-            // TODO: Re-add check for agency name when it has been added to the client.
             // Check that there was a valid list of routes and device uuid.
-            if ((!clientRequestBody.containsKey(DEVICE_UUID_KEY)) ||
-                    //(!clientRequestBody.containsKey(AGENCY_NAME_KEY)) ||
-                    (!clientRequestBody.containsKey(ROUTE_LIST_KEY))) {
-                return SubscriptionResult.MISSING_PARAMS_RESULT;
+            if (formEncodedMap.containsKey(DEVICE_UUID_KEY) && formEncodedMap.containsKey(ROUTE_LIST_KEY)) {
+                return true;
             }
         }
-        return SubscriptionResult.OK;
+        return false;
     }
 }

@@ -7,7 +7,7 @@ import akka.actor.ActorSystem;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import dispatcher.processors.TaskQueue;
+import pushservices.services.TaskQueue;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;

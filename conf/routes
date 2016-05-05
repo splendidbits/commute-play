@@ -4,6 +4,7 @@
 
 # Home page
 GET         /                             controllers.Application.index()
+GET         /robots.txt                   controllers.Application.robots()
 
 # Public API endpoints
 POST        /gcm/v1/register              controllers.RegistrationController.register()

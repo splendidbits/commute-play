@@ -5,7 +5,7 @@
 
 create table splendidlog.applications (
   id                            integer not null,
-  application_name              varchar(255),
+  name                          varchar(255),
   created_at                    timestamp without time zone,
   constraint pk_applications primary key (id)
 );

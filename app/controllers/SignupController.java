@@ -1,7 +1,7 @@
 package controllers;
 
 import com.avaje.ebean.EbeanServer;
-import enums.PlatformType;
+import pushservices.enums.PlatformType;
 import helpers.ValidationHelper;
 import main.Log;
 import models.accounts.Account;
@@ -91,10 +91,7 @@ public class SignupController extends Controller {
             pendingAccount.active = false;
             pendingAccount.platformAccounts = platformAccounts;
 
-            mEbeanServer.beginTransaction();
             mEbeanServer.save(pendingAccount);
-            mEbeanServer.commitTransaction();
-            mEbeanServer.endTransaction();
 
         } else {
             mLog.w(TAG, "No platforms were found for account signup: " + email);

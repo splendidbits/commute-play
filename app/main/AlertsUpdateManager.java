@@ -1,11 +1,11 @@
 package main;
 
-import appmodels.AgencyModifications;
-import dispatcher.processors.PushMessageManager;
+import agency.AgencyModifications;
+import helpers.PushMessageManager;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import services.AgencyService;
+import services.AgencyDao;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -25,12 +25,12 @@ public class AlertsUpdateManager {
 
     private static final String TAG = AlertsUpdateManager.class.getSimpleName();
 
-    private AgencyService mAgencyService;
+    private AgencyDao mAgencyService;
     private PushMessageManager mPushMessageManager;
     private Log mLog;
 
     @Inject
-    public AlertsUpdateManager(Log log, AgencyService agencyService, PushMessageManager pushMessageManager) {
+    public AlertsUpdateManager(Log log, AgencyDao agencyService, PushMessageManager pushMessageManager) {
         mAgencyService = agencyService;
         mLog = log;
         mPushMessageManager = pushMessageManager;
@@ -42,7 +42,7 @@ public class AlertsUpdateManager {
      * 1) Builds a list of added and removed alerts for the agency, since the last time.
      * 2) Saves the modified routes in the database.
      * 3) Passes on the alert information to subscribed GCM clients.
-     * 4) Modifies any registration information based on the response from Google.
+     * 4) Modifies any device information based on the response from Google.
      *
      * @param updatedAgency The agency which has been updated.
      */
@@ -89,15 +89,13 @@ public class AlertsUpdateManager {
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
-        if (freshRoutes.isEmpty()) {
+        if (freshRoutes == null || freshRoutes.isEmpty()) {
             modifiedRouteAlerts.addStaleRouteAlert(updatedAgency.routes);
             return modifiedRouteAlerts;
         }
 
         List<Route> updatedRoutes = new ArrayList<>();
         List<Route> staleRoutes = new ArrayList<>();
-
-        // Iterate through the fresh routes that have been parsed.
         for (Route freshRoute : freshRoutes) {
 
             // Iterate through the existing persisted routes.

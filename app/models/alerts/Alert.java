@@ -3,6 +3,7 @@ package models.alerts;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.AlertLevel;
 import enums.AlertType;
 import main.Constants;
@@ -23,7 +24,8 @@ public class Alert extends Model implements Comparable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
     public Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "route_id",
             table = "agency_updates.routes",

@@ -3,6 +3,7 @@ package models.alerts;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import main.Constants;
 
 import javax.persistence.*;
@@ -20,6 +21,7 @@ public class Location extends Model implements Comparable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq_gen")
     public Integer id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "alert_id",

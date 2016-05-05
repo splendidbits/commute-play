@@ -44,8 +44,8 @@ playEbeanDebugLevel := 4
 playEbeanModels in Compile := Seq(
   "models.alerts.*",
   "models.accounts.*",
-  "models.taskqueue.*",
-  "models.registrations.*"
+  "pushservices.models.database.*",
+  "models.devices.*"
 )
 
 // Turning this to "true" stops debugging. Aways set it to "false" in debug

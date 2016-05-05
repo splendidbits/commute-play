@@ -32,14 +32,17 @@ public class PlatformAccount extends Model {
     @Column(name = "package_uri")
     public String packageUri;
 
-    @Column(name = "auth_token")
-    public String authToken;
+    @Column(name = "authorization_key")
+    public String authorizationKey;
+
+    @Column(name = "certificate_body", columnDefinition = "TEXT")
+    public String certificateBody;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
-            name = "platform_id",
+            name = "platform_type",
             table = "api_accounts.platforms",
-            referencedColumnName = "platform",
+            referencedColumnName = "platform_id",
             unique = false,
             updatable = true)
     public Platform platform;
