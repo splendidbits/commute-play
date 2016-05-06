@@ -3,10 +3,10 @@ package services;
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
 import pushservices.enums.PlatformType;
-import main.Log;
 import models.accounts.Account;
 import models.accounts.Platform;
 import models.alerts.Route;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -1,11 +1,10 @@
 package services;
 
 import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.OrderBy;
 import com.avaje.ebean.Transaction;
-import main.Log;
 import models.alerts.Agency;
 import models.alerts.Route;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -158,7 +157,7 @@ public class AgencyDao {
     public List<Route> getRouteAlerts(int agencyId) {
         try {
             return mEbeanServer.find(Route.class)
-                    .setOrder(new OrderBy<>("routeId"))
+                    .orderBy("routeId")
                     .where()
                     .eq("agency_id", agencyId)
                     .findList();

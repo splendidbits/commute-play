@@ -9,6 +9,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import pushservices.services.TaskQueue;
 import scala.concurrent.duration.Duration;
+import services.splendidlog.Log;
 
 import java.util.concurrent.TimeUnit;
 

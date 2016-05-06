@@ -27,7 +27,7 @@ public class Recipient extends Model {
             name = "message_id",
             table = "task_queue.messages",
             referencedColumnName = "id",
-            unique = false,
+            unique = true,
             updatable = true)
     public Message message;
 

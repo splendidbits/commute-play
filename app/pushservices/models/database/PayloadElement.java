@@ -29,7 +29,7 @@ public class PayloadElement extends Model {
             table = "task_queue.messages",
             referencedColumnName = "id",
             unique = false,
-            updatable = true)
+            updatable = false)
     public Message message;
 
     @SuppressWarnings("unused")

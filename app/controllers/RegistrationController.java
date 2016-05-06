@@ -19,6 +19,7 @@ import java.util.function.Function;
  * The public API endpoint controller that handles devices registering
  * with the commute server.
  */
+@SuppressWarnings("unused")
 public class RegistrationController extends Controller {
 
     @Inject

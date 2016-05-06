@@ -22,6 +22,7 @@ import java.util.function.Function;
  * The public API endpoint controller that handles devices subscribing to agency routes
  * with the commute server.
  */
+@SuppressWarnings("unused")
 public class SubscriptionController extends Controller {
     private static final String API_KEY = "api_key";
     private static final String DEVICE_UUID_KEY = "device_uuid";

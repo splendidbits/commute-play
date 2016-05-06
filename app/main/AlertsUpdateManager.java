@@ -6,6 +6,7 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import services.AgencyDao;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;

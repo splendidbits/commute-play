@@ -2,8 +2,8 @@ package services;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;
-import main.Log;
 import models.devices.Device;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

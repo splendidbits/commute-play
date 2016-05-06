@@ -4,7 +4,7 @@ import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
 import com.avaje.ebean.Transaction;
 import com.avaje.ebean.annotation.Transactional;
-import main.Log;
+import services.splendidlog.Log;
 import org.jetbrains.annotations.NotNull;
 import pushservices.enums.PlatformFailureType;
 import pushservices.helpers.SortedRecipientResponse;
@@ -36,7 +36,7 @@ import java.util.concurrent.TransferQueue;
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
     private static final int MAXIMUM_TASK_RETRIES = 10;
-    private static final long TASK_POLL_INTERVAL_MS = 1000;
+    private static final long TASK_POLL_INTERVAL_MS = 500;
 
     private TransferQueue<Task> mPendingTaskQueue = new LinkedTransferQueue<>();
     private ConcurrentHashMap<Long, TaskMessageResponse> mTaskIdClientListeners = new ConcurrentHashMap<>();
@@ -79,7 +79,7 @@ public class TaskQueue {
     private void fetchPendingTasks() {
         try {
             List<Task> tasks = mEbeanServer.find(Task.class)
-                    .order("id")
+                    .orderBy("id")
                     .fetch("messages", new FetchConfig().query())
                     .fetch("messages.recipients", new FetchConfig().query())
                     .fetch("messages.credentials", new FetchConfig().query())

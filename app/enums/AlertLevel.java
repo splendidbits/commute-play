@@ -10,7 +10,6 @@ import com.avaje.ebean.annotation.EnumValue;
  * Copyright 4/30/16 Splendid Bits.
  */
 public enum AlertLevel {
-
     @EnumValue("SILENT")
     LEVEL_SILENT(-1),
 

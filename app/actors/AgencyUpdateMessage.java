@@ -11,6 +11,6 @@ public class AgencyUpdateMessage implements AgencyUpdateProtocol {
 
     @Override
     public AgencyUpdateType getAgencyType() {
-        return AgencyUpdateType.TYPE_ALL;
+        return AgencyUpdateType.TYPE_SEPTA;
     }
 }

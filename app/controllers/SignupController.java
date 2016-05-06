@@ -3,7 +3,7 @@ package controllers;
 import com.avaje.ebean.EbeanServer;
 import pushservices.enums.PlatformType;
 import helpers.ValidationHelper;
-import main.Log;
+import services.splendidlog.Log;
 import models.accounts.Account;
 import models.accounts.Platform;
 import models.accounts.PlatformAccount;
@@ -24,6 +24,7 @@ import java.util.Map;
 /**
  * Adds an API user to the system to have access to push services.
  */
+@SuppressWarnings("unused")
 public class SignupController extends Controller {
     private static final String TAG = SignupController.class.getSimpleName();
 

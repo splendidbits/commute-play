@@ -5,7 +5,7 @@ import enums.AlertLevel;
 import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
-import main.Log;
+import services.splendidlog.Log;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;

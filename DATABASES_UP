@@ -2,13 +2,12 @@
 CREATE USER splendidbits;
 CREATE USER splendidlog;
 
+-----
+
 CREATE DATABASE commute_gcm;
 GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
 
-CREATE DATABASE splendidlog;
-GRANT ALL PRIVILEGES ON DATABASE splendidlog to splendidlog;
-
------
+--
 
 CREATE SCHEMA agency_updates;
 CREATE SCHEMA device_information;
@@ -45,9 +44,12 @@ GRANT ALL ON SCHEMA task_queue TO splendidbits;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
 
-
 -----
 
+CREATE DATABASE splendid_log;
+GRANT ALL PRIVILEGES ON DATABASE splendid_log to splendidlog;
+
+--
 
 CREATE SCHEMA splendidlog;
 GRANT USAGE ON SCHEMA splendidlog TO splendidlog;

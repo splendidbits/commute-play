@@ -33,7 +33,6 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
     @Override
     public EbeanServer get() {
-        // Ebean config file.
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
         dataSourceConfig.setUrl(url);
         dataSourceConfig.setHeartbeatTimeoutSeconds(10);
@@ -42,24 +41,17 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setPassword(password);
         dataSourceConfig.setCaptureStackTrace(true);
 
+        // Agency, API Account, Device, and TaskQueue models.
         ArrayList<Class<?>> models = new ArrayList<>();
-
-        // client account models.
         models.add(Account.class);
         models.add(PlatformAccount.class);
         models.add(Platform.class);
-
-        // Agency alert models.
         models.add(Agency.class);
         models.add(Route.class);
         models.add(Alert.class);
         models.add(Location.class);
-
-        // Client device models.
         models.add(Device.class);
         models.add(Subscription.class);
-
-        // GCM Task models.
         models.add(Credentials.class);
         models.add(Message.class);
         models.add(PayloadElement.class);
@@ -74,9 +66,6 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setRegister(true);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);
-        serverConfig.setUpdatesDeleteMissingChildren(true);
-
-        // Remove missing children.
         serverConfig.setUpdatesDeleteMissingChildren(true);
 
         return EbeanServerFactory.create(serverConfig);

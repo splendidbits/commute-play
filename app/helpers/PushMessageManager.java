@@ -6,7 +6,7 @@ import pushservices.models.app.UpdatedRegistration;
 import pushservices.services.TaskQueue;
 import pushservices.types.PushFailCause;
 import pushservices.enums.PlatformType;
-import main.Log;
+import services.splendidlog.Log;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Alert;
