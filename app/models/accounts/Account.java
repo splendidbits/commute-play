@@ -12,13 +12,13 @@ import java.util.List;
 @Entity
 @Table(name = "accounts", schema = "api_accounts")
 public class Account extends Model {
-    public static Finder<Integer, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
+    public static Finder<Long, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
 
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
     @Column(name = "id")
-    public Integer id;
+    public Long id;
 
     @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)

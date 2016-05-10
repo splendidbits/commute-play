@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "payload_element", schema = "task_queue")
+@Table(name = "payload_element", schema = "push_services")
 public class PayloadElement extends Model {
     public static Finder<Long, PayloadElement> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, PayloadElement.class);
 
@@ -20,13 +20,13 @@ public class PayloadElement extends Model {
     @Column(name = "element_name")
     public String name;
 
-    @Column(name = "element_value")
+    @Column(name = "element_value", columnDefinition = "TEXT")
     public String value;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "message_id",
-            table = "task_queue.messages",
+            table = "push_services.messages",
             referencedColumnName = "id",
             unique = false,
             updatable = false)

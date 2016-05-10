@@ -1,10 +1,10 @@
 package agency;
 
+import models.alerts.Alert;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -40,71 +40,43 @@ public class AgencyModifications {
     }
 
     /**
-     * Add a list of route alerts as new or updated. It will not be added if it has already
+     * Add a list of route alerts as new, updated or stale. It will not be added if it has already
      * been added as stale.
      *
-     * @param routes The routes with alerts to set as updated or new.
+     * @param routes The routes with alerts to set as updated or stale.
      */
-    public void addUpdatedRouteAlert(@Nonnull List<Route> routes) {
+    public void addRoute(@Nonnull List<Route> routes) {
         // Do not add new alert if it exists in the stale collection.
         for (Route route : routes) {
-            addUpdatedRouteAlert(route);
+            addRoute(route);
         }
     }
 
     /**
-     * Add a route as new or updated. It will not be added if it has already
+     * Add a route as stale, new, or updated. It will not be added if it has already
      * been added as stale.
      *
      * @param route The route with alerts to flag as updated or new.
      */
-    public void addUpdatedRouteAlert(@Nonnull Route route) {
-        if (route.routeId != null) {
+    public void addRoute(@Nonnull Route route) {
+        if (route.routeId != null && route.alerts != null) {
+            boolean addRouteAsUpdated = false;
 
-            // Remove matching stale alert if alert with the route Id exists.
-            Iterator<Route> staleRouteIterator = mStaleAlertRoutes.iterator();
-            while (staleRouteIterator.hasNext()) {
-
-                Route staleRoute = staleRouteIterator.next();
-                if (staleRoute.routeId.equals(route.routeId)) {
-                    staleRouteIterator.remove();
+            // If all alerts are empty, this is a stale route.
+            for (Alert updatedAlert : route.alerts) {
+                if (updatedAlert.messageBody != null && !updatedAlert.messageBody.isEmpty()) {
+                    addRouteAsUpdated = true;
+                    break;
                 }
             }
 
-            mUpdatedAlertRoutes.add(route);
-        }
-    }
+            // Check that the route doesn't already exist when adding to updated or stale collections.
+            if (addRouteAsUpdated && !mUpdatedAlertRoutes.contains(route)) {
+                mUpdatedAlertRoutes.add(route);
 
-    /**
-     * Add a list of route alerts as stale. It will not be added if it has already
-     * been added as new or updated.
-     *
-     * @param routes The routes with alerts to flag as stale or missing.
-     */
-    public void addStaleRouteAlert(@Nonnull List<Route> routes) {
-        // Do not add stale alert if it exists in the updated collection.
-        for (Route staleRoute : routes) {
-            addStaleRouteAlert(staleRoute);
-        }
-    }
-
-    /**
-     * Add a route alerts as stale. It will not be added if it has already
-     * been added as new or updated.
-     *
-     * @param route The route with alerts to flag as stale or missing.
-     */
-    public void addStaleRouteAlert(@Nonnull Route route) {
-        if (route.routeId != null) {
-
-            // Do not add stale alert if it exists in new alerts list.
-            for (Route updatedRoute : mUpdatedAlertRoutes) {
-                if (updatedRoute.routeId.equals(route.routeId)){
-                    return;
-                }
+            } else if (!addRouteAsUpdated && !mStaleAlertRoutes.contains(route)) {
+                mStaleAlertRoutes.add(route);
             }
-
-            mStaleAlertRoutes.add(route);
         }
     }
 

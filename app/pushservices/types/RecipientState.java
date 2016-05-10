@@ -19,5 +19,8 @@ public enum RecipientState {
     @EnumValue("WAITING_RETRY")
     STATE_WAITING_RETRY,
     @EnumValue("COMPLETE")
-    STATE_COMPLETE
+    STATE_COMPLETE;
+
+    RecipientState() {
+    }
 }

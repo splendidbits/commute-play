@@ -148,7 +148,7 @@ public class Route extends Model implements Comparable<Route> {
     }
 
     @SuppressWarnings("unused")
-    public Route() {
+    protected Route() {
     }
 
     public Route(@Nonnull String routeId) {

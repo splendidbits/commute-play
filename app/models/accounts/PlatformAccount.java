@@ -2,6 +2,7 @@ package models.accounts;
 
 import com.avaje.ebean.Model;
 import main.Constants;
+import pushservices.enums.PlatformType;
 
 import javax.persistence.*;
 
@@ -32,18 +33,13 @@ public class PlatformAccount extends Model {
     @Column(name = "package_uri")
     public String packageUri;
 
-    @Column(name = "authorization_key")
-    public String authorizationKey;
+    @Column(name = "authorisation_key")
+    public String authorisationKey;
 
     @Column(name = "certificate_body", columnDefinition = "TEXT")
     public String certificateBody;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(
-            name = "platform_type",
-            table = "api_accounts.platforms",
-            referencedColumnName = "platform_id",
-            unique = false,
-            updatable = true)
-    public Platform platform;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "platform")
+    public PlatformType platformType;
 }

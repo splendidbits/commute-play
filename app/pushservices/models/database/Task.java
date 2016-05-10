@@ -1,8 +1,8 @@
 package pushservices.models.database;
 
 import com.avaje.ebean.Model;
-import pushservices.types.TaskState;
 import main.Constants;
+import pushservices.types.TaskState;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -12,7 +12,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "tasks", schema = "task_queue")
+@Table(name = "tasks", schema = "push_services")
 public class Task extends Model {
     public static Finder<Long, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
@@ -32,8 +32,9 @@ public class Task extends Model {
     @Column(name = "name")
     public String name;
 
+//    @Enumerated(EnumType.STRING)
     @Column(name = "state")
-    public TaskState state;
+    public TaskState state = TaskState.STATE_IDLE;
 
     @Basic
     @Column(name = "task_added", columnDefinition = "timestamp without time zone")
@@ -61,17 +62,11 @@ public class Task extends Model {
     public Task() {
     }
 
-    public Task(@Nonnull String name) {
-        this.name = name;
-    }
-
-    @PrePersist
-    public void initialValues() {
+    public Task(String name) {
         Calendar nowTime = Calendar.getInstance();
-
-        state = TaskState.STATE_IDLE;
-        taskAdded = nowTime;
-        nextAttempt = nowTime;
-        retryCount = 0;
+        this.name = name;
+        this.taskAdded = nowTime;
+        this.nextAttempt = nowTime;
+        this.retryCount = 0;
     }
 }

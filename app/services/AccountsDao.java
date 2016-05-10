@@ -4,7 +4,6 @@ import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
 import pushservices.enums.PlatformType;
 import models.accounts.Account;
-import models.accounts.Platform;
 import models.alerts.Route;
 import services.splendidlog.Log;
 
@@ -45,14 +44,13 @@ public class AccountsDao {
                     .fetch("devices", new FetchConfig().query())
                     .fetch("devices.subscriptions", new FetchConfig().query())
                     .fetch("platformAccounts", new FetchConfig().query())
-                    .fetch("platformAccounts.platform", new FetchConfig().query())
                     .where()
                     .conjunction()
-                    .eq("platformAccounts.platform.platformType", platform)
+                    .eq("platformAccounts.platformType", platform)
                     .eq("devices.subscriptions.route.routeId", route.routeId)
                     .eq("devices.subscriptions.route.agency.id", agencyId)
                     .endJunction()
-                    .filterMany("platformAccounts").eq("platform.platformType", platform)
+                    .filterMany("platformAccounts").eq("platformType", platform)
                     .filterMany("devices").eq("subscriptions.route.agency.id", agencyId)
                     .filterMany("devices").eq("subscriptions.route.routeId", route.routeId)
                     .findList();
@@ -112,16 +110,5 @@ public class AccountsDao {
 
         mLog.d(TAG, logString);
         return account;
-    }
-
-    /**
-     * Get a platform model for name, such as GCM or APNS.
-     *
-     * @param platformType type of platform.
-     * @return Platform. null if not found
-     */
-    @Nullable
-    public Platform getPlatform(@Nonnull PlatformType platformType) {
-        return Platform.find.byId(platformType.name);
     }
 }

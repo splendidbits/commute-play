@@ -2,9 +2,6 @@ package pushservices.services;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
-import com.avaje.ebean.Transaction;
-import com.avaje.ebean.annotation.Transactional;
-import services.splendidlog.Log;
 import org.jetbrains.annotations.NotNull;
 import pushservices.enums.PlatformFailureType;
 import pushservices.helpers.SortedRecipientResponse;
@@ -17,15 +14,16 @@ import pushservices.models.database.Task;
 import pushservices.types.PushFailCause;
 import pushservices.types.RecipientState;
 import pushservices.types.TaskState;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TransferQueue;
 
 /**
  * The singleton class that handles all GCM task jobs.
@@ -36,9 +34,12 @@ import java.util.concurrent.TransferQueue;
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
     private static final int MAXIMUM_TASK_RETRIES = 10;
-    private static final long TASK_POLL_INTERVAL_MS = 500;
 
-    private TransferQueue<Task> mPendingTaskQueue = new LinkedTransferQueue<>();
+    // Delay each taskqueue polling to a 1/4 second so the server isn't flooded.
+    private static final long TASKQUEUE_POLL_INTERVAL_MS = 500;
+    private static final int TASKQUEUE_MAX_SIZE = 250;
+
+    private ArrayBlockingQueue<Task> mPendingTaskQueue = new ArrayBlockingQueue<>(TASKQUEUE_MAX_SIZE);
     private ConcurrentHashMap<Long, TaskMessageResponse> mTaskIdClientListeners = new ConcurrentHashMap<>();
     private QueueConsumer mQueueConsumer = new QueueConsumer();
     private Thread mTaskConsumerThread;
@@ -60,17 +61,50 @@ public class TaskQueue {
     }
 
     /**
-     * Returns if the {@link Task} ready to be dispatched (not waiting for next interval
+     * Returns true if the {@link Task} ready to be dispatched (not waiting for next interval
      * and hasn't failed or isn't currently processing)
      *
-     * @param newTask The task to start work on.
-     * @return true or false, duh.
+     * @param task The task to start work on.
+     * @return true if the task can be processed. false if it is invalid or has completed..
      */
-    private boolean isTaskIncomplete(@Nonnull Task newTask) {
-        Calendar currentTime = Calendar.getInstance();
-        return (!newTask.state.equals(TaskState.STATE_COMPLETE) &&
-                !newTask.state.equals(TaskState.STATE_FAILED) &&
-                (newTask.nextAttempt == null || !newTask.nextAttempt.after(currentTime)));
+    private boolean isTaskIncomplete(@Nonnull Task task) {
+
+        boolean taskReady = false;
+        if (task.state == null) {
+            task.state = TaskState.STATE_IDLE;
+        }
+
+        taskReady = !task.state.equals(TaskState.STATE_COMPLETE) &&
+                !task.state.equals(TaskState.STATE_FAILED);
+
+        // Check task has messages
+        if (task.messages == null || task.messages.isEmpty()) {
+            return false;
+        }
+
+        // Check task has at least some recipients
+        boolean messagesReady = false;
+        for (Message message : task.messages) {
+
+            // If the message has at least 1 recipient,
+            if (message.recipients != null && !message.recipients.isEmpty()) {
+                for (Recipient recipient : message.recipients) {
+
+                    // If the state is empty, reset it to idle.
+                    if (recipient.state == null) {
+                        recipient.state = RecipientState.STATE_IDLE;
+                        messagesReady = true;
+                    }
+
+                    if (!recipient.state.equals(RecipientState.STATE_COMPLETE) &&
+                            !recipient.state.equals(RecipientState.STATE_FAILED)) {
+                        messagesReady = true;
+                    }
+                }
+            }
+        }
+
+        return messagesReady && taskReady;
     }
 
     /**
@@ -95,7 +129,7 @@ public class TaskQueue {
             // Add the saved pending tasks back into the queue
             if (tasks != null) {
                 for (Task task : tasks) {
-                    mPendingTaskQueue.offer(task);
+                    mPendingTaskQueue.add(task);
                 }
             }
         } catch (Exception e) {
@@ -119,43 +153,18 @@ public class TaskQueue {
      * @param task task to save and add to TaskQueue.
      */
     @SuppressWarnings("WeakerAccess")
-    public boolean addTask(@Nonnull Task task, TaskMessageResponse taskMessageResponse) {
+    public void addTask(@Nonnull Task task, TaskMessageResponse taskMessageResponse) {
         mLog.d(TAG, "Saving new task to TaskQueue and datastore.");
-        for (Task queuedTask : mPendingTaskQueue) {
-            if (Objects.equals(queuedTask.id, task.id)) {
-                return false;
-            }
-        }
 
-        // Add to the queue in a new thread.
-        if (task.state == null || (!task.state.equals(TaskState.STATE_COMPLETE) &&
-                !task.state.equals(TaskState.STATE_FAILED))) {
+        if (isTaskIncomplete(task)) {
+            // Save the task entry and put it in the queue.
+            mPendingTaskQueue.add(task);
 
-            if (task.messages != null) {
-                for (Message message : task.messages) {
-                    if (message.credentials != null) {
-                        mEbeanServer.refresh(message.credentials);
-                    }
-                }
-            }
-
-            // Insert the task entry and dd the client callback.
-            saveTask(task);
+            // Add the listener to the map to be called later.
             if (taskMessageResponse != null) {
                 mTaskIdClientListeners.put(task.id, taskMessageResponse);
             }
-
-            // Offer the task to the polling thread.
-            CompletableFuture.runAsync(new Runnable() {
-                @Override
-                public void run() {
-                    mPendingTaskQueue.offer(task);
-                }
-            });
-
-            return true;
         }
-        return false;
     }
 
     /**
@@ -163,41 +172,32 @@ public class TaskQueue {
      *
      * @param task the task to persist.
      */
-    @Transactional
-    private void saveTask(@Nonnull Task task) {
-        boolean foundValidTask = false;
-        Transaction transaction = mEbeanServer.createTransaction();
-
+    private boolean updateSaveTask(@Nonnull Task task) {
         try {
+            Task existingTask = null;
             if (task.id != null) {
-                Task foundTask = mEbeanServer
-                        .find(Task.class)
-                        .fetch("messages")
-                        .fetch("messages.recipients")
-                        .fetch("messages.credentials")
+                existingTask = mEbeanServer.find(Task.class)
                         .where()
                         .eq("id", task.id)
                         .findUnique();
-
-                if (foundTask != null) {
-                    foundValidTask = true;
-
-                    task.id = foundTask.id;
-                    mEbeanServer.update(task, transaction);
-                    transaction.commit();
-                }
             }
 
             // If the task was not found, insert a new task.
-            if (!foundValidTask) {
-                mEbeanServer.save(task, transaction);
-                transaction.commit();
+            if (existingTask != null){
+                task.id = existingTask.id;
+                mEbeanServer.update(task);
+
+            } else {
+                mEbeanServer.save(task);
             }
 
-        } catch (Exception exception) {
-            transaction.rollback();
-            mLog.e(TAG, "Error saving new task state", exception);
+        } catch (Exception e) {
+            mLog.e(TAG, "Error saving new task state", e);
+            return false;
         }
+
+        // Return true if the task has an id (and so was saved)
+        return task.id != null;
     }
 
     /**
@@ -209,10 +209,10 @@ public class TaskQueue {
      * sorted back into the original sent message.
      */
     private class MessageResponseListener extends SortedRecipientResponse {
-        private Task mOriginalTask = null;
+        private Task mTask = null;
 
-        public MessageResponseListener(Task originalTask) {
-            mOriginalTask = originalTask;
+        public MessageResponseListener(Task task) {
+            mTask = task;
         }
 
         @Override
@@ -220,33 +220,40 @@ public class TaskQueue {
             super.messageResult(message, result);
 
             if (message.recipients != null) {
+                TaskMessageResponse taskCallback = mTaskIdClientListeners.get(mTask.id);
                 mLog.d(TAG, String.format("200-OK from pushservices for message %d", message.id));
-                TaskMessageResponse clientTaskCallback = mTaskIdClientListeners.get(mOriginalTask.id);
-
-                // Update the time.
-                mOriginalTask.lastAttempt = Calendar.getInstance();
+                mTask.lastAttempt = Calendar.getInstance();
 
                 /*
-                 * If the message (task) needs retrying. Set the Task as TaskState.STATE_PARTIALLY_PROCESSED
-                 * and Recipient states as RecipientState. STATE_PARTIALLY_PROCESSED (unless we have reached
-                 * the maximum amount of allowed retries, in which case set the TaskState.STATE_FAILED and each
-                 * Recipient as RecipientState.STATE_FAILED.
+                 * If the message (task) needs retrying, the Task is set as
+                 * TaskState.STATE_PARTIALLY_PROCESSED.
+                 *
+                 * Set each recipient state as RecipientState.STATE_PARTIALLY_PROCESSED
+                 * (unless we have reached the maximum amount of allowed retries, in which case set
+                 * the TaskState.STATE_FAILED and each Recipient as RecipientState.STATE_FAILED.
                  */
                 if (!result.getRecipientsToRetry().isEmpty()) {
-                    if (mOriginalTask.retryCount <= MAXIMUM_TASK_RETRIES) {
+                    if (mTask.retryCount <= MAXIMUM_TASK_RETRIES) {
 
                         // Set the task as partially processed.
-                        mOriginalTask.state = TaskState.STATE_PARTIALLY_PROCESSED;
-                        mOriginalTask.retryCount = mOriginalTask.retryCount + 1;
+                        mTask.state = TaskState.STATE_PARTIALLY_PROCESSED;
+                        mTask.retryCount = mTask.retryCount + 1;
 
                         // Exponentially bump up the next retry time.
                         Calendar nextAttemptCal = Calendar.getInstance();
-                        nextAttemptCal.add(Calendar.MINUTE, (mOriginalTask.retryCount * 2));
-                        mOriginalTask.nextAttempt = nextAttemptCal;
+                        nextAttemptCal.add(Calendar.MINUTE, (mTask.retryCount * 2));
+                        mTask.nextAttempt = nextAttemptCal;
+
+                        try {
+                            mPendingTaskQueue.put(mTask);
+
+                        } catch (InterruptedException e) {
+                            mLog.w(TAG, "New Task not added. TaskQueue consumer was shutdown.");
+                        }
 
                     } else {
                         // If the max retry count was reached, complete the task, and fail remaining recipients.
-                        mOriginalTask.state = TaskState.STATE_FAILED;
+                        mTask.state = TaskState.STATE_FAILED;
 
                         for (Recipient messageRecipient : message.recipients) {
                             if (messageRecipient.state == RecipientState.STATE_WAITING_RETRY) {
@@ -257,50 +264,51 @@ public class TaskQueue {
                     }
                 } else {
                     // If there were no retry recipients, mark the task as complete.
-                    mOriginalTask.state = TaskState.STATE_COMPLETE;
+                    mTask.state = TaskState.STATE_COMPLETE;
                     for (Recipient messageRecipient : message.recipients) {
                         messageRecipient.state = RecipientState.STATE_COMPLETE;
                     }
                 }
 
                 // Send back any recipients to be updated.
-                if (!result.getUpdatedRegistrations().isEmpty() && clientTaskCallback != null) {
-                    clientTaskCallback.updateRecipients(result.getUpdatedRegistrations());
+                if (!result.getUpdatedRegistrations().isEmpty() && taskCallback != null) {
+                    taskCallback.updateRecipients(result.getUpdatedRegistrations());
                 }
 
                 // Send back any recipients to be deleted.
-                if (!result.getStaleRecipients().isEmpty() && clientTaskCallback != null) {
+                if (!result.getStaleRecipients().isEmpty() && taskCallback != null) {
                     List<Recipient> staleRecipients = new ArrayList<>();
+
                     for (Recipient staleRecipient : result.getStaleRecipients()) {
                         staleRecipients.add(staleRecipient);
                     }
-                    clientTaskCallback.removeRecipients(staleRecipients);
+                    taskCallback.removeRecipients(staleRecipients);
                 }
 
-                if (clientTaskCallback != null) {
-                    clientTaskCallback.completed(mOriginalTask);
-                    removeClientListener(clientTaskCallback);
+                if (taskCallback != null) {
+                    taskCallback.completed(mTask);
+                    removeClientListener(taskCallback);
                 }
 
                 // Update the task.
-                saveTask(mOriginalTask);
+                updateSaveTask(mTask);
             }
         }
 
         @Override
         public void messageFailure(@Nonnull Message message, PushFailCause failCause) {
-            TaskMessageResponse clientTaskCallback = mTaskIdClientListeners.get(mOriginalTask.id);
+            TaskMessageResponse taskCallback = mTaskIdClientListeners.get(mTask.id);
 
             // Set the task as failed.
-            mOriginalTask.state = TaskState.STATE_FAILED;
+            mTask.state = TaskState.STATE_FAILED;
 
-            if (clientTaskCallback != null) {
-                clientTaskCallback.failed(mOriginalTask, failCause);
-                removeClientListener(clientTaskCallback);
+            if (taskCallback != null) {
+                taskCallback.failed(mTask, failCause);
+                removeClientListener(taskCallback);
             }
 
             // Update the task.
-            saveTask(mOriginalTask);
+            updateSaveTask(mTask);
 
             mLog.e(TAG, String.format("Failed. %s response from push service for message %d",
                     failCause.name(), message.id));
@@ -311,27 +319,11 @@ public class TaskQueue {
          * the {@link Task} has completed or failed.
          */
         private void removeClientListener(@Nonnull TaskMessageResponse taskMessageResponse) {
-            if (mOriginalTask.state == TaskState.STATE_COMPLETE || mOriginalTask.state == TaskState.STATE_FAILED) {
-                mTaskIdClientListeners.remove(mOriginalTask.id);
+            if (mTask.state == TaskState.STATE_COMPLETE ||
+                    mTask.state == TaskState.STATE_FAILED) {
+                mTaskIdClientListeners.remove(mTask.id);
             }
         }
-    }
-
-    /**
-     * Check if a task is stale (has no messages or no recipients in any messages).
-     *
-     * @param task Task to check/
-     * @return boolean true if the task is stale.
-     */
-    private boolean isTaskEmpty(@Nonnull Task task) {
-        if (task.messages != null) {
-            for (Message message : task.messages) {
-                if (message.recipients != null && !message.recipients.isEmpty()) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     /**
@@ -343,21 +335,25 @@ public class TaskQueue {
         @Override
         public void run() {
             try {
+                // Loop through the tasks infinitely.
                 while (true) {
-                    mLog.d(TAG, "TaskQueue Consumer waiting to take element..");
+                    // Sleep every so often so the serve isn't hammered.
+                    Thread.sleep(TASKQUEUE_POLL_INTERVAL_MS);
+
+                    mLog.d(TAG, "TaskQueue processing received task");
                     Task task = mPendingTaskQueue.take();
+                    String taskName = task.name;
 
-                    if (isTaskEmpty(task) || task.state.equals(TaskState.STATE_COMPLETE)) {
-                        // Clean up complete or empty tasks.
+                    boolean backoffTimeReached = task.nextAttempt == null ||
+                            task.nextAttempt.before(Calendar.getInstance());
 
-                        mLog.d(TAG, "Removing stale task from TaskQueue.");
-                        task.state = TaskState.STATE_COMPLETE;
-                        saveTask(task);
-                        mPendingTaskQueue.remove();
+                        // Backoff time was not reached.
+                    if (!backoffTimeReached) {
+                        mPendingTaskQueue.add(task);
+                        mLog.d(TAG, String.format("Task %s hasn't reached backoff.", taskName));
 
-                    } else if (isTaskIncomplete(task) && task.messages != null) {
-                        // Start updating the task models for dispatch.
-
+                        // Task is ready for dispatch.
+                    } else if (isTaskIncomplete(task)) {
                         task.state = TaskState.STATE_PROCESSING;
                         task.lastAttempt = Calendar.getInstance();
 
@@ -370,9 +366,8 @@ public class TaskQueue {
                             }
                         }
 
-                        // Persist the and process the task.
-                        saveTask(task);
-                        mLog.d(TAG, "TaskQueue processing received task");
+                        // Save the updated task.
+                        updateSaveTask(task);
 
                         // Dispatch each message within the task..
                         for (Message message : task.messages) {
@@ -381,10 +376,8 @@ public class TaskQueue {
                             }
                         }
                     }
-
-                    // Sleep every second to cool down.
-                    Thread.sleep(TASK_POLL_INTERVAL_MS);
                 }
+
             } catch (InterruptedException e) {
                 mLog.d(TAG, "TaskQueue consumer thread was interrupted.");
             }

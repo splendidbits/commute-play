@@ -12,17 +12,17 @@ GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
 CREATE SCHEMA agency_updates;
 CREATE SCHEMA device_information;
 CREATE SCHEMA api_accounts;
-CREATE SCHEMA task_queue;
+CREATE SCHEMA push_services;
 
 GRANT USAGE ON SCHEMA agency_updates TO splendidbits;
 GRANT USAGE ON SCHEMA device_information TO splendidbits;
 GRANT USAGE ON SCHEMA api_accounts TO splendidbits;
-GRANT USAGE ON SCHEMA task_queue TO splendidbits;
+GRANT USAGE ON SCHEMA push_services TO splendidbits;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_updates TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA device_information TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA api_accounts TO splendidbits;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA push_services TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA agency_updates GRANT ALL ON TABLES TO postgres;
 GRANT ALL ON SCHEMA agency_updates TO splendidbits;
@@ -39,10 +39,10 @@ GRANT ALL ON SCHEMA api_accounts TO splendidbits;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA api_accounts to splendidbits;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA api_accounts TO splendidbits;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA task_queue GRANT ALL ON TABLES TO postgres;
-GRANT ALL ON SCHEMA task_queue TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA task_queue to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA task_queue TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA push_services GRANT ALL ON TABLES TO postgres;
+GRANT ALL ON SCHEMA push_services TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA push_services to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA push_services TO splendidbits;
 
 -----
 

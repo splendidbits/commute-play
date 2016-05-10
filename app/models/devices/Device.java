@@ -22,10 +22,10 @@ public class Device extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "device_id_seq_gen")
     public Long id;
 
-    @Column(name = "device_id")
+    @Column(name = "device_id", columnDefinition = "TEXT")
 	public String deviceId;
 
-    @Column(name = "token")
+    @Column(name = "token", columnDefinition = "TEXT")
     public String token;
 
     @Column(name = "app_key")

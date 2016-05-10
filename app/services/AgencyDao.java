@@ -1,7 +1,7 @@
 package services;
 
 import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.Transaction;
+import com.avaje.ebean.OrderBy;
 import models.alerts.Agency;
 import models.alerts.Route;
 import services.splendidlog.Log;
@@ -39,22 +39,16 @@ public class AgencyDao {
     public boolean saveAgencyAlerts(@Nonnull Agency newAgency) {
         Collections.sort(newAgency.routes);
 
-        // Start the transaction.
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setPersistCascade(true);
+        // Fetch [any] the persisted agency that matches the new agency
+        mLog.d(TAG, "Persisting agency routes in database.");
+        Agency existingAgency = mEbeanServer.find(Agency.class)
+                .where()
+                .eq("id", newAgency.id)
+                .findUnique();
 
         try {
-            // Fetch [any] the persisted agency that matches the new agency
-            mLog.d(TAG, "Persisting agency routes in database.");
-            Agency existingAgency = mEbeanServer.find(Agency.class)
-                    .where()
-                    .idEq(newAgency.id)
-                    .findUnique();
-
             // If there is an existing agency with routes, use those ids.
             if (existingAgency != null) {
-                mLog.d(TAG, String.format("Found xisting routes for %s.", existingAgency.name));
-
                 Collections.sort(existingAgency.routes);
 
                 // Loop through each route and persist if anything is new.
@@ -72,6 +66,9 @@ public class AgencyDao {
                     // If a new routeId matched an existing routeId, replace it. If not, replace all
                     // existing route attributes with the new route apart deviceId.
                     if (existingRoute != null) {
+                        mLog.d(TAG, String.format("Found $1%d existing routes for $2%s.",
+                                existingAgency.routes.size(),
+                                existingAgency.name));
 
                         // If something about the new route does not equal the existing route..
                         if (existingRoute.routeId.equals(newRoute.routeId) &&
@@ -88,12 +85,12 @@ public class AgencyDao {
                                     newRoute.alerts != null ? newRoute.alerts.size() : 0,
                                     existingRoute.routeId));
 
-                            mEbeanServer.update(newRoute, transaction);
+                            mEbeanServer.update(newRoute);
                         }
 
                     } else {
                         newRoute.agency = newAgency;
-                        mEbeanServer.save(newRoute, transaction);
+                        mEbeanServer.save(newRoute);
                         mLog.i(TAG, String.format("Agency Route %s does not exist. Inserting.", newRoute.routeId));
                     }
                 }
@@ -101,16 +98,12 @@ public class AgencyDao {
             } else {
                 // There was no existing agency found locally. Simple save the entire agency.
                 mLog.i(TAG, String.format("Agency %s doesn't exist. Inserting all alerts.", newAgency.name));
-                mEbeanServer.save(newAgency, transaction);
+                mEbeanServer.save(newAgency);
             }
-
-            // Commit all work.
-            transaction.commit();
             return true;
 
         } catch (Exception e) {
             mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
-            transaction.rollback();
             return false;
         }
     }
@@ -132,8 +125,9 @@ public class AgencyDao {
 
                 try {
                     List<Route> routes = mEbeanServer.find(Route.class)
+                            .fetch("agency")
                             .where()
-                            .eq("agency_id", agencyId)
+                            .eq("agency.id", agencyId)
                             .eq("routeId", routeId.toLowerCase())
                             .findList();
 
@@ -150,17 +144,19 @@ public class AgencyDao {
     /**
      * Get a list of saved alerts for a given agency.
      *
-     * @param agencyId deviceId of the agency.
+     * @param agencyId id of the agency.
      * @return list of alerts for agency. Can be null.
      */
     @Nullable
     public List<Route> getRouteAlerts(int agencyId) {
         try {
-            return mEbeanServer.find(Route.class)
-                    .orderBy("routeId")
+            List<Route> routes = mEbeanServer.find(Route.class)
+                    .setOrder(new OrderBy<>("routeId"))
                     .where()
-                    .eq("agency_id", agencyId)
+                    .eq("agency.id", agencyId)
                     .findList();
+
+            return routes;
 
         } catch (Exception e) {
             mLog.e(TAG, "Error getting routes for agency.", e);

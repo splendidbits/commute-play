@@ -1,11 +1,13 @@
 package controllers;
 
+import services.PushMessageManager;
 import models.accounts.Account;
+import models.accounts.PlatformAccount;
 import models.devices.Device;
 import play.mvc.Controller;
 import play.mvc.Result;
+import pushservices.enums.PlatformType;
 import services.AccountsDao;
-import helpers.PushMessageManager;
 import services.DeviceDao;
 
 import javax.annotation.Nonnull;
@@ -35,9 +37,10 @@ public class RegistrationController extends Controller {
     private enum RegistrationResult {
         OK(ok("Success")),
         MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request")),
-        BAD_ACCOUNT(badRequest("No account for api_key")),
+        BAD_ACCOUNT(badRequest("No platform account registered for api_key")),
         OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co")),
-        BAD_REGISTRATION_REQUEST(badRequest("Error adding device registration"));
+        BAD_REGISTRATION_REQUEST(badRequest("Error adding device registration")),
+        UNKNOWN_ERROR(badRequest("Unknown error saving the device registration."));
 
         public Result mResultValue;
 
@@ -114,21 +117,28 @@ public class RegistrationController extends Controller {
 
         Device device = new Device(deviceId, registrationId);
         device.account = account;
-        if (appKey != null) {
-            device.appKey = appKey;
-        }
-        if (userKey != null) {
-            device.userKey = userKey;
+        device.appKey = appKey;
+        device.userKey = userKey;
+
+        // Return error if there were not platform accounts for Account.
+        if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
+            return CompletableFuture.completedFuture(RegistrationResult.BAD_ACCOUNT);
         }
 
+        // Return error on error saving registration.
         boolean persistSuccess = mDeviceDao.saveDevice(device);
-
-        if (persistSuccess && account.platformAccounts != null) {
-            mPushMessageManager.sendRegistrationConfirmation(device, account.platformAccounts);
-            return CompletableFuture.completedFuture(RegistrationResult.OK);
-
-        } else {
-            return CompletableFuture.completedFuture(RegistrationResult.BAD_REGISTRATION_REQUEST);
+        if (!persistSuccess) {
+            return CompletableFuture.completedFuture(RegistrationResult.UNKNOWN_ERROR);
         }
+
+        // Send update using one of each platform.
+        for (PlatformAccount platformAccount : account.platformAccounts) {
+            if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
+                mPushMessageManager.sendRegistrationConfirmMessage(device, platformAccount);
+                break;
+            }
+        }
+
+        return CompletableFuture.completedFuture(RegistrationResult.OK);
     }
 }

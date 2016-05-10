@@ -11,14 +11,15 @@ import com.avaje.ebean.annotation.EnumValue;
  */
 public enum PlatformType {
     @EnumValue("GCM")
-    SERVICE_GCM("GCM"),
+    SERVICE_GCM("GCM", "https://android.googleapis.com/gcm/send"),
 
-    @EnumValue("APNS")
-    SERVICE_APNS("APNS");
+    @EnumValue( "APNS")
+    SERVICE_APNS("APNS", "https://gateway.sandbox.push.apple.com");
 
     public String name;
-
-    PlatformType(String name) {
+    public String url;
+    PlatformType(String name, String url) {
         this.name = name;
+        this.url = url;
     }
 }

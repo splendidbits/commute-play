@@ -38,10 +38,6 @@ public class Alert extends Model implements Comparable {
     @Enumerated(EnumType.STRING)
     public AlertType type = AlertType.TYPE_NONE;
 
-    @Column(name = "level")
-    @Enumerated(EnumType.STRING)
-    public AlertLevel level = AlertLevel.LEVEL_SILENT;
-
     @Column(name = "message_title", columnDefinition = "TEXT")
     public String messageTitle;
 
@@ -67,10 +63,6 @@ public class Alert extends Model implements Comparable {
         int hashCode = type != null
                 ? type.hashCode()
                 : super.hashCode();
-
-        hashCode += level != null
-                ? level.hashCode()
-                : hashCode;
 
         hashCode += messageTitle != null
                 ? messageTitle.hashCode()
@@ -106,8 +98,6 @@ public class Alert extends Model implements Comparable {
 
             boolean sameType = (type.equals(other.type));
 
-            boolean sameLevel = (level.equals(other.level));
-
             boolean sameTitle = (messageTitle == null && other.messageTitle == null) ||
                     (messageTitle != null && other.messageTitle != null && messageTitle.equals(other.messageTitle));
 
@@ -124,14 +114,13 @@ public class Alert extends Model implements Comparable {
                     (lastUpdated != null && other.lastUpdated != null &&
                             lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
 
-            boolean bothLocationsEmpty = locations == null && other.locations == null;
+            boolean bothLocationsEmpty = locations.isEmpty() && other.locations.isEmpty();
 
-            boolean sameLocations = bothLocationsEmpty || (locations != null && other.locations != null &&
-                    locations.containsAll(other.locations) && other.locations.containsAll(locations));
+            boolean sameLocations = bothLocationsEmpty || (locations.containsAll(other.locations) &&
+                    other.locations.containsAll(locations));
 
             // Match everything.
-            return (sameType && sameLevel && sameTitle && sameSubtitle &&
-                    sameBody && sameUri && sameUpdateTime && sameLocations);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameUpdateTime && sameLocations);
         }
 
         return obj.equals(this);

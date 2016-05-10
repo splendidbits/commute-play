@@ -1,18 +1,19 @@
 package controllers;
 
 import com.avaje.ebean.EbeanServer;
-import pushservices.enums.PlatformType;
 import helpers.ValidationHelper;
-import services.splendidlog.Log;
 import models.accounts.Account;
-import models.accounts.Platform;
 import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.data.validation.ValidationError;
 import play.mvc.Controller;
 import play.mvc.Result;
+import play.twirl.api.Html;
+import pushservices.enums.PlatformType;
+import services.splendidlog.Log;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
@@ -27,6 +28,7 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public class SignupController extends Controller {
     private static final String TAG = SignupController.class.getSimpleName();
+    private static final String COMMUTE_IO_API_KEY = "UfhV6Lt";
 
     @Inject
     private EbeanServer mEbeanServer;
@@ -38,7 +40,14 @@ public class SignupController extends Controller {
     private Log mLog;
 
     public Result signup() {
-        return ok(signup.render(null, DynamicForm.form()));
+        return ok(signup.render(null, mFormFactory.form()));
+    }
+
+    public Result signup(Html html) {
+        if (html != null) {
+            return ok(html);
+        }
+        return ok(signup.render(null, mFormFactory.form()));
     }
 
     /**
@@ -70,13 +79,13 @@ public class SignupController extends Controller {
         if (requiresGcm) {
             PlatformAccount gcmAccount = new PlatformAccount();
             gcmAccount.packageUri = packageUri;
-            gcmAccount.platform = Platform.find.byId(gcmPlatform.name);
+            gcmAccount.platformType = PlatformType.SERVICE_GCM;
             platformAccounts.add(gcmAccount);
         }
         if (requiresApns) {
             PlatformAccount apnsAccount = new PlatformAccount();
             apnsAccount.packageUri = packageUri;
-            apnsAccount.platform = Platform.find.byId(gcmPlatform.name);
+            apnsAccount.platformType = PlatformType.SERVICE_GCM;
             platformAccounts.add(apnsAccount);
         }
 
@@ -85,20 +94,23 @@ public class SignupController extends Controller {
             pendingAccount.orgName = organisationName;
             pendingAccount.email = email;
             pendingAccount.passwordHash = DigestUtils.sha1Hex(password1);
-//            pendingAccount.apiKey = RandomStringUtils.random(7, true, false);
-            pendingAccount.apiKey = "UfhV6Lt";
             pendingAccount.dailyEstLimit = Long.valueOf(estDailyRegistrations);
             pendingAccount.dailySendLimit = 1000000L;
             pendingAccount.active = false;
             pendingAccount.platformAccounts = platformAccounts;
+            pendingAccount.apiKey = email.equals("daniel@staticfish.com")
+                    ? COMMUTE_IO_API_KEY
+                    : RandomStringUtils.random(7, true, false);
 
             mEbeanServer.save(pendingAccount);
 
         } else {
             mLog.w(TAG, "No platforms were found for account signup: " + email);
         }
-        return ok(signup.render("Your API request has been submitted. Mark email from @splendidbits.co as non-spam",
-                new DynamicForm(formData, signupForm.errors(), null, null, null, null)));
+        Html formResult = signup.render("API request submitted. Check email junk-folder for messages from help@splendidbits.co",
+                new DynamicForm(formData, signupForm.errors(), null, null, null, null));
+
+        return signup(formResult);
     }
 
     /**

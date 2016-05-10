@@ -4,8 +4,8 @@
     <data-source name="commute-gcm splendidbits@localhost" uuid="1a12eade-1133-4d3d-ad8e-2106e6ee41e1">
       <secret-storage>master_key</secret-storage>
       <user-name>splendidbits</user-name>
-      <schema-pattern>commute_gcm.agency_updates commute_gcm.api_accounts commute_gcm.device_information commute_gcm.task_queue</schema-pattern>
-      <default-schemas>commute_gcm.agency_updates commute_gcm.api_accounts commute_gcm.device_information commute_gcm.public commute_gcm.task_queue</default-schemas>
+      <schema-pattern>commute_gcm.agency_updates commute_gcm.api_accounts commute_gcm.device_information commute_gcm.push_services</schema-pattern>
+      <default-schemas>commute_gcm.agency_updates commute_gcm.api_accounts commute_gcm.device_information commute_gcm.public</default-schemas>
     </data-source>
     <data-source name="splendidlog splendidlog@localhost" uuid="5aa891e3-b65d-494a-9972-1733c2b79255">
       <secret-storage>master_key</secret-storage>

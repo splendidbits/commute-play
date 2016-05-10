@@ -16,8 +16,11 @@ public enum TaskState {
     STATE_PROCESSING,
     @EnumValue("FAILED")
     STATE_FAILED,
-    @EnumValue("STATE_PARTIALLY_PROCESSED")
+    @EnumValue("PARTIALLY_PROCESSED")
     STATE_PARTIALLY_PROCESSED,
     @EnumValue("COMPLETE")
-    STATE_COMPLETE
+    STATE_COMPLETE;
+
+    TaskState() {
+    }
 }

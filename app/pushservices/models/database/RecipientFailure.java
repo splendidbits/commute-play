@@ -14,7 +14,7 @@ import java.util.Calendar;
  * Copyright 4/6/16 Splendid Bits.
  */
 @Entity
-@Table(name = "recipient_failures", schema = "task_queue")
+@Table(name = "recipient_failures", schema = "push_services")
 public class RecipientFailure extends Model {
     public static Finder<Long, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
 
@@ -31,7 +31,7 @@ public class RecipientFailure extends Model {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "recipient_id",
-            table = "task_queue.recipients",
+            table = "push_services.recipients",
             referencedColumnName = "id",
             unique = false,
             updatable = true)

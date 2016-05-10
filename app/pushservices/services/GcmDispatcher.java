@@ -3,11 +3,10 @@ package pushservices.services;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
-import helpers.CommuteGcmBuilder;
-import services.splendidlog.Log;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import pushservices.enums.PlatformFailureType;
+import pushservices.helpers.MessageHelper;
 import pushservices.interfaces.RawMessageResponse;
 import pushservices.models.app.GoogleResponse;
 import pushservices.models.app.MessageResult;
@@ -15,6 +14,7 @@ import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.types.PushFailCause;
 import serializers.GcmMessageSerializer;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,7 +62,7 @@ class GcmDispatcher {
         }
 
         // Return error on no platform.
-        if (message.credentials == null || message.credentials.authorizationKey == null) {
+        if (message.credentials == null || message.credentials.platformType == null) {
             responseListener.messageFailure(message, PushFailCause.MISSING_CREDENTIALS);
             return;
         }
@@ -77,6 +77,7 @@ class GcmDispatcher {
                     if (exception instanceof GoogleCallException) {
                         GoogleCallException googleException = (GoogleCallException) exception;
                         switch (googleException.mStatusCode) {
+
                             case 400:
                                 responseListener.messageFailure(message,
                                         PushFailCause.GCM_MESSAGE_JSON_ERROR);
@@ -151,7 +152,7 @@ class GcmDispatcher {
         List<Message> returnedMessageParts = new ArrayList<>();
         List<Recipient> allRecipients = originalMessage.recipients;
 
-        Message messagePart = CommuteGcmBuilder.cloneMessage(originalMessage);
+        Message messagePart = MessageHelper.copyMessage(originalMessage);
         int messageRegistrations = 1;
 
         // Add each registration_id to the message in batches of 1000.
@@ -162,7 +163,7 @@ class GcmDispatcher {
                 if (messageRegistrations == 999) {
                     returnedMessageParts.add(messagePart);
 
-                    messagePart = CommuteGcmBuilder.cloneMessage(originalMessage);
+                    messagePart = MessageHelper.copyMessage(originalMessage);
                     messageRegistrations = 0;
                 }
 
@@ -187,16 +188,16 @@ class GcmDispatcher {
      */
     @Nullable
     private CompletionStage<WSResponse> sendMessageRequest(@Nonnull Message messagePart) {
-        if (messagePart.credentials != null && messagePart.credentials.endpointUrl != null) {
+        if (messagePart.credentials != null && messagePart.credentials.platformType != null) {
             String jsonBody = new GsonBuilder()
                     .registerTypeAdapter(Message.class, new GcmMessageSerializer())
                     .create()
                     .toJson(messagePart);
 
             return mWsClient
-                    .url(messagePart.credentials.endpointUrl)
+                    .url(messagePart.credentials.platformType.url)
                     .setContentType("application/json")
-                    .setHeader("Authorization", String.format("key=%s", messagePart.credentials.authorizationKey))
+                    .setHeader("Authorization", String.format("key=%s",messagePart.credentials.authorisationKey))
                     .setRequestTimeout(GCM_REQUEST_TIMEOUT)
                     .setFollowRedirects(true)
                     .post(jsonBody);
@@ -267,7 +268,8 @@ class GcmDispatcher {
                     for (PlatformFailureType error : PlatformFailureType.values()) {
 
                         // Check for an error in the response where the recipient is stale.
-                        if (error.friendlyError.equals(PlatformFailureType.ERROR_NOT_REGISTERED) ||
+                        if (error.friendlyError != null &&
+                                error.friendlyError.equals(PlatformFailureType.ERROR_NOT_REGISTERED) ||
                                 error.equals(PlatformFailureType.ERROR_INVALID_REGISTRATION)) {
                             messageResult.addStaleRecipient(originalRecipient);
                         }

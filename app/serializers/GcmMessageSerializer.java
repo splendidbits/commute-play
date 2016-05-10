@@ -34,9 +34,8 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
         jsonMessage.add("dry_run", new JsonPrimitive(message.isDryRun));
         jsonMessage.add("registration_ids", registrationIdArray);
         jsonMessage.add("data", jsonPayloadData);
-        if (message.credentials.restrictedPackage != null) {
-            jsonMessage.add("restricted_package_name",
-                    new JsonPrimitive(message.credentials.restrictedPackage));
+        if (message.credentials != null && message.credentials.packageUri != null) {
+            jsonMessage.add("restricted_package_name", new JsonPrimitive(message.credentials.packageUri));
         }
 
         return jsonMessage;

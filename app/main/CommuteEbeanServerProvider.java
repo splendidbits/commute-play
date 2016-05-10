@@ -6,7 +6,6 @@ import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Provider;
 import models.accounts.Account;
-import models.accounts.Platform;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -45,7 +44,6 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         ArrayList<Class<?>> models = new ArrayList<>();
         models.add(Account.class);
         models.add(PlatformAccount.class);
-        models.add(Platform.class);
         models.add(Agency.class);
         models.add(Route.class);
         models.add(Alert.class);
@@ -63,6 +61,7 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
         serverConfig.setName(name);
         serverConfig.setDefaultServer(true);
+        serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setRegister(true);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);

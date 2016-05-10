@@ -3,7 +3,7 @@ package agency;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import controllers.Application;
-import main.AlertsUpdateManager;
+import services.AlertsUpdateManager;
 import services.splendidlog.Log;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;

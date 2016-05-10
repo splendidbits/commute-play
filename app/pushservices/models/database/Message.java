@@ -3,7 +3,6 @@ package pushservices.models.database;
 import com.avaje.ebean.Model;
 import main.Constants;
 import pushservices.enums.MessagePriority;
-import pushservices.enums.PlatformType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,7 +12,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name = "messages", schema = "task_queue")
+@Table(name = "messages", schema = "push_services")
 public class Message extends Model {
     public static Finder<Long, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
 
@@ -26,32 +25,21 @@ public class Message extends Model {
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
     @JoinColumn(
             name = "task_id",
-            table = "task_queue.tasks",
+            table = "push_services.tasks",
             referencedColumnName = "id",
             unique = false,
             updatable = true)
     public Task task;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinColumn(
-            name = "auth_id",
-            table = "task_queue.credentials",
-            referencedColumnName = "authorization_key",
-            nullable = true,
-            unique = false,
-            updatable = true)
+    @OneToOne(mappedBy = "message", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     public Credentials credentials;
 
-    @Column(name = "platform")
-    @Enumerated(EnumType.STRING)
-    public PlatformType platformType;
-
     @Nullable
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Recipient> recipients;
 
     @Nullable
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "message", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<PayloadElement> payloadData;
 
     @Column(name = "collapse_key")
@@ -76,16 +64,7 @@ public class Message extends Model {
     public Calendar sentTime;
 
     @Transient
-    public void addData(@Nonnull String key, @Nonnull String value){
-        if (payloadData == null) {
-            payloadData = new ArrayList<>();
-        }
-        PayloadElement payloadElement = new PayloadElement(key, value);
-        payloadData.add(payloadElement);
-    }
-
-    @Transient
-    public void addRecipient(@Nonnull Recipient recipient){
+    public void addRecipient(@Nonnull Recipient recipient) {
         if (recipients == null) {
             recipients = new ArrayList<>();
         }

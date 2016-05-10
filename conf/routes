@@ -11,8 +11,8 @@ POST        /gcm/v1/register              controllers.RegistrationController.reg
 POST        /gcm/v1/subscribe             controllers.SubscriptionController.subscribe()
 
 # Signup
-GET         /gcm/v1/signup                controllers.SignupController.signup()
-POST        /gcm/v1/signup/adduser        controllers.SignupController.addUser()
+GET         /signup                controllers.SignupController.signup()
+POST        /signup/adduser        controllers.SignupController.addUser()
 
 # SplendidLog
 ->          /logs                         splendidlog.Routes

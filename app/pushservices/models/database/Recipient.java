@@ -3,13 +3,14 @@ package pushservices.models.database;
 import com.avaje.ebean.Model;
 import main.Constants;
 import pushservices.types.RecipientState;
+import pushservices.types.TaskState;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.Calendar;
 
 @Entity
-@Table(name = "recipients", schema = "task_queue")
+@Table(name = "recipients", schema = "push_services")
 public class Recipient extends Model {
     public static Finder<Long, Recipient> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Recipient.class);
 
@@ -19,21 +20,21 @@ public class Recipient extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recipient_id_seq_gen")
     public Long id;
 
-    @Column(name = "token")
+    @Column(name = "token", columnDefinition = "TEXT")
     public String token;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "message_id",
-            table = "task_queue.messages",
+            table = "push_services.messages",
             referencedColumnName = "id",
             unique = true,
             updatable = true)
     public Message message;
 
+//    @Enumerated(EnumType.STRING)
     @Column(name = "state")
-    @Enumerated(EnumType.STRING)
-    public RecipientState state = RecipientState.STATE_IDLE;
+    public RecipientState state;
 
     @Basic(fetch=FetchType.LAZY)
     @Column(name = "time_added", columnDefinition = "timestamp without time zone")
