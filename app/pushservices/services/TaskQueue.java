@@ -54,10 +54,6 @@ public class TaskQueue {
         mLog = log;
         mGcmDispatcher = gcmDispatcher;
         mTaskConsumerThread = new Thread(mQueueConsumer);
-
-        // Fetch any tasks that are partially or incomplete.
-        fetchPendingTasks();
-        start();
     }
 
     /**
@@ -141,8 +137,11 @@ public class TaskQueue {
      * Starts the TaskQueue {@link Task} polling process.
      */
     public void start() {
-        if (!mTaskConsumerThread.isAlive()) {
+        if (!mTaskConsumerThread.isAlive() || mTaskConsumerThread.isInterrupted()) {
             mLog.d(TAG, "Starting the TaskQueue consumer thread.");
+
+            // Get outstanding incomplete message tasks and start queue consumer thread..
+            fetchPendingTasks();
             mTaskConsumerThread.start();
         }
     }
@@ -183,7 +182,7 @@ public class TaskQueue {
             }
 
             // If the task was not found, insert a new task.
-            if (existingTask != null){
+            if (existingTask != null) {
                 task.id = existingTask.id;
                 mEbeanServer.update(task);
 
@@ -347,7 +346,7 @@ public class TaskQueue {
                     boolean backoffTimeReached = task.nextAttempt == null ||
                             task.nextAttempt.before(Calendar.getInstance());
 
-                        // Backoff time was not reached.
+                    // Backoff time was not reached.
                     if (!backoffTimeReached) {
                         mPendingTaskQueue.add(task);
                         mLog.d(TAG, String.format("Task %s hasn't reached backoff.", taskName));

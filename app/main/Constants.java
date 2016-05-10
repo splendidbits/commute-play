@@ -7,8 +7,7 @@ import java.util.TimeZone;
  */
 public class Constants {
     // Timeout for Agency alerts download requests in MS.
-    public static final int TASK_QUEUE_INITIAL_DELAY_SECONDS = 60;
-    public static final int TASK_QUEUE_INTERVAL_SECONDS = 15;
+    public static final int TASKQUEUE_CHECK_CONSUMER_RUNNING_MINS = 15;
     public static final int AGENCY_UPDATE_INITIAL_DELAY_SECONDS = 5;
     public static final int AGENCY_UPDATE_INTERVAL_SECONDS = 45;
 

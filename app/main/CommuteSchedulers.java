@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Runs on application startup.
+ * Starts scheduled tasks such as agency alert feed downloads, and periodic taskqueue
+ * consumer verification. Runs on application startup.
  */
 @Singleton
 public class CommuteSchedulers {
@@ -35,21 +36,19 @@ public class CommuteSchedulers {
         mTaskQueue = taskQueue;
 
         startAgencyUpdateSchedule(actorSystem, agencyActor);
+        verifyTaskQueueConsumerRunning(actorSystem);
     }
 
     /**
-     * Start the TaskQueue system scheduler.
-     *
-     * @deprecated in favour of the TaskQueue running it's own polling thread.
+     * Periodically verify that the TaskQueue Queue consumer is up and running,
+     * if not, restart it.
      */
-    private void startTaskQueueSchedule(ActorSystem actorSystem) {
-        actorSystem.scheduler().schedule(
-                Duration.create(Constants.TASK_QUEUE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
-                Duration.create(Constants.TASK_QUEUE_INTERVAL_SECONDS, TimeUnit.SECONDS),
+    private void verifyTaskQueueConsumerRunning(ActorSystem actorSystem) {
+        actorSystem.scheduler().schedule(Duration.create(0, TimeUnit.SECONDS),
+                Duration.create(Constants.TASKQUEUE_CHECK_CONSUMER_RUNNING_MINS, TimeUnit.MINUTES),
                 new Runnable() {
                     @Override
                     public void run() {
-                        mLog.d(TAG, "Sweeping TaskQueue Service" + System.currentTimeMillis());
                         mTaskQueue.start();
                     }
                 },
