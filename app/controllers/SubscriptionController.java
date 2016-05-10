@@ -99,7 +99,7 @@ public class SubscriptionController extends Controller {
                 }
 
                 // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-                List<Route> validRoutes = mAgencyService.getRouteAlerts(agencyId, routes);
+                List<Route> validRoutes = mAgencyService.getAgencyRoutes(agencyId, routes);
                 List<Subscription> subscriptions = new ArrayList<>();
                 if (validRoutes != null) {
 

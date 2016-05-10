@@ -1,6 +1,8 @@
 package pushservices.models.database;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import pushservices.enums.PlatformFailureType;
 
@@ -14,6 +16,7 @@ import java.util.Calendar;
  * Copyright 4/6/16 Splendid Bits.
  */
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "recipient_failures", schema = "push_services")
 public class RecipientFailure extends Model {
     public static Finder<Long, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
@@ -53,5 +56,37 @@ public class RecipientFailure extends Model {
 
     public RecipientFailure(@Nonnull PlatformFailureType failure) {
         this.failure = failure;
+    }
+
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += failure != null
+                ? failure.hashCode()
+                : hashCode;
+
+        hashCode += recipient != null
+                ? recipient.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof RecipientFailure) {
+            RecipientFailure other = (RecipientFailure) obj;
+
+            boolean sameType = (failure == null && other.failure == null) ||
+                    (failure != null && other.failure != null && failure.equals(other.failure));
+
+            boolean sameRecipient = (recipient == null && other.recipient == null) ||
+                    (recipient != null && other.recipient != null && recipient.equals(other.recipient));
+
+            // Match everything.
+            return (sameType && sameRecipient);
+        }
+        return obj.equals(this);
     }
 }

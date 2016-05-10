@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.util.List;
 
+
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "routes", schema = "agency_updates")
@@ -51,7 +52,7 @@ public class Route extends Model implements Comparable<Route> {
     public String externalUri;
 
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "agency_id",
             table = "agency_updates.agencies",
@@ -62,7 +63,7 @@ public class Route extends Model implements Comparable<Route> {
 
     @JsonIgnore
     @Nullable
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "route")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "route")
     public List<Subscription> subscriptions;
 
     @Nullable
@@ -71,9 +72,13 @@ public class Route extends Model implements Comparable<Route> {
 
     @Override
     public int hashCode() {
-        int hashCode = routeId != null
-                ? routeId.hashCode()
+        Long hashCode = routeId != null
+                ? (long) routeId.hashCode()
                 : super.hashCode();
+
+        hashCode += id != null
+                ? id.hashCode()
+                : hashCode;
 
         hashCode += routeName != null
                 ? routeName.hashCode()
@@ -103,7 +108,7 @@ public class Route extends Model implements Comparable<Route> {
                 ? alerts.hashCode()
                 : hashCode;
 
-        return hashCode;
+        return hashCode.hashCode();
     }
 
     @Override
@@ -155,7 +160,7 @@ public class Route extends Model implements Comparable<Route> {
         this.routeId = routeId;
     }
 
-    public Route(@Nonnull String routeId, @Nonnull String routeName) {
+    public Route(@Nonnull String routeId, String routeName) {
         this.routeId = routeId;
         this.routeName = routeName;
     }

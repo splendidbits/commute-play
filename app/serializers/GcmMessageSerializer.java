@@ -30,7 +30,7 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
         // Serialise the main elements.
         JsonObject jsonMessage = new JsonObject();
         jsonMessage.add("collapse_key", new JsonPrimitive(message.collapseKey));
-        jsonMessage.add("time_to_live", new JsonPrimitive(message.ttl));
+        jsonMessage.add("time_to_live", new JsonPrimitive(message.ttlSeconds));
         jsonMessage.add("dry_run", new JsonPrimitive(message.isDryRun));
         jsonMessage.add("registration_ids", registrationIdArray);
         jsonMessage.add("data", jsonPayloadData);

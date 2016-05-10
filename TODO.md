@@ -1,9 +1,14 @@
+
 # Project TODO:
 
 ##ASAP
 * ~~Finish automatic scheduling.~~
 * ~~Make entire logging system dependency injectable~~
 * ~~Implement TaskQueue task~~.
+
+* split push-services into own submodule
+* stats return for push-services
+
 
 * Go through TODOs
 * ~~Add non-dispatch message listener callback from client~~.
@@ -12,11 +17,11 @@
 * Refresh device tokens on response from GCM.
 * Authenticate external app logging.
 * Create json agency alert endpoints with caching
-* Change splendid log password
-* Test alerts removal sends cancel_message
-* Test alerts adding sends message
-* Remove automatic evolutions
-* TEST TEST TEST
+* ~~Change splendid log password~~
+* ~~Test alerts removal sends cancel_message~~
+* ~~Test alerts adding sends message~~
+* ~~Remove automatic evolutions~~
+* ~~TEST TEST TEST~~
 
 ## model updates
 ### subscriptions_registrations

@@ -36,6 +36,9 @@ public class Agency extends Model {
 
     @SuppressWarnings("unused")
     public Agency() {
-        routes = new ArrayList<>();
+    }
+
+    public Agency(Integer id) {
+        this.id = id;
     }
 }

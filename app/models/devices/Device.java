@@ -1,6 +1,8 @@
 package models.devices;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import main.Constants;
 import models.accounts.Account;
@@ -12,6 +14,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "devices", schema = "device_information")
 public class Device extends Model {
     public static Finder<Long, Device> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Device.class);
@@ -63,8 +66,48 @@ public class Device extends Model {
         this.token = token;
     }
 
-    @PrePersist
-    public void initialValues() {
-        timeRegistered = Calendar.getInstance();
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += deviceId != null
+                ? deviceId.hashCode()
+                : hashCode;
+
+        hashCode += token != null
+                ? token.hashCode()
+                : hashCode;
+
+        hashCode += appKey != null
+                ? appKey.hashCode()
+                : hashCode;
+
+        hashCode += userKey != null
+                ? userKey.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Device) {
+            Device other = (Device) obj;
+
+            boolean sameDeviceId = deviceId == null && other.deviceId == null ||
+                    deviceId != null && deviceId.equals(other.deviceId);
+
+            boolean sameToken = token == null && other.token == null ||
+                    token != null && token.equals(other.token);
+
+            boolean sameAppKey = appKey == null && other.appKey == null ||
+                    appKey != null && appKey.equals(other.appKey);
+
+            boolean sameUserKey = userKey == null && other.userKey == null ||
+                    userKey != null && userKey.equals(other.userKey);
+
+            return sameDeviceId && sameToken && sameAppKey && sameUserKey;
+        }
+        return obj.equals(this);
     }
 }

@@ -1,9 +1,9 @@
 package pushservices.services;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.FetchConfig;
 import org.jetbrains.annotations.NotNull;
+import pushservices.dao.TasksDao;
 import pushservices.enums.PlatformFailureType;
+import pushservices.helpers.MessageHelper;
 import pushservices.helpers.SortedRecipientResponse;
 import pushservices.interfaces.TaskMessageResponse;
 import pushservices.models.app.MessageResult;
@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static pushservices.helpers.MessageHelper.isTaskIncomplete;
+
 /**
- * The singleton class that handles all GCM task jobs.
- * <p>
- * TODO: Move database related functions to a TaskDAO.
+ * A singleton class that handles all Push Service task jobs.
  */
 @Singleton
 public class TaskQueue {
@@ -44,16 +44,17 @@ public class TaskQueue {
     private QueueConsumer mQueueConsumer = new QueueConsumer();
     private Thread mTaskConsumerThread;
 
+    @Inject
     private GcmDispatcher mGcmDispatcher;
-    private EbeanServer mEbeanServer;
+
+    @Inject
+    private TasksDao mTasksDao;
+
+    @Inject
     private Log mLog;
 
     @Inject
-    public TaskQueue(EbeanServer ebeanServer, Log log, GcmDispatcher gcmDispatcher) {
-        mEbeanServer = ebeanServer;
-        mLog = log;
-        mGcmDispatcher = gcmDispatcher;
-        mTaskConsumerThread = new Thread(mQueueConsumer);
+    public TaskQueue() {
     }
 
     /**
@@ -103,45 +104,22 @@ public class TaskQueue {
         return messagesReady && taskReady;
     }
 
-    /**
-     * Get all {@link Task}s from the database which have not yet completed fully.
-     */
-    private void fetchPendingTasks() {
-        try {
-            List<Task> tasks = mEbeanServer.find(Task.class)
-                    .orderBy("id")
-                    .fetch("messages", new FetchConfig().query())
-                    .fetch("messages.recipients", new FetchConfig().query())
-                    .fetch("messages.credentials", new FetchConfig().query())
-                    .where()
-                    .conjunction()
-                    .ne("state", TaskState.STATE_FAILED)
-                    .ne("state", TaskState.STATE_COMPLETE)
-                    .endJunction()
-                    .filterMany("messages.recipients").ne("state", RecipientState.STATE_COMPLETE)
-                    .filterMany("messages.recipients").ne("state", RecipientState.STATE_FAILED)
-                    .findList();
-
-            // Add the saved pending tasks back into the queue
-            if (tasks != null) {
-                for (Task task : tasks) {
-                    mPendingTaskQueue.add(task);
-                }
-            }
-        } catch (Exception e) {
-            mLog.e(TAG, "Error getting message tasks.", e);
-        }
-    }
 
     /**
-     * Starts the TaskQueue {@link Task} polling process.
+     * Checks that the task consumer thread is active and running, and starts the TaskQueue
+     * {@link Task} polling process if it is not.
      */
     public void start() {
-        if (!mTaskConsumerThread.isAlive() || mTaskConsumerThread.isInterrupted()) {
+        if (mTaskConsumerThread == null || !mTaskConsumerThread.isAlive() || mTaskConsumerThread.isInterrupted()) {
+            mTaskConsumerThread = new Thread(mQueueConsumer);
             mLog.d(TAG, "Starting the TaskQueue consumer thread.");
 
             // Get outstanding incomplete message tasks and start queue consumer thread..
-            fetchPendingTasks();
+            List<Task> pendingTasks = mTasksDao.fetchPendingTasks();
+            for (Task task : pendingTasks) {
+                mPendingTaskQueue.add(task);
+            }
+
             mTaskConsumerThread.start();
         }
     }
@@ -155,48 +133,25 @@ public class TaskQueue {
     public void addTask(@Nonnull Task task, TaskMessageResponse taskMessageResponse) {
         mLog.d(TAG, "Saving new task to TaskQueue and datastore.");
 
-        if (isTaskIncomplete(task)) {
-            // Save the task entry and put it in the queue.
-            mPendingTaskQueue.add(task);
+        if (MessageHelper.isTaskIncomplete(task) && !mPendingTaskQueue.contains(task)) {
 
-            // Add the listener to the map to be called later.
-            if (taskMessageResponse != null) {
-                mTaskIdClientListeners.put(task.id, taskMessageResponse);
+            // Don't add the task if there's already a task for that id.
+            Task existingTask = mTasksDao.fetchTask(task.id);
+            if (existingTask == null) {
+
+                // Save the task entry and put it in the queue.
+                mPendingTaskQueue.add(task);
+
+                // Add the listener to the map to be called later.
+                boolean taskPersisted = mTasksDao.insertTask(task);
+                if (taskPersisted && taskMessageResponse != null) {
+                    mTaskIdClientListeners.put(task.id, taskMessageResponse);
+
+                } else {
+                    mLog.i(TAG, "No TaskMessage response listener for added task was stored.");
+                }
             }
         }
-    }
-
-    /**
-     * Updates or Inserts a task in the TaskQueue datastore.
-     *
-     * @param task the task to persist.
-     */
-    private boolean updateSaveTask(@Nonnull Task task) {
-        try {
-            Task existingTask = null;
-            if (task.id != null) {
-                existingTask = mEbeanServer.find(Task.class)
-                        .where()
-                        .eq("id", task.id)
-                        .findUnique();
-            }
-
-            // If the task was not found, insert a new task.
-            if (existingTask != null) {
-                task.id = existingTask.id;
-                mEbeanServer.update(task);
-
-            } else {
-                mEbeanServer.save(task);
-            }
-
-        } catch (Exception e) {
-            mLog.e(TAG, "Error saving new task state", e);
-            return false;
-        }
-
-        // Return true if the task has an id (and so was saved)
-        return task.id != null;
     }
 
     /**
@@ -289,8 +244,8 @@ public class TaskQueue {
                     removeClientListener(taskCallback);
                 }
 
-                // Update the task.
-                updateSaveTask(mTask);
+                // Save the updated task.
+                mTasksDao.updateTask(mTask);
             }
         }
 
@@ -306,8 +261,8 @@ public class TaskQueue {
                 removeClientListener(taskCallback);
             }
 
-            // Update the task.
-            updateSaveTask(mTask);
+            // Save the updated task.
+            mTasksDao.updateTask(mTask);
 
             mLog.e(TAG, String.format("Failed. %s response from push service for message %d",
                     failCause.name(), message.id));
@@ -356,17 +311,17 @@ public class TaskQueue {
                         task.state = TaskState.STATE_PROCESSING;
                         task.lastAttempt = Calendar.getInstance();
 
-                        // Set all recipient states on the pending task to processing.
-                        for (Message message : task.messages) {
-                            if (message.recipients != null) {
-                                for (Recipient recipient : message.recipients) {
-                                    recipient.state = RecipientState.STATE_PROCESSING;
+                        // Set all recipient states on all messages task to processing.
+                        if (task.messages != null) {
+                            for (Message message : task.messages) {
+                                if (message.recipients != null) {
+                                    for (Recipient recipient : message.recipients) {
+                                        recipient.state = RecipientState.STATE_PROCESSING;
+                                    }
+                                    mTasksDao.updateMessage(message);
                                 }
                             }
                         }
-
-                        // Save the updated task.
-                        updateSaveTask(task);
 
                         // Dispatch each message within the task..
                         for (Message message : task.messages) {

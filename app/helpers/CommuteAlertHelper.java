@@ -1,7 +1,9 @@
 package helpers;
 
 import models.accounts.PlatformAccount;
+import models.alerts.Agency;
 import models.alerts.Alert;
+import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import pushservices.enums.MessagePriority;
@@ -19,7 +21,7 @@ import java.util.List;
  * Used to easily create relevant push platform messages for different app alert types,
  * which can be sent out using the dispatchers.
  */
-public class CommuteMessageHelper {
+public class CommuteAlertHelper {
 
     /*
      * Different types of commute push message types.
@@ -35,6 +37,7 @@ public class CommuteMessageHelper {
 
         private String key;
         private String value;
+
         MessageType(String key, String value) {
             this.key = key;
             this.value = value;
@@ -50,6 +53,7 @@ public class CommuteMessageHelper {
         KEY_ROUTE_MESSAGE("message");
 
         private String name;
+
         AlertMessageKey(String name) {
             this.name = name;
         }
@@ -65,7 +69,6 @@ public class CommuteMessageHelper {
      */
     public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
                                                  @Nonnull PlatformAccount platformAccount) {
-        List<Message> messages = new ArrayList<>();
         if (route.alerts != null && !route.alerts.isEmpty()) {
             // If there are route alerts, create messages for each alert in the route.
             return buildAlertUpdateMessage(route, devices, platformAccount);
@@ -208,4 +211,107 @@ public class CommuteMessageHelper {
         return null;
     }
 
+    /**
+     * Deep copy a list of Routes including all of its children.
+     *
+     * @param routes {@link List<Route>} list to copy.
+     * @return copied {@link List<Route>}.
+     */
+    public static List<Route> copyRoutes(List<Route> routes) {
+        List<Route> copiedRoutes = new ArrayList<>();
+        if (routes != null) {
+            for (Route route : routes) {
+                copiedRoutes.add(copyRoutes(route));
+            }
+        }
+        return copiedRoutes;
+    }
+
+    /**
+     * Deep copy a route including all of its children. upward
+     * relationships such as subscriptions, agencies etc are not deep copied.
+     *
+     * @param route {@link Route} to copy.
+     * @return copied {@link Route}.
+     */
+    public static Route copyRoutes(@Nonnull Route route) {
+        Route updatedRoute = new Route(route.routeId, route.routeName);
+        Agency copiedAgency = null;
+        if (route.agency != null) {
+            copiedAgency = new Agency(route.agency.id);
+            copiedAgency.name = route.agency.phone;
+            copiedAgency.utcOffset = route.agency.utcOffset;
+            copiedAgency.phone = route.agency.phone;
+            copiedAgency.externalUri = route.agency.externalUri;
+            copiedAgency.routes = route.agency.routes;
+        }
+
+        updatedRoute.id = route.id;
+        updatedRoute.routeId = route.routeId;
+        updatedRoute.agency = copiedAgency;
+        updatedRoute.transitType = route.transitType;
+        updatedRoute.routeFlag = route.routeFlag;
+        updatedRoute.isDefault = route.isDefault;
+        updatedRoute.isSticky = route.isSticky;
+        updatedRoute.externalUri = route.externalUri;
+        updatedRoute.alerts = copyAlerts(route.alerts);
+        updatedRoute.subscriptions = route.subscriptions;
+
+        return updatedRoute;
+    }
+
+    /**
+     * Deep copy a list of Alerts including all of its children.
+     *
+     * @param alerts {@link List<Alert>} list to copy.
+     * @return copied {@link List<Alert>}.
+     */
+    public static List<Alert> copyAlerts(List<Alert> alerts) {
+        List<Alert> copiedAlerts = null;
+        if (alerts != null) {
+            copiedAlerts = new ArrayList<>();
+            for (Alert alert : alerts) {
+                copiedAlerts.add(copyAlerts(alert));
+            }
+        }
+        return copiedAlerts;
+    }
+
+    /**
+     * Deep copy an Alert including all of its children.
+     *
+     * @param alert {@link Alert} alert to copy.
+     * @return copied {@link Alert}.
+     */
+    public static Alert copyAlerts(@Nonnull Alert alert) {
+        List<Location> copiedLocations = null;
+        if (alert.locations != null) {
+            copiedLocations = new ArrayList<>();
+            for (Location location : alert.locations) {
+                Location copiedLocation = new Location();
+                copiedLocation.id = location.id;
+                copiedLocation.name = location.name;
+                copiedLocation.latitude = location.latitude;
+                copiedLocation.longitude = location.longitude;
+                copiedLocation.message = location.message;
+                copiedLocation.sequence = location.sequence;
+                copiedLocation.date = location.date;
+                copiedLocation.alert = location.alert;
+                copiedLocations.add(copiedLocation);
+            }
+        }
+
+        Alert copiedAlert = new Alert();
+        copiedAlert.id = alert.id;
+        copiedAlert.type = alert.type;
+        copiedAlert.messageTitle = alert.messageTitle;
+        copiedAlert.messageSubtitle = alert.messageSubtitle;
+        copiedAlert.messageBody = alert.messageBody;
+        copiedAlert.externalUri = alert.externalUri;
+        copiedAlert.lastUpdated = alert.lastUpdated;
+        copiedAlert.route = alert.route;
+        copiedAlert.locations = copiedLocations;
+
+        return copiedAlert;
+    }
 }

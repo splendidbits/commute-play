@@ -1,6 +1,8 @@
 package models.devices;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import models.alerts.Route;
 
@@ -8,6 +10,7 @@ import javax.persistence.*;
 import java.util.Calendar;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "subscriptions", schema = "device_information")
 public class Subscription extends Model {
     public static Finder<Long, Subscription> find = new Model.Finder<>(

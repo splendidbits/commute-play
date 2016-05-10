@@ -57,6 +57,10 @@ public class Location extends Model implements Comparable {
                 ? name.hashCode()
                 : super.hashCode();
 
+        hashCode += id != null
+                ? id.hashCode()
+                : hashCode;
+
         hashCode += message != null
                 ? message.hashCode()
                 : hashCode;

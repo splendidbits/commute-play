@@ -60,9 +60,13 @@ public class Alert extends Model implements Comparable {
 
     @Override
     public int hashCode() {
-        int hashCode = type != null
-                ? type.hashCode()
+        Long hashCode = type != null
+                ? (long) type.hashCode()
                 : super.hashCode();
+
+        hashCode += id != null
+                ? id.hashCode()
+                : hashCode;
 
         hashCode += messageTitle != null
                 ? messageTitle.hashCode()
@@ -88,7 +92,7 @@ public class Alert extends Model implements Comparable {
                 ? locations.hashCode()
                 : hashCode;
 
-        return hashCode;
+        return hashCode.hashCode();
     }
 
     @Override

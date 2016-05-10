@@ -83,7 +83,7 @@ create table push_services.messages (
   task_id                       bigint,
   collapse_key                  varchar(255),
   priority                      varchar(6),
-  time_to_live                  integer,
+  ttl_seconds                   integer,
   delay_while_idle              boolean,
   dry_run                       boolean,
   sent_time                     timestamp without time zone,
@@ -162,9 +162,10 @@ create sequence subscriptions_id_seq increment by 1;
 
 create table push_services.tasks (
   id                            bigint not null,
-  retry_count                   integer,
   name                          varchar(255),
   state                         varchar(19),
+  priority                      integer,
+  retry_count                   integer,
   task_added                    timestamp without time zone,
   last_attempt                  timestamp,
   next_attempt                  timestamp,

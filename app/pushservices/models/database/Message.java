@@ -1,6 +1,8 @@
 package pushservices.models.database;
 
 import com.avaje.ebean.Model;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
 import pushservices.enums.MessagePriority;
 
@@ -12,9 +14,11 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "messages", schema = "push_services")
 public class Message extends Model {
     public static Finder<Long, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
+    public static final int TTL_SECONDS_DEFAULT = 60 * 60 * 24 * 7;
 
     @Id
     @Column(name = "id")
@@ -22,7 +26,7 @@ public class Message extends Model {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
     public Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "task_id",
             table = "push_services.tasks",
@@ -31,7 +35,7 @@ public class Message extends Model {
             updatable = true)
     public Task task;
 
-    @OneToOne(mappedBy = "message", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public Credentials credentials;
 
     @Nullable
@@ -47,10 +51,10 @@ public class Message extends Model {
 
     @Column(name = "priority")
     @Enumerated(EnumType.STRING)
-    public MessagePriority messagePriority;
+    public MessagePriority messagePriority = MessagePriority.PRIORITY_NORMAL;
 
-    @Column(name = "time_to_live")
-    public int ttl;
+    @Column(name = "ttl_seconds")
+    public int ttlSeconds = TTL_SECONDS_DEFAULT;
 
     @Column(name = "delay_while_idle")
     public boolean shouldDelayWhileIdle;
@@ -61,7 +65,7 @@ public class Message extends Model {
     @Basic
     @Column(name = "sent_time", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar sentTime;
+    public Calendar sentTime = Calendar.getInstance();
 
     @Transient
     public void addRecipient(@Nonnull Recipient recipient) {
@@ -71,14 +75,81 @@ public class Message extends Model {
         recipients.add(recipient);
     }
 
-    @PrePersist
-    public void initialValues() {
-        sentTime = Calendar.getInstance();
-    }
-
     @SuppressWarnings("unused")
     public Message() {
-        messagePriority = MessagePriority.PRIORITY_NORMAL;
-        ttl = 86400;
+    }
+
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += collapseKey != null
+                ? collapseKey.hashCode()
+                : hashCode;
+
+        hashCode += messagePriority != null
+                ? messagePriority.hashCode()
+                : hashCode;
+
+        hashCode += ttlSeconds;
+
+        hashCode += shouldDelayWhileIdle ? 1 : 0;
+
+        hashCode += isDryRun ? 1 : 0;
+
+        hashCode += payloadData != null
+                ? payloadData.hashCode()
+                : hashCode;
+
+        hashCode += recipients != null
+                ? recipients.hashCode()
+                : hashCode;
+
+        hashCode += credentials != null
+                ? credentials.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Message) {
+            Message other = (Message) obj;
+
+            boolean sameCollapseKey = (collapseKey == null && other.collapseKey == null) ||
+                    (collapseKey != null && other.collapseKey != null && collapseKey.equals(other.collapseKey));
+
+            boolean sameCredentials = (credentials == null && other.credentials == null) ||
+                    (credentials != null && other.credentials != null && credentials.equals(other.credentials));
+
+            boolean samePriority = (messagePriority == null && other.messagePriority == null) ||
+                    (messagePriority != null && other.messagePriority != null && messagePriority.equals(other.messagePriority));
+
+            boolean sameTtl = ttlSeconds == other.ttlSeconds;
+
+            boolean sameDelayWhileIdle = shouldDelayWhileIdle == other.shouldDelayWhileIdle;
+
+            boolean sameDryRun = isDryRun == other.isDryRun;
+
+            boolean bothPayloadsEmpty = payloadData == null && other.payloadData == null ||
+                    (payloadData != null && payloadData.isEmpty() && other.payloadData != null && other.payloadData.isEmpty());
+
+            boolean samePayloadData = bothPayloadsEmpty ||
+                    payloadData != null && payloadData != null && other.payloadData != null &&
+                            (payloadData.containsAll(other.payloadData) && other.payloadData.containsAll(payloadData));
+
+            boolean bothRecipientsEmpty = recipients == null && other.recipients == null ||
+                    (recipients != null && recipients.isEmpty() && other.recipients != null && other.recipients.isEmpty());
+
+            boolean sameRecipients = bothRecipientsEmpty ||
+                    recipients != null && recipients != null && other.recipients != null &&
+                            (recipients.containsAll(other.recipients) && other.recipients.containsAll(recipients));
+
+            // Match everything.
+            return (sameCollapseKey && sameCredentials && samePriority && sameTtl &&
+                    sameDelayWhileIdle && sameDryRun && samePayloadData && sameRecipients);
+        }
+        return obj.equals(this);
     }
 }

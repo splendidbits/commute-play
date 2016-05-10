@@ -235,6 +235,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         }
 
                         // Add the modified route back into the map.
+                        route.agency = mAgency;
                         routesMap.put(routeId, route);
                     }
                 }

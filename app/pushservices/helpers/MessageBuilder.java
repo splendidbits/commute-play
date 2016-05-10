@@ -38,7 +38,7 @@ public class MessageBuilder {
         public Message build() {
             Message message = new Message();
             message.collapseKey = mCollapseKey;
-            message.ttl = mTtl;
+            message.ttlSeconds = mTtl;
             message.isDryRun = mIsDryRun;
             message.shouldDelayWhileIdle = mShouldDelayWhileIdle;
             message.credentials = mCredentials;

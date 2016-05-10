@@ -1,7 +1,7 @@
 package services;
 
 import agency.AgencyModifications;
-import helpers.CommuteMessageHelper;
+import helpers.CommuteAlertHelper;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Route;
@@ -59,7 +59,9 @@ public class PushMessageManager {
                 // Iterate through the NEW Alerts to send.
                 for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
                     Task updatedRoutesTask = new Task(String.format("agency-%d_updated_route-%s",
-                            updatedRoute.agency.id, updatedRoute.routeId));
+                            updatedRoute.agency != null ? updatedRoute.agency.id : -1, updatedRoute.routeId));
+                    updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
+
                     List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), updatedRoute, false);
                     if (!messages.isEmpty()) {
                         updatedRoutesTask.messages = new ArrayList<>();
@@ -71,7 +73,9 @@ public class PushMessageManager {
                 // Iterate through the STALE (canceled) Alerts to send.
                 for (Route staleRoute : agencyUpdates.getStaleAlertRoutes()) {
                     Task staleRoutesTask = new Task(String.format("agency-%d_cancelled_route-%s",
-                            staleRoute.agency.id, staleRoute.routeId));
+                            staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
+                    staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
+
                     List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), staleRoute, true);
                     if (!messages.isEmpty()) {
                         staleRoutesTask.messages = new ArrayList<>();
@@ -122,7 +126,7 @@ public class PushMessageManager {
 
                 // Create a message for each new alert in the route.
                 for (PlatformAccount platformAccount : account.platformAccounts) {
-                    List<Message> alertMessages = CommuteMessageHelper.getAlertMessages(route,
+                    List<Message> alertMessages = CommuteAlertHelper.getAlertMessages(route,
                             account.devices, platformAccount);
                     messages.addAll(alertMessages);
                 }
@@ -141,7 +145,8 @@ public class PushMessageManager {
     public CompletionStage<Boolean> sendRegistrationConfirmMessage(@Nonnull Device device,
                                                                    @Nonnull PlatformAccount platformAccounts) {
         Task messageTask = new Task("registration_success");
-        Message message = CommuteMessageHelper.buildDeviceRegisteredMessage(device, platformAccounts);
+        messageTask.priority = Task.TASK_PRIORITY_HIGH;
+        Message message = CommuteAlertHelper.buildDeviceRegisteredMessage(device, platformAccounts);
 
         if (message != null) {
             messageTask.addMessage(message);

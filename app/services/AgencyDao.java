@@ -9,12 +9,13 @@ import services.splendidlog.Log;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Singleton
+/**
+ * Agency route / alert database storage functions.
+ */
 public class AgencyDao {
     private static final String TAG = AgencyDao.class.getSimpleName();
 
@@ -115,7 +116,7 @@ public class AgencyDao {
      * @param routeIds list of routeIds to retrieve.
      * @return List of Routes.
      */
-    public List<Route> getRouteAlerts(int agencyId, String... routeIds) {
+    public List<Route> getAgencyRoutes(int agencyId, String... routeIds) {
         List<Route> foundRoutes = new ArrayList<>();
         if (routeIds != null) {
 
@@ -125,6 +126,7 @@ public class AgencyDao {
 
                 try {
                     List<Route> routes = mEbeanServer.find(Route.class)
+                            .setOrder(new OrderBy<>("routeId"))
                             .fetch("agency")
                             .where()
                             .eq("agency.id", agencyId)
@@ -148,19 +150,23 @@ public class AgencyDao {
      * @return list of alerts for agency. Can be null.
      */
     @Nullable
-    public List<Route> getRouteAlerts(int agencyId) {
+    public List<Route> getAgencyRoutes(int agencyId) {
+        List<Route> routes = new ArrayList<>();
         try {
-            List<Route> routes = mEbeanServer.find(Route.class)
+            List<Route> fetchedRoutes = mEbeanServer.find(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
+                    .fetch("agency")
                     .where()
                     .eq("agency.id", agencyId)
                     .findList();
 
-            return routes;
+            if (fetchedRoutes != null){
+                routes.addAll(fetchedRoutes);
+            }
 
         } catch (Exception e) {
             mLog.e(TAG, "Error getting routes for agency.", e);
         }
-        return null;
+        return routes;
     }
 }
