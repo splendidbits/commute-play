@@ -1,4 +1,4 @@
-package pushservices.types;
+package pushservices.enums;
 
 import com.avaje.ebean.annotation.EnumValue;
 

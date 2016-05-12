@@ -1,19 +1,20 @@
 package helpers;
 
+import enums.AlertType;
 import models.accounts.PlatformAccount;
-import models.alerts.Agency;
 import models.alerts.Alert;
-import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import pushservices.enums.MessagePriority;
 import pushservices.enums.PlatformType;
-import pushservices.helpers.MessageBuilder;
+import pushservices.helpers.PlatformMessageBuilder;
 import pushservices.models.database.Credentials;
 import pushservices.models.database.Message;
+import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,10 @@ import java.util.List;
  * which can be sent out using the dispatchers.
  */
 public class CommuteAlertHelper {
+    private static final String TAG = CommuteAlertHelper.class.getSimpleName();
+
+    @Inject
+    private static Log mLog;
 
     /*
      * Different types of commute push message types.
@@ -89,8 +94,9 @@ public class CommuteAlertHelper {
     @Nullable
     public static Message buildDeviceRegisteredMessage(@Nonnull Device device, @Nonnull PlatformAccount platformAccount) {
         Credentials credentials = getMessageCredentials(platformAccount);
+
         if (device.token != null && credentials != null) {
-            return new MessageBuilder.Builder()
+            return new PlatformMessageBuilder.Builder()
                     .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setPlatformCredentials(credentials)
@@ -112,13 +118,13 @@ public class CommuteAlertHelper {
     @Nonnull
     private static List<Message> buildAlertUpdateMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
-        List<Message> messages = new ArrayList<>();
-
         Credentials credentials = getMessageCredentials(platformAccount);
+
+        List<Message> messages = new ArrayList<>();
         if (credentials != null && route.alerts != null && route.routeId != null) {
             for (Alert alert : route.alerts) {
 
-                MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
                         .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setPlatformCredentials(credentials)
@@ -174,11 +180,11 @@ public class CommuteAlertHelper {
     @Nullable
     private static List<Message> buildAlertCancelMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
-        List<Message> messages = new ArrayList<>();
-
         Credentials credentials = getMessageCredentials(platformAccount);
+
+        List<Message> messages = new ArrayList<>();
         if (credentials != null && route.routeId != null) {
-            MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+            PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                     .setCollapseKey(route.routeId)
                     .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                     .setPlatformCredentials(credentials)
@@ -212,6 +218,20 @@ public class CommuteAlertHelper {
     }
 
     /**
+     * Check if the Alert is "empty" (if there is no message, or type.
+     * @param alert the alert to check.
+     *
+     * @return true if the message is empty.
+     */
+    public static boolean isAlertEmpty(@Nonnull Alert alert) {
+        return (alert.messageBody != null &&
+                alert.type != null &&
+                !alert.messageBody.isEmpty()) ||
+                alert.type != null &&
+                alert.type != AlertType.TYPE_NONE;
+    }
+
+    /**
      * Deep copy a list of Routes including all of its children.
      *
      * @param routes {@link List<Route>} list to copy.
@@ -221,7 +241,11 @@ public class CommuteAlertHelper {
         List<Route> copiedRoutes = new ArrayList<>();
         if (routes != null) {
             for (Route route : routes) {
-                copiedRoutes.add(copyRoutes(route));
+                try {
+                    copiedRoutes.add(copyRoutes(route));
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return copiedRoutes;
@@ -234,30 +258,8 @@ public class CommuteAlertHelper {
      * @param route {@link Route} to copy.
      * @return copied {@link Route}.
      */
-    public static Route copyRoutes(@Nonnull Route route) {
-        Route updatedRoute = new Route(route.routeId, route.routeName);
-        Agency copiedAgency = null;
-        if (route.agency != null) {
-            copiedAgency = new Agency(route.agency.id);
-            copiedAgency.name = route.agency.phone;
-            copiedAgency.utcOffset = route.agency.utcOffset;
-            copiedAgency.phone = route.agency.phone;
-            copiedAgency.externalUri = route.agency.externalUri;
-            copiedAgency.routes = route.agency.routes;
-        }
-
-        updatedRoute.id = route.id;
-        updatedRoute.routeId = route.routeId;
-        updatedRoute.agency = copiedAgency;
-        updatedRoute.transitType = route.transitType;
-        updatedRoute.routeFlag = route.routeFlag;
-        updatedRoute.isDefault = route.isDefault;
-        updatedRoute.isSticky = route.isSticky;
-        updatedRoute.externalUri = route.externalUri;
-        updatedRoute.alerts = copyAlerts(route.alerts);
-        updatedRoute.subscriptions = route.subscriptions;
-
-        return updatedRoute;
+    public static Route copyRoutes(@Nonnull Route route) throws CloneNotSupportedException {
+        return (Route) route.clone();
     }
 
     /**
@@ -266,15 +268,20 @@ public class CommuteAlertHelper {
      * @param alerts {@link List<Alert>} list to copy.
      * @return copied {@link List<Alert>}.
      */
+    @Nullable
     public static List<Alert> copyAlerts(List<Alert> alerts) {
-        List<Alert> copiedAlerts = null;
+        List<Alert> copiedAlerts = new ArrayList<>();
         if (alerts != null) {
-            copiedAlerts = new ArrayList<>();
             for (Alert alert : alerts) {
-                copiedAlerts.add(copyAlerts(alert));
+                try {
+                    copiedAlerts.add(copyAlerts(alert));
+                } catch (CloneNotSupportedException e) {
+                    mLog.e(TAG, "Error cloning task or task children.");
+                }
             }
+            return copiedAlerts;
         }
-        return copiedAlerts;
+        return null;
     }
 
     /**
@@ -283,35 +290,7 @@ public class CommuteAlertHelper {
      * @param alert {@link Alert} alert to copy.
      * @return copied {@link Alert}.
      */
-    public static Alert copyAlerts(@Nonnull Alert alert) {
-        List<Location> copiedLocations = null;
-        if (alert.locations != null) {
-            copiedLocations = new ArrayList<>();
-            for (Location location : alert.locations) {
-                Location copiedLocation = new Location();
-                copiedLocation.id = location.id;
-                copiedLocation.name = location.name;
-                copiedLocation.latitude = location.latitude;
-                copiedLocation.longitude = location.longitude;
-                copiedLocation.message = location.message;
-                copiedLocation.sequence = location.sequence;
-                copiedLocation.date = location.date;
-                copiedLocation.alert = location.alert;
-                copiedLocations.add(copiedLocation);
-            }
-        }
-
-        Alert copiedAlert = new Alert();
-        copiedAlert.id = alert.id;
-        copiedAlert.type = alert.type;
-        copiedAlert.messageTitle = alert.messageTitle;
-        copiedAlert.messageSubtitle = alert.messageSubtitle;
-        copiedAlert.messageBody = alert.messageBody;
-        copiedAlert.externalUri = alert.externalUri;
-        copiedAlert.lastUpdated = alert.lastUpdated;
-        copiedAlert.route = alert.route;
-        copiedAlert.locations = copiedLocations;
-
-        return copiedAlert;
+    public static Alert copyAlerts(@Nonnull Alert alert) throws CloneNotSupportedException {
+        return (Alert) alert.clone();
     }
 }

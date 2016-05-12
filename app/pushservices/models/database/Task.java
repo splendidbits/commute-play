@@ -4,7 +4,7 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
-import pushservices.types.TaskState;
+import pushservices.helpers.PlatformMessageBuilder;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,7 +16,7 @@ import java.util.List;
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "tasks", schema = "push_services")
-public class Task extends Model {
+public class Task extends Model implements Cloneable {
     public static Finder<Long, Task> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Task.class);
 
     // While priority can be set to any int, these might be useful. Bigger int is higher priority.
@@ -37,30 +37,21 @@ public class Task extends Model {
     @Column(name = "name")
     public String name;
 
-    @Column(name = "state")
-    public TaskState state = TaskState.STATE_IDLE;
-
     @Column(name = "priority")
     public int priority = TASK_PRIORITY_LOW;
 
-    @Column(name = "retry_count")
-    public int retryCount;
-
     @Basic
-    @Column(name = "task_added", columnDefinition = "timestamp without time zone")
+    @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar taskAdded;
+    public Calendar lastUpdated = Calendar.getInstance();
 
-    @Basic
-    @Column(name = "last_attempt")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar lastAttempt;
-
-    @Basic
-    @Column(name = "next_attempt")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Calendar nextAttempt;
-
+    /**
+     * Add a platform message to the task. Ensure that the message contains the
+     * credentials attribute. Many different push services / accounts can be used per task.
+     *
+     * @param platformMessage The message to add. Use {@link PlatformMessageBuilder}
+     *                        to easily create a platform message.
+     */
     public void addMessage(@Nonnull Message platformMessage) {
         if (messages == null) {
             messages = new ArrayList<>();
@@ -73,32 +64,7 @@ public class Task extends Model {
     }
 
     public Task(String name) {
-        Calendar nowTime = Calendar.getInstance();
         this.name = name;
-        this.taskAdded = nowTime;
-        this.nextAttempt = nowTime;
-        this.retryCount = 0;
-    }
-
-    @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += name != null
-                ? name.hashCode()
-                : hashCode;
-
-        hashCode += messages != null
-                ? messages.hashCode()
-                : hashCode;
-
-        hashCode += state != null
-                ? state.hashCode()
-                : hashCode;
-
-        hashCode += priority;
-
-        return hashCode.hashCode();
     }
 
     @Override
@@ -111,13 +77,19 @@ public class Task extends Model {
 
             boolean samePriority = priority == other.priority;
 
-            boolean bothMessagesEmpty = messages == null && other.messages == null;
+            boolean bothMessagesEmpty = messages == null && other.messages == null ||
+                    (messages != null && messages.isEmpty() && other.messages != null && other.messages.isEmpty());
 
-            boolean sameMessages = bothMessagesEmpty || (messages != null && other.messages != null &&
-                    messages.containsAll(other.messages) && other.messages.containsAll(messages));
+            boolean sameMessages = bothMessagesEmpty || messages != null && other.messages != null &&
+                    (messages.containsAll(other.messages) && other.messages.containsAll(messages));
 
-            return sameTaskName && sameMessages && samePriority;
+            return sameTaskName && samePriority && sameMessages;
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

@@ -1,6 +1,7 @@
 package services;
 
 import agency.AgencyModifications;
+import enums.AlertType;
 import helpers.CommuteAlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -10,7 +11,9 @@ import services.splendidlog.Log;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Receives agency bundles and performs the following actions.
@@ -41,15 +44,12 @@ public class AlertsUpdateManager {
      * <p>
      * 1) Builds a list of added and removed alerts for the agency, since the last time.
      * 2) Saves the modified routes in the database.
-     * 3) Passes on the alert information to subscribed GCM clients.
+     * 3) Passes on the alert information to subscribed device / subscription Platform Account clients.
      * 4) Modifies any device information based on the response from Google.
      *
      * @param updatedAgency The agency which has been updated.
      */
     public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
-        List<Route> agencyRoutes = updatedAgency.routes;
-
-        // Pass the Alert differences on to the GCM Pre-processor.
         AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
         if (agencyModifications.hasModifiedRoutes()) {
 
@@ -82,13 +82,13 @@ public class AlertsUpdateManager {
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
         if (existingRoutes == null || existingRoutes.isEmpty()) {
-            modifiedRouteAlerts.addRoute(updatedAgency.routes);
+            modifiedRouteAlerts.addUpdatedRoute(updatedAgency.routes);
             return modifiedRouteAlerts;
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
         if (freshRoutes == null || freshRoutes.isEmpty()) {
-            modifiedRouteAlerts.addRoute(updatedAgency.routes);
+            modifiedRouteAlerts.addUpdatedRoute(updatedAgency.routes);
             return modifiedRouteAlerts;
         }
 
@@ -101,49 +101,69 @@ public class AlertsUpdateManager {
                     // If there are no new alerts and there are existing alerts.
                     if ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
                             (existingRoute.alerts != null && !existingRoute.alerts.isEmpty())) {
-                        modifiedRouteAlerts.addRoute(freshRoute);
+                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
                         break;
                     }
 
                     // If there are no existing alerts and there are new alerts.
                     if ((existingRoute.alerts == null || existingRoute.alerts.isEmpty()) &&
                             (existingRoute.alerts != null && !existingRoute.alerts.isEmpty())) {
-                        modifiedRouteAlerts.addRoute(freshRoute);
+                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
                         break;
                     }
 
+                    Set<AlertType> updatedAlertTypes = new HashSet<>();
                     List<Alert> updatedAlerts = new ArrayList<>();
-                    List<Alert> staleAlerts = new ArrayList<>();
 
-                    // Check if the fresh alert is new (updated properties).
+                    /*
+                     * Add a route alert as updated if:
+                     * 1) The fresh alert does not exist in the new route alert list.
+                     */
                     if (freshRoute.alerts != null) {
                         for (Alert freshAlert : freshRoute.alerts) {
-                            if (!existingRoute.alerts.contains(freshAlert)) {
+
+                            // Record the new alert, and alertType.
+                            if (!CommuteAlertHelper.isAlertEmpty(freshAlert) &&
+                                    !existingRoute.alerts.contains(freshAlert)) {
+                                updatedAlertTypes.add(freshAlert.type);
                                 updatedAlerts.add(freshAlert);
                             }
                         }
                     }
 
-                    // Add the alert as stale if it no longer exists.
-                    // TODO: Implement stale alerts from here when cancellations for alert types are supported.
-                    for (Alert existingAlert : existingRoute.alerts) {
-                        if (!freshRoute.alerts.contains(existingAlert)) {
-                            staleAlerts.add(existingAlert);
+                    /*
+                     * Add a route alert as stale if:
+                     * 1) An existing alert for the route no longer exists in the fresh route.
+                     * 2) The alertType was not previously recorded as being updated.
+                     */
+                    List<Route> staleRoutes = new ArrayList<>();
+                    if (existingRoute.alerts != null) {
+
+                        for (Alert existingAlert : existingRoute.alerts) {
+                            if (!freshRoute.alerts.contains(existingAlert) &&
+                                    !updatedAlertTypes.contains(existingAlert.type)) {
+
+                                freshRoute.alerts = new ArrayList<>();
+                                staleRoutes.add(freshRoute);
+                                break;
+                            }
                         }
                     }
 
-                    // Copy an updated route and route alerts.
+                    // Add only the new updated fresh alerts into the freshRoute.
                     if (!updatedAlerts.isEmpty()) {
                         freshRoute.alerts = updatedAlerts;
-                        modifiedRouteAlerts.addRoute(freshRoute);
+                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
                     }
+
+                    // Set the stale routes.
+                    modifiedRouteAlerts.addStaleRoute(staleRoutes);
 
                     // There was a route match so skip the inner loop.
                     break;
                 }
             }
         }
-
         return modifiedRouteAlerts;
     }
 }

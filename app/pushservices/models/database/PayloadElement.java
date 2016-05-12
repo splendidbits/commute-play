@@ -11,14 +11,14 @@ import javax.persistence.*;
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "payload_element", schema = "push_services")
-public class PayloadElement extends Model {
+public class PayloadElement extends Model implements Cloneable {
     public static Finder<Long, PayloadElement> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, PayloadElement.class);
 
     @Id
     @Column(name = "id")
     @SequenceGenerator(name = "element_id_seq_gen", sequenceName = "element_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "element_id_seq_gen")
-    public Long id;
+    protected Long id;
 
     @Column(name = "element_name")
     public String name;
@@ -45,21 +45,6 @@ public class PayloadElement extends Model {
     }
 
     @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += name != null
-                ? name.hashCode()
-                : hashCode;
-
-        hashCode += value != null
-                ? value.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj instanceof PayloadElement) {
             PayloadElement other = (PayloadElement) obj;
@@ -74,5 +59,10 @@ public class PayloadElement extends Model {
             return (sameName && sameValue);
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

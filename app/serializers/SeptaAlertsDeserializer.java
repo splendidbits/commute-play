@@ -65,14 +65,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             final JsonArray schedulesArray = json.getAsJsonArray();
             if (schedulesArray != null) {
 
-                /*
-                 * Loop through each alert row and separate each one into multiple possible alerts. This is
-                 * because SEPTA overload each "alert" row with possibly more than one alert type of alert
-                 * (advisory, current message, and detour.
-                 *
-                 * After all possible alerts in each row have been parsed for all rows, then loop through them
-                 * and add them to the correct route object.
-                 */
+                // Iterate through each object in the alerts document.
                 for (JsonElement scheduleRow : schedulesArray) {
                     JsonObject bucket = scheduleRow.getAsJsonObject();
 
@@ -91,7 +84,73 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
 
-                        // Keep hold of all the possible alerts FOR THIS ROW.
+                        /*
+                         * Routes Parsing:
+                         *
+                         * If a Route object doesn't exist; create it. If one exists; fetch it. Then add all the
+                         * above alerts to the Route, and progress to the next alert row of the document.
+                         *
+                         * There's should be a list of (possibly empty) alerts for this single array entry in the
+                         * json document. Check to see if there's already a Route model stored for this routeId.
+                         */
+                        Route route = new Route(routeId, routeName);
+                        if (routesMap.containsKey(route.routeId)) {
+                            route = routesMap.get(route.routeId);
+                        }
+
+                        // Create the Route model, as it may be the first time this route has been seen.
+                        if (routeId.contains("generic")) {
+                            route.transitType = TransitType.TYPE_SPECIAL;
+                            route.externalUri = "http://www.septa.org/service/";
+
+                        } else if (routeId.contains("cct")) {
+                            route.transitType = TransitType.TYPE_SPECIAL;
+                            route.externalUri = "http://www.septa.org/service/cct/";
+
+                        } else if (routeId.contains("bsl")) {
+                            route.transitType = TransitType.TYPE_SUBWAY;
+                            route.externalUri = "http://www.septa.org/service/bsl/";
+
+                        } else if (routeId.contains("mfl")) {
+                            route.transitType = TransitType.TYPE_SUBWAY;
+                            route.externalUri = "http://www.septa.org/service/mfl/";
+
+                        } else if (routeId.contains("nhsl")) {
+                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
+                            route.externalUri = "http://www.septa.org/service/highspeed/";
+
+                        } else if (routeId.contains("bus_")) {
+                            route.transitType = TransitType.TYPE_BUS;
+                            route.externalUri = "http://www.septa.org/service/bus/";
+
+                        } else if (routeId.contains("trolley_")) {
+                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
+                            route.externalUri = "http://www.septa.org/service/trolley/";
+
+                        } else if (routeId.contains("rr_")) {
+                            route.transitType = TransitType.TYPE_RAIL;
+                            route.externalUri = "http://www.septa.org/service/rail/";
+                        }
+
+                        // Set route flags.
+                        if (routeId.contains("generic")) {
+                            route.isSticky = true;
+                            route.isDefault = true;
+
+                        } else if (routeId.contains("bso") || routeId.contains("mfo")) {
+                            route.routeFlag = RouteFlag.TYPE_OWL;
+                        }
+
+                        /*
+                         * Alerts Parsing:
+                         *
+                         * Loop through each alert row and separate each one into multiple possible alerts. This is
+                         * because SEPTA overload each "alert" row with possibly more than one alert type of alert
+                         * (advisory, current message, and detour.
+                         *
+                         * After all possible alerts in each row have been parsed for all rows, then loop through them
+                         * and add them to the correct route object.
+                         */
                         List<Alert> rowAlerts = new ArrayList<>();
 
                         Calendar lastUpdateCalendar = Calendar.getInstance(timezone, Locale.US);
@@ -169,61 +228,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.messageTitle = typeCurrent.title;
                             alert.messageBody = currentMessage;
                             rowAlerts.add(alert);
-                        }
-
-                        /*
-                         * There's now a list of (possibly empty) alerts for this single array entry in the
-                         * json document. Check to see if there's already a Route model stored for this routeId.
-                         *
-                         * If a Route object doesn't exist; create it. If one exists; fetch it. Then add all the
-                         * above alerts to the Route, and progress to the next alert row of the document.
-                         */
-                        Route route = new Route(routeId, routeName);
-                        if (routesMap.containsKey(route.routeId)) {
-                            route = routesMap.get(route.routeId);
-                        }
-
-                        // Create the Route model, as it may be the first time this route has been seen.
-                        if (routeId.contains("generic")) {
-                            route.transitType = TransitType.TYPE_SPECIAL;
-                            route.externalUri = "http://www.septa.org/service/";
-
-                        } else if (routeId.contains("cct")) {
-                            route.transitType = TransitType.TYPE_SPECIAL;
-                            route.externalUri = "http://www.septa.org/service/cct/";
-
-                        } else if (routeId.contains("bsl")) {
-                            route.transitType = TransitType.TYPE_SUBWAY;
-                            route.externalUri = "http://www.septa.org/service/bsl/";
-
-                        } else if (routeId.contains("mfl")) {
-                            route.transitType = TransitType.TYPE_SUBWAY;
-                            route.externalUri = "http://www.septa.org/service/mfl/";
-
-                        } else if (routeId.contains("nhsl")) {
-                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
-                            route.externalUri = "http://www.septa.org/service/highspeed/";
-
-                        } else if (routeId.contains("bus_")) {
-                            route.transitType = TransitType.TYPE_BUS;
-                            route.externalUri = "http://www.septa.org/service/bus/";
-
-                        } else if (routeId.contains("trolley_")) {
-                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
-                            route.externalUri = "http://www.septa.org/service/trolley/";
-
-                        } else if (routeId.contains("rr_")) {
-                            route.transitType = TransitType.TYPE_RAIL;
-                            route.externalUri = "http://www.septa.org/service/rail/";
-                        }
-
-                        // Set route flags.
-                        if (routeId.contains("generic")) {
-                            route.isSticky = true;
-                            route.isDefault = true;
-
-                        } else if (routeId.contains("bso") || routeId.contains("mfo")) {
-                            route.routeFlag = RouteFlag.TYPE_OWL;
                         }
 
                         // Add alerts to route.

@@ -10,7 +10,7 @@ import java.util.List;
 public class GoogleResponse {
 
     @SerializedName("multicast_id")
-    public String mGcmMessageId;
+    public String mMessageId;
 
     @SerializedName("success")
     public int mSuccessCount;

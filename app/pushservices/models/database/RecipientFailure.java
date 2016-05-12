@@ -4,9 +4,8 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import main.Constants;
-import pushservices.enums.PlatformFailureType;
+import pushservices.enums.FailureType;
 
-import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.util.Calendar;
 
@@ -18,18 +17,14 @@ import java.util.Calendar;
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "recipient_failures", schema = "push_services")
-public class RecipientFailure extends Model {
+public class RecipientFailure extends Model implements Cloneable {
     public static Finder<Long, RecipientFailure> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, RecipientFailure.class);
 
     @Id
     @Column(name = "id")
     @SequenceGenerator(name = "failure_id_seq_gen", sequenceName = "failure_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
-    public Long id;
-
-    @Column(name = "failure")
-    @Enumerated(EnumType.STRING)
-    public PlatformFailureType failure;
+    protected Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -40,10 +35,17 @@ public class RecipientFailure extends Model {
             updatable = true)
     public Recipient recipient;
 
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    public FailureType type;
+
+    @Column(name = "message")
+    public String message;
+
     @Basic
     @Column(name = "fail_time", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar failTime;
+    public Calendar failTime = Calendar.getInstance();
 
     @PrePersist
     public void updateValues() {
@@ -54,23 +56,9 @@ public class RecipientFailure extends Model {
     public RecipientFailure() {
     }
 
-    public RecipientFailure(@Nonnull PlatformFailureType failure) {
-        this.failure = failure;
-    }
-
-    @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += failure != null
-                ? failure.hashCode()
-                : hashCode;
-
-        hashCode += recipient != null
-                ? recipient.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
+    public RecipientFailure(FailureType type, String message) {
+        this.type = type;
+        this.message = message;
     }
 
     @Override
@@ -78,15 +66,23 @@ public class RecipientFailure extends Model {
         if (obj instanceof RecipientFailure) {
             RecipientFailure other = (RecipientFailure) obj;
 
-            boolean sameType = (failure == null && other.failure == null) ||
-                    (failure != null && other.failure != null && failure.equals(other.failure));
+            boolean sameType = (type == null && other.type == null) ||
+                    (type != null && other.type != null && type.equals(other.type));
+
+            boolean sameMessage = (message == null && other.message == null) ||
+                    (message != null && other.message != null && message.equals(other.message));
 
             boolean sameRecipient = (recipient == null && other.recipient == null) ||
                     (recipient != null && other.recipient != null && recipient.equals(other.recipient));
 
             // Match everything.
-            return (sameType && sameRecipient);
+            return (sameType && sameMessage && sameRecipient);
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

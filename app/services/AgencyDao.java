@@ -72,21 +72,28 @@ public class AgencyDao {
                                 existingAgency.name));
 
                         // If something about the new route does not equal the existing route..
-                        if (existingRoute.routeId.equals(newRoute.routeId) &&
-                                !existingRoute.equals(newRoute)) {
+                        if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
 
                             // Delete all old alerts.
                             mLog.d(TAG, String.format("Replacing previous route: %s.", existingRoute.routeName));
 
-                            // Assign the existing route deviceId to the new route.
-                            newRoute.id = existingRoute.id;
+                            // Assign new attributes to the found routeId.
+                            existingRoute.routeId = newRoute.routeId;
+                            existingRoute.routeName = newRoute.routeName;
+                            existingRoute.agency = newRoute.agency;
+                            existingRoute.alerts = newRoute.alerts;
+                            existingRoute.subscriptions = newRoute.subscriptions;
+                            existingRoute.transitType = newRoute.transitType;
+                            existingRoute.routeFlag = newRoute.routeFlag;
+                            existingRoute.isSticky = newRoute.isSticky;
+                            existingRoute.isDefault = newRoute.isDefault;
+                            existingRoute.externalUri = newRoute.externalUri;
 
                             // Delete the alerts for that route
                             mLog.d(TAG, String.format("Saving %d alerts for %s.",
-                                    newRoute.alerts != null ? newRoute.alerts.size() : 0,
-                                    existingRoute.routeId));
+                                    newRoute.alerts != null ? newRoute.alerts.size() : 0, existingRoute.routeId));
 
-                            mEbeanServer.update(newRoute);
+                            mEbeanServer.update(existingRoute);
                         }
 
                     } else {

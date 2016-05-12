@@ -1,6 +1,5 @@
 package agency;
 
-import models.alerts.Alert;
 import models.alerts.Route;
 
 import javax.annotation.Nonnull;
@@ -40,43 +39,46 @@ public class AgencyModifications {
     }
 
     /**
-     * Add a list of route alerts as new, updated or stale. It will not be added if it has already
-     * been added as stale.
+     * Add a list of routes which contain new or updated alerts.
      *
-     * @param routes The routes with alerts to set as updated or stale.
+     * @param routes The routes with alerts to set as updated or new.
      */
-    public void addRoute(@Nonnull List<Route> routes) {
-        // Do not add new alert if it exists in the stale collection.
+    public void addUpdatedRoute(@Nonnull List<Route> routes) {
         for (Route route : routes) {
-            addRoute(route);
+            addUpdatedRoute(route);
         }
     }
 
     /**
-     * Add a route as stale, new, or updated. It will not be added if it has already
-     * been added as stale.
+     * Add a route as new, or updated.
      *
      * @param route The route with alerts to flag as updated or new.
      */
-    public void addRoute(@Nonnull Route route) {
+    public void addUpdatedRoute(@Nonnull Route route) {
         if (route.routeId != null && route.alerts != null) {
-            boolean addRouteAsUpdated = false;
+            mUpdatedAlertRoutes.add(route);
+        }
+    }
 
-            // If all alerts are empty, this is a stale route.
-            for (Alert updatedAlert : route.alerts) {
-                if (updatedAlert.messageBody != null && !updatedAlert.messageBody.isEmpty()) {
-                    addRouteAsUpdated = true;
-                    break;
-                }
-            }
+    /**
+     * Add a list of routes which contain stale, purged alerts.
+     *
+     * @param routes The routes with alerts to set as updated or stale.
+     */
+    public void addStaleRoute(@Nonnull List<Route> routes) {
+        for (Route route : routes) {
+            addStaleRoute(route);
+        }
+    }
 
-            // Check that the route doesn't already exist when adding to updated or stale collections.
-            if (addRouteAsUpdated && !mUpdatedAlertRoutes.contains(route)) {
-                mUpdatedAlertRoutes.add(route);
-
-            } else if (!addRouteAsUpdated && !mStaleAlertRoutes.contains(route)) {
-                mStaleAlertRoutes.add(route);
-            }
+    /**
+     * Add a route which contain stale, purged alerts.
+     *
+     * @param route The route with alerts to add as stale.
+     */
+    public void addStaleRoute(@Nonnull Route route) {
+        if (route.routeId != null) {
+            mStaleAlertRoutes.add(route);
         }
     }
 

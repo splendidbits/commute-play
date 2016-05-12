@@ -6,20 +6,21 @@ import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Route;
 import models.devices.Device;
-import org.jetbrains.annotations.NotNull;
+import pushservices.enums.FailureType;
 import pushservices.enums.PlatformType;
-import pushservices.interfaces.TaskMessageResponse;
+import pushservices.exceptions.TaskValidationException;
+import pushservices.interfaces.PlatformResponseCallback;
 import pushservices.models.app.UpdatedRegistration;
 import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.models.database.Task;
 import pushservices.services.TaskQueue;
-import pushservices.types.PushFailCause;
 import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -28,6 +29,7 @@ import java.util.concurrent.CompletionStage;
  * Intermediate Push Service manager for building and sending alert messages via
  * the platform push services such as APNS or GCM.
  */
+@SuppressWarnings("WeakerAccess")
 public class PushMessageManager {
     private static final String TAG = PushMessageManager.class.getSimpleName();
 
@@ -50,45 +52,45 @@ public class PushMessageManager {
      */
     public CompletionStage<Boolean> dispatchAlerts(@Nonnull AgencyModifications agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
-        CompletableFuture.runAsync(new Runnable() {
+        CompletableFuture.runAsync(() -> {
+            List<Task> taskList = new ArrayList<>();
 
-            @Override
-            public void run() {
-                List<Task> taskList = new ArrayList<>();
+            // Iterate through the NEW Alerts to send.
+            for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
+                Task updatedRoutesTask = new Task(String.format("agency-%d_updated_route-%s",
+                        updatedRoute.agency != null ? updatedRoute.agency.id : -1, updatedRoute.routeId));
+                updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
 
-                // Iterate through the NEW Alerts to send.
-                for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
-                    Task updatedRoutesTask = new Task(String.format("agency-%d_updated_route-%s",
-                            updatedRoute.agency != null ? updatedRoute.agency.id : -1, updatedRoute.routeId));
-                    updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-
-                    List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), updatedRoute, false);
-                    if (!messages.isEmpty()) {
-                        updatedRoutesTask.messages = new ArrayList<>();
-                        updatedRoutesTask.messages.addAll(messages);
-                        taskList.add(updatedRoutesTask);
-                    }
+                List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), updatedRoute);
+                if (!messages.isEmpty()) {
+                    updatedRoutesTask.messages = new ArrayList<>();
+                    updatedRoutesTask.messages.addAll(messages);
+                    taskList.add(updatedRoutesTask);
                 }
+            }
 
-                // Iterate through the STALE (canceled) Alerts to send.
-                for (Route staleRoute : agencyUpdates.getStaleAlertRoutes()) {
-                    Task staleRoutesTask = new Task(String.format("agency-%d_cancelled_route-%s",
-                            staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
-                    staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
+            // Iterate through the STALE (canceled) Alerts to send.
+            for (Route staleRoute : agencyUpdates.getStaleAlertRoutes()) {
+                Task staleRoutesTask = new Task(String.format("agency-%d_cancelled_route-%s",
+                        staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
+                staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
 
-                    List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), staleRoute, true);
-                    if (!messages.isEmpty()) {
-                        staleRoutesTask.messages = new ArrayList<>();
-                        staleRoutesTask.messages.addAll(messages);
-                        taskList.add(staleRoutesTask);
-                    }
+                List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), staleRoute);
+                if (!messages.isEmpty()) {
+                    staleRoutesTask.messages = new ArrayList<>();
+                    staleRoutesTask.messages.addAll(messages);
+                    taskList.add(staleRoutesTask);
                 }
+            }
 
-                // Finally, if there are messages in each task, add them to the queue.
-                for (Task outboundTask : taskList) {
-                    mTaskQueue.addTask(outboundTask, new SendAlertRecipientResponseTask());
+            // Finally, if there are messages in each task, add them to the queue.
+            try {
+                for (Task alertsTask : taskList) {
+                    mTaskQueue.enqueueTask(alertsTask, new SendAlertRecipientResponsePlatformCallback(), false);
                     completableFuture.complete(true);
                 }
+            } catch (TaskValidationException e) {
+                mLog.e(TAG, "Commute Task threw an exception.");
             }
         });
 
@@ -103,11 +105,10 @@ public class PushMessageManager {
      *
      * @param agencyId        The agencyId for the route.
      * @param route           A route which contains cancelled route alerts to dispatch.
-     * @param isCancelMessage if the alert is an alert cancellation message.
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertGcmMessages(int agencyId, @Nonnull Route route, boolean isCancelMessage) {
+    private List<Message> createAlertGcmMessages(int agencyId, @Nonnull Route route) {
         List<Message> messages = new ArrayList<>();
 
         // Get all accounts with devices subscribed to that route.
@@ -158,7 +159,11 @@ public class PushMessageManager {
 
         // Add the message task to the TaskQueue.
         if (messageTask.messages != null) {
-            mTaskQueue.addTask(messageTask, new SendAlertRecipientResponseTask());
+            try {
+                mTaskQueue.enqueueTask(messageTask, new SendAlertRecipientResponsePlatformCallback(), false);
+            } catch (TaskValidationException e) {
+                mLog.e(TAG, "Commute Task threw an exception.");
+            }
         }
         return CompletableFuture.completedFuture(true);
     }
@@ -166,22 +171,19 @@ public class PushMessageManager {
     /**
      * Result Callbacks from the push-services.
      */
-    private class SendAlertRecipientResponseTask implements TaskMessageResponse {
-
+    private class SendAlertRecipientResponsePlatformCallback implements PlatformResponseCallback {
         @Override
-        public void removeRecipients(@NotNull List<Recipient> recipients) {
-            mLog.d(TAG, String.format("There are %d recipients to delete locally.", recipients.size()));
+        public void removeRecipients(@Nonnull Collection<Recipient> recipients) {
+            mLog.d(TAG, String.format("%d recipients need to be deleted.", recipients.size()));
             for (Recipient recipientToRemove : recipients) {
                 mDeviceDao.removeDevice(recipientToRemove.token);
             }
         }
 
         @Override
-        public void updateRecipients(@NotNull List<UpdatedRegistration> recipients) {
-            mLog.d(TAG, String.format("There are %d recipients to delete locally.", recipients.size()));
-            for (UpdatedRegistration recipientToUpdate : recipients) {
-                // TODO: Implement this.
-            }
+        public void updateRecipients(@Nonnull Collection<UpdatedRegistration> registrations) {
+            mLog.d(TAG, String.format("%d recipients require registration updates.", registrations.size()));
+
         }
 
         @Override
@@ -190,9 +192,8 @@ public class PushMessageManager {
         }
 
         @Override
-        public void failed(@Nonnull Task task, @Nonnull PushFailCause reason) {
-            mLog.d(TAG, String.format("The task %s$1 failed because of %s$2.", task.name, reason.name()));
+        public void failed(@Nonnull Task task, @Nonnull FailureType failure) {
+            mLog.d(TAG, String.format("The task %s$1 failed because of %s$2.", task.name, failure.name()));
         }
-
     }
 }

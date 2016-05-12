@@ -4,7 +4,6 @@ import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import enums.AlertLevel;
 import enums.AlertType;
 import main.Constants;
 
@@ -22,7 +21,7 @@ public class Alert extends Model implements Comparable {
     @Column(name = "id")
     @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
-    public Long id;
+    protected Long id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
@@ -59,43 +58,6 @@ public class Alert extends Model implements Comparable {
     public Calendar lastUpdated;
 
     @Override
-    public int hashCode() {
-        Long hashCode = type != null
-                ? (long) type.hashCode()
-                : super.hashCode();
-
-        hashCode += id != null
-                ? id.hashCode()
-                : hashCode;
-
-        hashCode += messageTitle != null
-                ? messageTitle.hashCode()
-                : hashCode;
-
-        hashCode += messageSubtitle != null
-                ? messageSubtitle.hashCode()
-                : hashCode;
-
-        hashCode += messageBody != null
-                ? messageBody.hashCode()
-                : hashCode;
-
-        hashCode += externalUri != null
-                ? externalUri.hashCode()
-                : hashCode;
-
-        hashCode += lastUpdated != null
-                ? lastUpdated.hashCode()
-                : hashCode;
-
-        hashCode += locations != null
-                ? locations.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
@@ -118,10 +80,11 @@ public class Alert extends Model implements Comparable {
                     (lastUpdated != null && other.lastUpdated != null &&
                             lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
 
-            boolean bothLocationsEmpty = locations.isEmpty() && other.locations.isEmpty();
+            boolean bothLocationsEmpty = locations == null && other.locations == null ||
+                    (locations != null && locations.isEmpty() && other.locations != null && other.locations.isEmpty());
 
-            boolean sameLocations = bothLocationsEmpty || (locations.containsAll(other.locations) &&
-                    other.locations.containsAll(locations));
+            boolean sameLocations = bothLocationsEmpty || locations != null && other.locations != null &&
+                            (locations.containsAll(other.locations) && other.locations.containsAll(locations));
 
             // Match everything.
             return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameUpdateTime && sameLocations);
@@ -143,5 +106,12 @@ public class Alert extends Model implements Comparable {
             }
         }
         return 0;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        id = null;
+        markPropertyUnset("id");
+        return super.clone();
     }
 }

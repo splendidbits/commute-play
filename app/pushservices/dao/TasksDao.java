@@ -1,12 +1,10 @@
 package pushservices.dao;
 
 import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.FetchConfig;
 import com.avaje.ebean.OrderBy;
 import pushservices.models.database.Message;
 import pushservices.models.database.Task;
-import pushservices.types.RecipientState;
-import pushservices.types.TaskState;
+import pushservices.enums.RecipientState;
 import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
@@ -88,9 +86,7 @@ public class TasksDao {
      */
     public boolean updateMessage(@Nonnull Message message) {
         try {
-            if (message.id != null) {
-                mEbeanServer.update(message);
-            }
+            mEbeanServer.save(message);
 
         } catch (Exception e) {
             mLog.e(TAG, "Error updating task message", e);
@@ -98,7 +94,7 @@ public class TasksDao {
         }
 
         // Return true if the task has an id (and thus was updated)
-        return message.id != null;
+        return true;
     }
 
     /**
@@ -115,16 +111,14 @@ public class TasksDao {
 
             List<Task> tasks = mEbeanServer.find(Task.class)
                     .setOrderBy(priorityOrder)
-                    .fetch("messages", new FetchConfig().query())
-                    .fetch("messages.recipients", new FetchConfig().query())
-                    .fetch("messages.credentials", new FetchConfig().query())
+                    .fetch("messages.task")
                     .where()
-                    .conjunction()
-                    .ne("state", TaskState.STATE_FAILED)
-                    .ne("state", TaskState.STATE_COMPLETE)
+                    .disjunction()
+                    .eq("messages.recipients.state", "")
+                    .ne("messages.recipients.state", RecipientState.STATE_COMPLETE)
                     .endJunction()
-                    .filterMany("messages.recipients").ne("state", RecipientState.STATE_COMPLETE)
-                    .filterMany("messages.recipients").ne("state", RecipientState.STATE_FAILED)
+                    .filterMany("messages").ne("recipients.state", RecipientState.STATE_COMPLETE)
+                    .filterMany("messages").ne("recipients.state", RecipientState.STATE_FAILED)
                     .findList();
 
             // Add the saved pending tasks back into the queue

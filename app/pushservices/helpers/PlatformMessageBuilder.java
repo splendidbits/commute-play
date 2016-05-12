@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Used to easily build any Push Service's raw messages which can be then
- * added to a task and sent out using the dispatchers.
+ * Easily build a Push Service's Platform {@link Message} which can be then
+ * added to a task and sent to the platform providers using the {@link java.util.TaskQueue}.
  */
-public class MessageBuilder {
+public class PlatformMessageBuilder {
 
     public static class Builder {
         private static final int ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;

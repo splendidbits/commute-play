@@ -18,7 +18,7 @@ public class Account extends Model {
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
     @Column(name = "id")
-    public Long id;
+    protected Long id;
 
     @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)

@@ -19,7 +19,7 @@ public class PlatformAccount extends Model {
     @SequenceGenerator(name = "platform_account_id_seq_gen", sequenceName = "platform_account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "platform_account_id_seq_gen")
     @Column(name = "id")
-    public Integer id;
+    protected Integer id;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(

@@ -67,29 +67,6 @@ public class Device extends Model {
     }
 
     @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += deviceId != null
-                ? deviceId.hashCode()
-                : hashCode;
-
-        hashCode += token != null
-                ? token.hashCode()
-                : hashCode;
-
-        hashCode += appKey != null
-                ? appKey.hashCode()
-                : hashCode;
-
-        hashCode += userKey != null
-                ? userKey.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Device) {
             Device other = (Device) obj;

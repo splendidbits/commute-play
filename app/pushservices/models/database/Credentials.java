@@ -11,14 +11,14 @@ import javax.persistence.*;
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "credentials", schema = "push_services")
-public class Credentials extends Model {
+public class Credentials extends Model implements Cloneable {
     public static Finder<Long, Credentials> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Credentials.class);
 
     @Id
     @Column(name = "id")
     @SequenceGenerator(name = "credentials_id_seq_gen", sequenceName = "credentials_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "credentials_id_seq_gen")
-    public Long id;
+    protected Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -46,30 +46,6 @@ public class Credentials extends Model {
 
     @SuppressWarnings("unused")
     public Credentials() {
-
-    }
-
-    @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += platformType != null
-                ? platformType.hashCode()
-                : hashCode;
-
-        hashCode += authorisationKey != null
-                ? authorisationKey.hashCode()
-                : hashCode;
-
-        hashCode += certificateBody != null
-                ? certificateBody.hashCode()
-                : hashCode;
-
-        hashCode += packageUri != null
-                ? packageUri.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
     }
 
     @Override
@@ -93,5 +69,10 @@ public class Credentials extends Model {
             return (samePlatform && sameAuthorisationKey && sameCertificateBody && samePackageUri);
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

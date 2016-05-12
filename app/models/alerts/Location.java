@@ -19,7 +19,7 @@ public class Location extends Model implements Comparable {
     @Column(name = "id")
     @SequenceGenerator(name = "location_id_seq_gen", sequenceName = "location_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq_gen")
-    public Integer id;
+    protected Integer id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,39 +50,6 @@ public class Location extends Model implements Comparable {
     @Column(name = "date", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar date;
-
-    @Override
-    public int hashCode() {
-        int hashCode = name != null
-                ? name.hashCode()
-                : super.hashCode();
-
-        hashCode += id != null
-                ? id.hashCode()
-                : hashCode;
-
-        hashCode += message != null
-                ? message.hashCode()
-                : hashCode;
-
-        hashCode += sequence != null
-                ? sequence.hashCode()
-                : hashCode;
-
-        hashCode += latitude != null
-                ? latitude.hashCode()
-                : hashCode;
-
-        hashCode += longitude != null
-                ? longitude.hashCode()
-                : hashCode;
-
-        hashCode += date != null
-                ? date.hashCode()
-                : hashCode;
-
-        return hashCode;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -125,5 +92,12 @@ public class Location extends Model implements Comparable {
             }
         }
         return 0;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        id = null;
+        markPropertyUnset("id");
+        return super.clone();
     }
 }

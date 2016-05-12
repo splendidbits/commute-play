@@ -86,6 +86,7 @@ create table push_services.messages (
   ttl_seconds                   integer,
   delay_while_idle              boolean,
   dry_run                       boolean,
+  maximum_retries               integer,
   sent_time                     timestamp without time zone,
   constraint ck_messages_priority check (priority in ('normal','low','high')),
   constraint pk_messages primary key (id)
@@ -119,6 +120,9 @@ create table push_services.recipients (
   message_id                    bigint,
   state                         varchar(13),
   time_added                    timestamp without time zone,
+  send_attempts                 integer,
+  previous_attempt              timestamp,
+  next_attempt                  timestamp,
   constraint ck_recipients_state check (state in ('WAITING_RETRY','COMPLETE','FAILED','IDLE','PROCESSING')),
   constraint pk_recipients primary key (id)
 );
@@ -126,10 +130,11 @@ create sequence recipient_id_seq increment by 1;
 
 create table push_services.recipient_failures (
   id                            bigint not null,
-  failure                       varchar(28),
   recipient_id                  bigint,
+  type                          varchar(30),
+  message                       varchar(255),
   fail_time                     timestamp without time zone,
-  constraint ck_recipient_failures_failure check (failure in ('ERROR_MISSING_REG_TOKEN','ERROR_INVALID_REGISTRATION','ERROR_NOT_REGISTERED','ERROR_INVALID_PACKAGE_NAME','ERROR_MISMATCHED_SENDER_ID','ERROR_MESSAGE_TO_BIG','ERROR_INVALID_DATA','ERROR_INVALID_TTL','ERROR_TOO_MANY_RETRIES','ERROR_EXCEEDED_MESSAGE_LIMIT')),
+  constraint ck_recipient_failures_type check (type in ('PLATFORM_LIMIT_EXCEEDED','MESSAGE_PAYLOAD_INVALID','MESSAGE_TTL_INVALID','MESSAGE_PACKAGE_INVALID','RECIPIENT_RATE_EXCEEDED','PLATFORM_AUTH_MISMATCHED','RECIPIENT_REGISTRATION_INVALID','MESSAGE_TOO_LARGE','PLATFORM_UNAVAILABLE','RECIPIENT_NOT_REGISTERED','PLATFORM_AUTH_INVALID','MESSAGE_REGISTRATIONS_MISSING','ERROR_UNKNOWN')),
   constraint uq_recipient_failures_recipient_id unique (recipient_id),
   constraint pk_recipient_failures primary key (id)
 );
@@ -137,6 +142,7 @@ create sequence failure_id_seq increment by 1;
 
 create table agency_updates.routes (
   id                            varchar(255) not null,
+  agency_id                     integer,
   route_id                      varchar(255),
   route_name                    varchar(255),
   route_flag                    varchar(18),
@@ -144,7 +150,6 @@ create table agency_updates.routes (
   is_default                    boolean,
   is_sticky                     boolean,
   external_uri                  TEXT,
-  agency_id                     integer,
   constraint ck_routes_route_flag check (route_flag in ('PRIVATE','TEMPORARY_ROUTE','OWL','CLOSED_PERMANENTLY','CLOSED_TEMPORARILY')),
   constraint ck_routes_transit_type check (transit_type in ('SPECIAL','BUS','SUBWAY','CABLE','FERRY','BIKE_SHARE','RAIL','LIGHT_RAIL')),
   constraint pk_routes primary key (id)
@@ -163,13 +168,8 @@ create sequence subscriptions_id_seq increment by 1;
 create table push_services.tasks (
   id                            bigint not null,
   name                          varchar(255),
-  state                         varchar(19),
   priority                      integer,
-  retry_count                   integer,
-  task_added                    timestamp without time zone,
-  last_attempt                  timestamp,
-  next_attempt                  timestamp,
-  constraint ck_tasks_state check (state in ('COMPLETE','FAILED','PARTIALLY_PROCESSED','IDLE','PROCESSING')),
+  last_updated                  timestamp without time zone,
   constraint pk_tasks primary key (id)
 );
 create sequence task_id_seq increment by 1;

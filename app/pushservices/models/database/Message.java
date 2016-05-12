@@ -16,7 +16,7 @@ import java.util.List;
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "messages", schema = "push_services")
-public class Message extends Model {
+public class Message extends Model implements Cloneable {
     public static Finder<Long, Message> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Message.class);
     public static final int TTL_SECONDS_DEFAULT = 60 * 60 * 24 * 7;
 
@@ -24,7 +24,7 @@ public class Message extends Model {
     @Column(name = "id")
     @SequenceGenerator(name = "message_id_seq_gen", sequenceName = "message_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "message_id_seq_gen")
-    public Long id;
+    protected Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -35,12 +35,12 @@ public class Message extends Model {
             updatable = true)
     public Task task;
 
-    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    public Credentials credentials;
-
     @Nullable
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Recipient> recipients;
+
+    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    public Credentials credentials;
 
     @Nullable
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -62,6 +62,9 @@ public class Message extends Model {
     @Column(name = "dry_run")
     public boolean isDryRun;
 
+    @Column(name = "maximum_retries")
+    public int maximumRetries = 10;
+
     @Basic
     @Column(name = "sent_time", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
@@ -77,39 +80,6 @@ public class Message extends Model {
 
     @SuppressWarnings("unused")
     public Message() {
-    }
-
-    @Override
-    public int hashCode() {
-        Long hashCode = 0L;
-
-        hashCode += collapseKey != null
-                ? collapseKey.hashCode()
-                : hashCode;
-
-        hashCode += messagePriority != null
-                ? messagePriority.hashCode()
-                : hashCode;
-
-        hashCode += ttlSeconds;
-
-        hashCode += shouldDelayWhileIdle ? 1 : 0;
-
-        hashCode += isDryRun ? 1 : 0;
-
-        hashCode += payloadData != null
-                ? payloadData.hashCode()
-                : hashCode;
-
-        hashCode += recipients != null
-                ? recipients.hashCode()
-                : hashCode;
-
-        hashCode += credentials != null
-                ? credentials.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
     }
 
     @Override
@@ -135,21 +105,24 @@ public class Message extends Model {
             boolean bothPayloadsEmpty = payloadData == null && other.payloadData == null ||
                     (payloadData != null && payloadData.isEmpty() && other.payloadData != null && other.payloadData.isEmpty());
 
-            boolean samePayloadData = bothPayloadsEmpty ||
-                    payloadData != null && payloadData != null && other.payloadData != null &&
-                            (payloadData.containsAll(other.payloadData) && other.payloadData.containsAll(payloadData));
+            boolean samePayloadData = bothPayloadsEmpty || payloadData != null && other.payloadData != null &&
+                    (payloadData.containsAll(other.payloadData) && other.payloadData.containsAll(payloadData));
 
             boolean bothRecipientsEmpty = recipients == null && other.recipients == null ||
                     (recipients != null && recipients.isEmpty() && other.recipients != null && other.recipients.isEmpty());
 
-            boolean sameRecipients = bothRecipientsEmpty ||
-                    recipients != null && recipients != null && other.recipients != null &&
-                            (recipients.containsAll(other.recipients) && other.recipients.containsAll(recipients));
+            boolean sameRecipients = bothRecipientsEmpty || recipients != null && other.recipients != null &&
+                    (recipients.containsAll(other.recipients) && other.recipients.containsAll(recipients));
 
             // Match everything.
             return (sameCollapseKey && sameCredentials && samePriority && sameTtl &&
                     sameDelayWhileIdle && sameDryRun && samePayloadData && sameRecipients);
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

@@ -15,18 +15,36 @@ import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.util.List;
 
-
 @Entity
 @EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "routes", schema = "agency_updates")
-public class Route extends Model implements Comparable<Route> {
+public class Route extends Model implements Comparable<Route>, Cloneable {
     public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
 
     @Id
     @Column(name = "id")
     @SequenceGenerator(name = "route_id_seq_gen", sequenceName = "route_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_id_seq_gen")
-    public String id;
+    protected String id;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "agency_id",
+            table = "agency_updates.agencies",
+            referencedColumnName = "id",
+            unique = false,
+            updatable = true)
+    public Agency agency;
+
+    @Nullable
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    public List<Alert> alerts;
+
+    @JsonIgnore
+    @Nullable
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "route")
+    public List<Subscription> subscriptions;
 
     @Column(name = "route_id")
     public String routeId;
@@ -51,66 +69,6 @@ public class Route extends Model implements Comparable<Route> {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "agency_id",
-            table = "agency_updates.agencies",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
-    public Agency agency;
-
-    @JsonIgnore
-    @Nullable
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "route")
-    public List<Subscription> subscriptions;
-
-    @Nullable
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    public List<Alert> alerts;
-
-    @Override
-    public int hashCode() {
-        Long hashCode = routeId != null
-                ? (long) routeId.hashCode()
-                : super.hashCode();
-
-        hashCode += id != null
-                ? id.hashCode()
-                : hashCode;
-
-        hashCode += routeName != null
-                ? routeName.hashCode()
-                : hashCode;
-
-        hashCode += routeFlag != null
-                ? routeFlag.hashCode()
-                : hashCode;
-
-        hashCode += transitType != null
-                ? transitType.hashCode()
-                : hashCode;
-
-        hashCode += isDefault != null
-                ? isDefault.hashCode()
-                : hashCode;
-
-        hashCode += isSticky != null
-                ? isSticky.hashCode()
-                : hashCode;
-
-        hashCode += externalUri != null
-                ? externalUri.hashCode()
-                : hashCode;
-
-        hashCode += alerts != null
-                ? alerts.hashCode()
-                : hashCode;
-
-        return hashCode.hashCode();
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Route) {
@@ -133,10 +91,12 @@ public class Route extends Model implements Comparable<Route> {
             boolean sameUri = externalUri == null && other.externalUri == null ||
                     externalUri != null && externalUri.equals(other.externalUri);
 
-            boolean bothAlertsEmpty = alerts == null && other.alerts == null;
+            boolean bothAlertsEmpty = alerts == null && other.alerts == null ||
+                    (alerts != null && alerts.isEmpty() && other.alerts != null && other.alerts.isEmpty());
 
-            boolean sameAlerts = bothAlertsEmpty || (alerts != null && other.alerts != null &&
-                    alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
+            boolean sameAlerts = bothAlertsEmpty ||
+                    alerts != null && alerts != null && other.alerts != null &&
+                            (alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
 
             return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType &&
                     sameDefaults && sameUri && sameAlerts;
@@ -163,5 +123,12 @@ public class Route extends Model implements Comparable<Route> {
     public Route(@Nonnull String routeId, String routeName) {
         this.routeId = routeId;
         this.routeName = routeName;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        id = null;
+        markPropertyUnset("id");
+        return super.clone();
     }
 }

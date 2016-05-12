@@ -2,50 +2,45 @@ package pushservices.services;
 
 import org.jetbrains.annotations.NotNull;
 import pushservices.dao.TasksDao;
-import pushservices.enums.PlatformFailureType;
-import pushservices.helpers.MessageHelper;
-import pushservices.helpers.SortedRecipientResponse;
-import pushservices.interfaces.TaskMessageResponse;
+import pushservices.enums.FailureType;
+import pushservices.enums.RecipientState;
+import pushservices.exceptions.TaskValidationException;
+import pushservices.helpers.TaskHelper;
+import pushservices.interfaces.RecipientPlatformMessageResponse;
+import pushservices.interfaces.PlatformResponseCallback;
 import pushservices.models.app.MessageResult;
 import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
-import pushservices.models.database.RecipientFailure;
 import pushservices.models.database.Task;
-import pushservices.types.PushFailCause;
-import pushservices.types.RecipientState;
-import pushservices.types.TaskState;
 import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static pushservices.helpers.MessageHelper.isTaskIncomplete;
-
 /**
  * A singleton class that handles all Push Service task jobs.
  */
+@SuppressWarnings({"WeakerAccess", "Convert2streamapi"})
 @Singleton
 public class TaskQueue {
     private static final String TAG = TaskQueue.class.getSimpleName();
-    private static final int MAXIMUM_TASK_RETRIES = 10;
 
     // Delay each taskqueue polling to a 1/4 second so the server isn't flooded.
-    private static final long TASKQUEUE_POLL_INTERVAL_MS = 500;
+    private static final long TASKQUEUE_POLL_INTERVAL_MS = 250;
     private static final int TASKQUEUE_MAX_SIZE = 250;
 
     private ArrayBlockingQueue<Task> mPendingTaskQueue = new ArrayBlockingQueue<>(TASKQUEUE_MAX_SIZE);
-    private ConcurrentHashMap<Long, TaskMessageResponse> mTaskIdClientListeners = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, PlatformResponseCallback> mTaskClientListeners = new ConcurrentHashMap<>();
     private QueueConsumer mQueueConsumer = new QueueConsumer();
     private Thread mTaskConsumerThread;
 
     @Inject
-    private GcmDispatcher mGcmDispatcher;
+    private GoogleMessageDispatcher mGoogleMessageDispatcher;
 
     @Inject
     private TasksDao mTasksDao;
@@ -58,99 +53,101 @@ public class TaskQueue {
     }
 
     /**
-     * Returns true if the {@link Task} ready to be dispatched (not waiting for next interval
-     * and hasn't failed or isn't currently processing)
-     *
-     * @param task The task to start work on.
-     * @return true if the task can be processed. false if it is invalid or has completed..
-     */
-    private boolean isTaskIncomplete(@Nonnull Task task) {
-
-        boolean taskReady = false;
-        if (task.state == null) {
-            task.state = TaskState.STATE_IDLE;
-        }
-
-        taskReady = !task.state.equals(TaskState.STATE_COMPLETE) &&
-                !task.state.equals(TaskState.STATE_FAILED);
-
-        // Check task has messages
-        if (task.messages == null || task.messages.isEmpty()) {
-            return false;
-        }
-
-        // Check task has at least some recipients
-        boolean messagesReady = false;
-        for (Message message : task.messages) {
-
-            // If the message has at least 1 recipient,
-            if (message.recipients != null && !message.recipients.isEmpty()) {
-                for (Recipient recipient : message.recipients) {
-
-                    // If the state is empty, reset it to idle.
-                    if (recipient.state == null) {
-                        recipient.state = RecipientState.STATE_IDLE;
-                        messagesReady = true;
-                    }
-
-                    if (!recipient.state.equals(RecipientState.STATE_COMPLETE) &&
-                            !recipient.state.equals(RecipientState.STATE_FAILED)) {
-                        messagesReady = true;
-                    }
-                }
-            }
-        }
-
-        return messagesReady && taskReady;
-    }
-
-
-    /**
      * Checks that the task consumer thread is active and running, and starts the TaskQueue
      * {@link Task} polling process if it is not.
      */
     public void start() {
-        if (mTaskConsumerThread == null || !mTaskConsumerThread.isAlive() || mTaskConsumerThread.isInterrupted()) {
-            mTaskConsumerThread = new Thread(mQueueConsumer);
+        if (mTaskConsumerThread == null || !mTaskConsumerThread.isAlive()) {
             mLog.d(TAG, "Starting the TaskQueue consumer thread.");
+            mTaskConsumerThread = new Thread(mQueueConsumer);
 
             // Get outstanding incomplete message tasks and start queue consumer thread..
             List<Task> pendingTasks = mTasksDao.fetchPendingTasks();
             for (Task task : pendingTasks) {
                 mPendingTaskQueue.add(task);
             }
-
             mTaskConsumerThread.start();
         }
     }
 
     /**
-     * Add a new task to the TaskQueue (don't add tasks that are already saved).
+     * Dispatch a Task {@link Message}
      *
-     * @param task task to save and add to TaskQueue.
+     * @param task     The {@link Task} to dispatch.
+     * @param callback The {@link PlatformResponseCallback} callback which notifies on required actions.
+     *                 <p>
+     *                 If there was a problem with the task a PlatformTaskException will be thrown.
      */
-    @SuppressWarnings("WeakerAccess")
-    public void addTask(@Nonnull Task task, TaskMessageResponse taskMessageResponse) {
-        mLog.d(TAG, "Saving new task to TaskQueue and datastore.");
+    private void dispatchTask(@Nonnull Task task, @Nonnull PlatformMessageCallback callback)
+            throws TaskValidationException {
+        TaskHelper.verifyTask(task);
 
-        if (MessageHelper.isTaskIncomplete(task) && !mPendingTaskQueue.contains(task)) {
+        // Task is ready for dispatch.
+        task.lastUpdated = Calendar.getInstance();
 
-            // Don't add the task if there's already a task for that id.
-            Task existingTask = mTasksDao.fetchTask(task.id);
-            if (existingTask == null) {
+        //noinspection ConstantConditions
+        for (Message message : task.messages) {
+            int recipientsCount = 0;
 
-                // Save the task entry and put it in the queue.
-                mPendingTaskQueue.add(task);
+            // Set recipient states to processing for ready recipients.
+            if (message.recipients != null) {
+                for (Recipient recipient : message.recipients) {
 
-                // Add the listener to the map to be called later.
-                boolean taskPersisted = mTasksDao.insertTask(task);
-                if (taskPersisted && taskMessageResponse != null) {
-                    mTaskIdClientListeners.put(task.id, taskMessageResponse);
+                    if (TaskHelper.isRecipientReady(recipient)) {
+                        recipient.state = RecipientState.STATE_PROCESSING;
+                        recipientsCount += 1;
 
-                } else {
-                    mLog.i(TAG, "No TaskMessage response listener for added task was stored.");
+                    } else {
+                        recipient.state = RecipientState.STATE_WAITING_RETRY;
+                    }
                 }
             }
+
+            // Update the task message in the database.
+            mTasksDao.updateMessage(message);
+
+            if (recipientsCount > 0) {
+                mLog.d(TAG, String.format("Dispatching message to %d recipients", recipientsCount));
+                mGoogleMessageDispatcher.dispatchMessage(message, callback);
+
+            } else {
+                mPendingTaskQueue.add(task);
+            }
+        }
+    }
+
+    /**
+     * Add a new, unsaved task to the TaskQueue.
+     *
+     * @param task      task to add to TaskQueue and dispatch.
+     * @param immediate true if the TaskQueue process should be skipped and the message
+     *                  just sent immediately.
+     */
+    public void enqueueTask(@Nonnull Task task, @Nonnull PlatformResponseCallback callback, boolean immediate)
+            throws TaskValidationException {
+        mLog.d(TAG, "Relieved client task.");
+
+        Task clonedTask = TaskHelper.copyTask(task);
+        Task existingTask = mTasksDao.fetchTask(task.id);
+
+        if (existingTask != null) {
+            throw new TaskValidationException("Task or Task children are already persisted.\n" +
+                    "Ensure that all children have a unique or null id");
+        }
+
+        boolean taskPersisted = mTasksDao.insertTask(clonedTask);
+        if (!taskPersisted) {
+            throw new TaskValidationException("Error saving Task into persistence.");
+        }
+
+        // Add the listener to the map to be called later, and queue task.
+        mTaskClientListeners.put(clonedTask.id, callback);
+
+        // Queue the task or send it immediately.
+        if (immediate) {
+            dispatchTask(task, new PlatformMessageCallback(task));
+        } else {
+            mPendingTaskQueue.add(task);
         }
     }
 
@@ -158,14 +155,14 @@ public class TaskQueue {
      * Response back from the push message pushservices (APNS or GCM) for the sent message.
      * The message may have either succeeded or failed.
      * <p>
-     * As {@link SortedRecipientResponse} is being extended, instead of simply implementing
-     * the {@link SortedRecipientResponse} callback, the {@link Recipient}s are
+     * As {@link RecipientPlatformMessageResponse} is being extended, instead of simply implementing
+     * the {@link RecipientPlatformMessageResponse} callback, the {@link Recipient}s are
      * sorted back into the original sent message.
      */
-    private class MessageResponseListener extends SortedRecipientResponse {
+    private class PlatformMessageCallback extends RecipientPlatformMessageResponse {
         private Task mTask = null;
 
-        public MessageResponseListener(Task task) {
+        public PlatformMessageCallback(@Nonnull Task task) {
             mTask = task;
         }
 
@@ -174,54 +171,13 @@ public class TaskQueue {
             super.messageResult(message, result);
 
             if (message.recipients != null) {
-                TaskMessageResponse taskCallback = mTaskIdClientListeners.get(mTask.id);
-                mLog.d(TAG, String.format("200-OK from pushservices for message %d", message.id));
-                mTask.lastAttempt = Calendar.getInstance();
+                PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
+                mLog.d(TAG, "200-OK from pushservices for message");
 
-                /*
-                 * If the message (task) needs retrying, the Task is set as
-                 * TaskState.STATE_PARTIALLY_PROCESSED.
-                 *
-                 * Set each recipient state as RecipientState.STATE_PARTIALLY_PROCESSED
-                 * (unless we have reached the maximum amount of allowed retries, in which case set
-                 * the TaskState.STATE_FAILED and each Recipient as RecipientState.STATE_FAILED.
-                 */
+
+                // Add the task to the back of the queue.
                 if (!result.getRecipientsToRetry().isEmpty()) {
-                    if (mTask.retryCount <= MAXIMUM_TASK_RETRIES) {
-
-                        // Set the task as partially processed.
-                        mTask.state = TaskState.STATE_PARTIALLY_PROCESSED;
-                        mTask.retryCount = mTask.retryCount + 1;
-
-                        // Exponentially bump up the next retry time.
-                        Calendar nextAttemptCal = Calendar.getInstance();
-                        nextAttemptCal.add(Calendar.MINUTE, (mTask.retryCount * 2));
-                        mTask.nextAttempt = nextAttemptCal;
-
-                        try {
-                            mPendingTaskQueue.put(mTask);
-
-                        } catch (InterruptedException e) {
-                            mLog.w(TAG, "New Task not added. TaskQueue consumer was shutdown.");
-                        }
-
-                    } else {
-                        // If the max retry count was reached, complete the task, and fail remaining recipients.
-                        mTask.state = TaskState.STATE_FAILED;
-
-                        for (Recipient messageRecipient : message.recipients) {
-                            if (messageRecipient.state == RecipientState.STATE_WAITING_RETRY) {
-                                messageRecipient.state = RecipientState.STATE_FAILED;
-                                messageRecipient.failure = new RecipientFailure(PlatformFailureType.ERROR_TOO_MANY_RETRIES);
-                            }
-                        }
-                    }
-                } else {
-                    // If there were no retry recipients, mark the task as complete.
-                    mTask.state = TaskState.STATE_COMPLETE;
-                    for (Recipient messageRecipient : message.recipients) {
-                        messageRecipient.state = RecipientState.STATE_COMPLETE;
-                    }
+                    mPendingTaskQueue.add(mTask);
                 }
 
                 // Send back any recipients to be updated.
@@ -230,18 +186,13 @@ public class TaskQueue {
                 }
 
                 // Send back any recipients to be deleted.
-                if (!result.getStaleRecipients().isEmpty() && taskCallback != null) {
-                    List<Recipient> staleRecipients = new ArrayList<>();
-
-                    for (Recipient staleRecipient : result.getStaleRecipients()) {
-                        staleRecipients.add(staleRecipient);
-                    }
-                    taskCallback.removeRecipients(staleRecipients);
+                if (!result.getFailedRecipients().isEmpty() && taskCallback != null) {
+                    taskCallback.removeRecipients(result.getFailedRecipients().keySet());
                 }
 
                 if (taskCallback != null) {
                     taskCallback.completed(mTask);
-                    removeClientListener(taskCallback);
+                    mTaskClientListeners.remove(mTask.id, taskCallback);
                 }
 
                 // Save the updated task.
@@ -250,90 +201,51 @@ public class TaskQueue {
         }
 
         @Override
-        public void messageFailure(@Nonnull Message message, PushFailCause failCause) {
-            TaskMessageResponse taskCallback = mTaskIdClientListeners.get(mTask.id);
-
-            // Set the task as failed.
-            mTask.state = TaskState.STATE_FAILED;
+        public void messageFailure(@Nonnull Message message, FailureType failureType) {
+            PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
 
             if (taskCallback != null) {
-                taskCallback.failed(mTask, failCause);
-                removeClientListener(taskCallback);
+                taskCallback.failed(mTask, failureType);
+                mTaskClientListeners.remove(mTask.id, taskCallback);
             }
 
             // Save the updated task.
             mTasksDao.updateTask(mTask);
-
-            mLog.e(TAG, String.format("Failed. %s response from push service for message %d",
-                    failCause.name(), message.id));
-        }
-
-        /**
-         * Remove a client's {@link TaskMessageResponse} listener if it's not null and
-         * the {@link Task} has completed or failed.
-         */
-        private void removeClientListener(@Nonnull TaskMessageResponse taskMessageResponse) {
-            if (mTask.state == TaskState.STATE_COMPLETE ||
-                    mTask.state == TaskState.STATE_FAILED) {
-                mTaskIdClientListeners.remove(mTask.id);
-            }
+            mLog.e(TAG, String.format("%s response from push service for task %s", failureType.name(), mTask.name));
         }
     }
 
     /**
      * Thread that loops through the blocking queue and sends
-     * tasks to the pushservices. This will block if there are no tasks to take,
+     * tasks to the platform push provider. This will block if there are no tasks to take,
      * hence the Runnable.
      */
+    @SuppressWarnings("ConstantConditions")
     private class QueueConsumer implements Runnable {
+
         @Override
         public void run() {
             try {
                 // Loop through the tasks infinitely.
-                while (true) {
-                    // Sleep every so often so the serve isn't hammered.
+                while (mPendingTaskQueue != null) {
+                    mLog.d(TAG, "TaskQueue processing received task");
+
+                    // Sleep on while so often so the server isn't hammered.
                     Thread.sleep(TASKQUEUE_POLL_INTERVAL_MS);
 
-                    mLog.d(TAG, "TaskQueue processing received task");
+                    // Take and remove the task from queue.
                     Task task = mPendingTaskQueue.take();
-                    String taskName = task.name;
 
-                    boolean backoffTimeReached = task.nextAttempt == null ||
-                            task.nextAttempt.before(Calendar.getInstance());
-
-                    // Backoff time was not reached.
-                    if (!backoffTimeReached) {
-                        mPendingTaskQueue.add(task);
-                        mLog.d(TAG, String.format("Task %s hasn't reached backoff.", taskName));
-
-                        // Task is ready for dispatch.
-                    } else if (isTaskIncomplete(task)) {
-                        task.state = TaskState.STATE_PROCESSING;
-                        task.lastAttempt = Calendar.getInstance();
-
-                        // Set all recipient states on all messages task to processing.
-                        if (task.messages != null) {
-                            for (Message message : task.messages) {
-                                if (message.recipients != null) {
-                                    for (Recipient recipient : message.recipients) {
-                                        recipient.state = RecipientState.STATE_PROCESSING;
-                                    }
-                                    mTasksDao.updateMessage(message);
-                                }
-                            }
-                        }
-
-                        // Dispatch each message within the task..
-                        for (Message message : task.messages) {
-                            if (message.recipients != null && !message.recipients.isEmpty()) {
-                                mGcmDispatcher.dispatchMessageAsync(message, new MessageResponseListener(task));
-                            }
-                        }
-                    }
+                    // Get the clientCallback listener for task if it is available.
+                    dispatchTask(task, new PlatformMessageCallback(task));
                 }
 
             } catch (InterruptedException e) {
                 mLog.d(TAG, "TaskQueue consumer thread was interrupted.");
+
+            } catch (TaskValidationException e) {
+                mLog.d(TAG, "A Task was corrupt and threw a PlatformTaskException.");
+                start();
             }
         }
     }
