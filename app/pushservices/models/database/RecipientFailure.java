@@ -26,13 +26,7 @@ public class RecipientFailure extends Model implements Cloneable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "failure_id_seq_gen")
     protected Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "recipient_id",
-            table = "push_services.recipients",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
+    @OneToOne(fetch = FetchType.EAGER)
     public Recipient recipient;
 
     @Column(name = "type")

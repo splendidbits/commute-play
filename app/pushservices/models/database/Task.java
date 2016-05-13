@@ -3,7 +3,6 @@ package pushservices.models.database;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import com.avaje.ebean.enhance.agent.InterceptField;
 import main.Constants;
 import pushservices.helpers.PlatformMessageBuilder;
 
@@ -79,9 +78,10 @@ public class Task extends Model implements Cloneable {
             boolean samePriority = priority == other.priority;
 
             boolean bothMessagesEmpty = messages == null && other.messages == null ||
-                    (messages != null && messages.isEmpty() && other.messages != null && other.messages.isEmpty());
+                    messages == null && other.messages.isEmpty() ||
+                    messages.isEmpty() && other.messages == null;
 
-            boolean sameMessages = bothMessagesEmpty || messages != null && other.messages != null &&
+            boolean sameMessages = bothMessagesEmpty || messages != other.messages ||
                     (messages.containsAll(other.messages) && other.messages.containsAll(messages));
 
             return sameTaskName && samePriority && sameMessages;

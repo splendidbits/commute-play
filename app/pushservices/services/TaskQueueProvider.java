@@ -18,11 +18,11 @@ public class TaskQueueProvider implements Provider<TaskQueue> {
     private TasksDao mTasksDao;
 
     @Inject
-    private GoogleMessageDispatcher mGoogleMessageDispatcher;
+    private GcmMessageDispatcher mGcmMessageDispatcher;
 
     @Provides
     @Override
     public TaskQueue get() {
-        return new TaskQueue(mTasksDao, mGoogleMessageDispatcher);
+        return new TaskQueue(mTasksDao, mGcmMessageDispatcher);
     }
 }

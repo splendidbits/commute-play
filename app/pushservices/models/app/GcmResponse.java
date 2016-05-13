@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Response model from Google GCM endpoint (for response status 200).
  */
-public class GoogleResponse {
+public class GcmResponse {
 
     @SerializedName("multicast_id")
     public String mMessageId;

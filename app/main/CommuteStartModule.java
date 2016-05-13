@@ -20,11 +20,11 @@ public class CommuteStartModule extends AbstractModule implements AkkaGuiceSuppo
                 .toProvider(CommuteEbeanServerProvider.class)
                 .asEagerSingleton();
 
-        // Bind the scheduling system.
-        bind(CommuteSchedulers.class).asEagerSingleton();
-
         bindActor(AgencyUpdateActor.class, AgencyUpdateActor.ACTOR_NAME);
 
+        // Bind the scheduling system.
+        bind(CommuteSchedulers.class).asEagerSingleton();
+        
         // TODO: PULL INTO PUSH-SERVICES
         // Bind TaskQueue as an eager singleton. An eager singleton is a sad thing to be.
         bind(TaskQueue.class)

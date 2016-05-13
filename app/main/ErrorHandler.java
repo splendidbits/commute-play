@@ -35,7 +35,7 @@ public class ErrorHandler implements HttpErrorHandler{
 
     public CompletionStage<Result> onServerError(Http.RequestHeader request, Throwable exception) {
         String logMessage = "Exception was triggered";
-        Logger.error(TAG, logMessage, exception);
+        Logger.error(logMessage, exception);
 
         return CompletableFuture.completedFuture(
                 Results.internalServerError("A server error occurred")

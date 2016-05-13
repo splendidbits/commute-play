@@ -1,4 +1,4 @@
-package serializers;
+package pushservices.serializers;
 
 import com.google.gson.*;
 import pushservices.models.database.Message;

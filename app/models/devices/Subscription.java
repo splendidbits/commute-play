@@ -22,17 +22,17 @@ public class Subscription extends Model {
     @Column(name = "id")
     public Long id;
 
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "device_id",
             table = "device_information.devices",
             referencedColumnName = "id",
             nullable = false,
             unique = false,
-            updatable = true)
+            updatable = false)
     public Device device;
 
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @Column(name = "route_id")
     @JoinColumn(
             name = "route_id",
@@ -40,7 +40,7 @@ public class Subscription extends Model {
             referencedColumnName = "id",
             nullable = true,
             unique = false,
-            updatable = true)
+            updatable = false)
     public Route route;
 
     @Basic

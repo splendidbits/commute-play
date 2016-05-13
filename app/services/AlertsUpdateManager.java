@@ -47,19 +47,21 @@ public class AlertsUpdateManager {
      *
      * @param updatedAgency The agency which has been updated.
      */
-    public void saveAndNotifyAgencySubscribers(@Nonnull Agency updatedAgency) {
-        AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
-        if (agencyModifications.hasModifiedRoutes()) {
+    public void saveAndNotifyAgencySubscribers(Agency updatedAgency) {
+        if (updatedAgency != null) {
+            AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
+            if (agencyModifications.hasModifiedRoutes()) {
 
-            // Save the agency in the datastore.
-            Logger.debug("Saving new or updated agency data.");
-            boolean alertsPersisted = mAgencyService.saveAgencyAlerts(updatedAgency);
+                // Save the agency in the datastore.
+                Logger.debug("Saving new or updated agency data.");
+                boolean alertsPersisted = mAgencyService.saveAgency(updatedAgency);
 
-            // NOTE: This is a sanity-check to ensure we don't bombard clients with
-            // alerts if there's an issue with database persistence.
-            if (alertsPersisted) {
-                Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
-                mPushMessageManager.dispatchAlerts(agencyModifications);
+                // NOTE: This is a sanity-check to ensure we don't bombard clients with
+                // alerts if there's an issue with database persistence.
+                if (alertsPersisted) {
+                    Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
+                    mPushMessageManager.dispatchAlerts(agencyModifications);
+                }
             }
         }
     }
@@ -67,26 +69,28 @@ public class AlertsUpdateManager {
     /**
      * Creates a list of new and removed alerts for a given agency bundle.
      *
-     * @param updatedAgency the agency which is to be updated.
+     * @param agency the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
     @Nonnull
-    private AgencyModifications getUpdatedRoutesAlerts(@Nonnull Agency updatedAgency) {
-        AgencyModifications modifiedRouteAlerts = new AgencyModifications(updatedAgency.id);
+    private AgencyModifications getUpdatedRoutesAlerts(@Nonnull Agency agency) {
+        AgencyModifications modifiedRouteAlerts = new AgencyModifications(agency.id);
 
         // Get all new routes, and the current routes that exist for the agency.
-        List<Route> freshRoutes = CommuteAlertHelper.copyRoutes(updatedAgency.routes);
-        List<Route> existingRoutes = CommuteAlertHelper.copyRoutes(mAgencyService.getAgencyRoutes(updatedAgency.id));
+        List<Route> freshRoutes = CommuteAlertHelper.copyRoutes(agency.routes);
+        List<Route> existingRoutes = CommuteAlertHelper.copyRoutes(mAgencyService.getAgencyRoutes(agency.id));
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
         if (existingRoutes == null || existingRoutes.isEmpty()) {
-            modifiedRouteAlerts.addUpdatedRoute(updatedAgency.routes);
+            Logger.info(String.format("Existing routes for agency %1$d missing. Marked all as updated.", agency.id));
+            modifiedRouteAlerts.addUpdatedRoute(agency.routes);
             return modifiedRouteAlerts;
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
         if (freshRoutes == null || freshRoutes.isEmpty()) {
-            modifiedRouteAlerts.addUpdatedRoute(updatedAgency.routes);
+            Logger.info(String.format("New routes for agency %1$d missing. Marked all as stale.", agency.id));
+            modifiedRouteAlerts.addStaleRoute(agency.routes);
             return modifiedRouteAlerts;
         }
 
@@ -123,6 +127,10 @@ public class AlertsUpdateManager {
                             // Record the new alert, and alertType.
                             if (!CommuteAlertHelper.isAlertEmpty(freshAlert) &&
                                     !existingRoute.alerts.contains(freshAlert)) {
+
+                                Logger.info(String.format("%1%s alert for existing route %2$s missing. Marked updated.",
+                                        freshAlert.type, existingRoute.routeId));
+
                                 updatedAlertTypes.add(freshAlert.type);
                                 updatedAlerts.add(freshAlert);
                             }
@@ -140,6 +148,9 @@ public class AlertsUpdateManager {
                         for (Alert existingAlert : existingRoute.alerts) {
                             if (!freshRoute.alerts.contains(existingAlert) &&
                                     !updatedAlertTypes.contains(existingAlert.type)) {
+
+                                Logger.info(String.format("%1%s alert for fresh route %2$s missing. Marked stale.",
+                                        existingAlert.type, existingRoute.routeId));
 
                                 freshRoute.alerts = new ArrayList<>();
                                 staleRoutes.add(freshRoute);

@@ -10,12 +10,12 @@ import pushservices.enums.FailureType;
 import pushservices.helpers.PlatformHelper;
 import pushservices.helpers.TaskHelper;
 import pushservices.interfaces.PlatformMessageResponse;
-import pushservices.models.app.GoogleResponse;
+import pushservices.models.app.GcmResponse;
 import pushservices.models.app.MessageResult;
 import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.models.database.RecipientFailure;
-import serializers.GcmMessageSerializer;
+import pushservices.serializers.GcmMessageSerializer;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -33,9 +33,7 @@ import java.util.function.Function;
  * - A collapse_key
  * - The keys and string data to send.
  */
-public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
-    private static final String TAG = GoogleMessageDispatcher.class.getSimpleName();
-
+class GcmMessageDispatcher extends PlatformMessageDispatcher {
     private static final int ENDPOINT_REQUEST_TIMEOUT_SECONDS = 30 * 1000;
     private static final int MESSAGE_RECIPIENT_BATCH_SIZE = 900;
 
@@ -43,7 +41,7 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
     private WSClient mWsClient;
 
     @Inject
-    protected GoogleMessageDispatcher() {
+    protected GcmMessageDispatcher() {
 
     }
 
@@ -73,11 +71,10 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
 
             @Override
             public Void apply(Throwable exception) {
-                Logger.error(TAG, "Exception dispatching GCM message", exception);
-
                 if (exception != null && exception instanceof PlatformEndpointException) {
-                    PlatformEndpointException googleException = (PlatformEndpointException) exception;
+                    Logger.error("Exception dispatching GCM message", exception);
 
+                    PlatformEndpointException googleException = (PlatformEndpointException) exception;
                     if (googleException.mStatusCode == 400) {
                         responseListener.messageFailure(message, FailureType.MESSAGE_PAYLOAD_INVALID);
 
@@ -105,13 +102,13 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
         List<List<Recipient>> recipientBlocks = splitMessageRecipients(message);
 
         // Get the accounts for which we are sending the message.
-        CompletionStage<List<GoogleResponse>> googleResponses = getMessageResponses(message, recipientBlocks);
-        googleResponses.thenApply(new Function<List<GoogleResponse>, Void>() {
+        CompletionStage<List<GcmResponse>> googleResponses = getMessageResponses(message, recipientBlocks);
+        googleResponses.thenApply(new Function<List<GcmResponse>, Void>() {
 
             @Override
-            public Void apply(List<GoogleResponse> googleResponses) {
+            public Void apply(List<GcmResponse> gcmResponses) {
                 // The response from each message send.
-                MessageResult messageCompleteResult = combineMessageResponses(message, googleResponses);
+                MessageResult messageCompleteResult = combineMessageResponses(message, gcmResponses);
                 responseListener.messageResult(message, messageCompleteResult);
 
                 return null;
@@ -125,20 +122,20 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
      * @param message The message to send and  get responses for.
      * @return A list of Google GCM responses.
      */
-    private CompletionStage<List<GoogleResponse>> getMessageResponses(@Nonnull Message message,
-                                                                      @Nonnull List<List<Recipient>> recipientBlocks) {
+    private CompletionStage<List<GcmResponse>> getMessageResponses(@Nonnull Message message,
+                                                                   @Nonnull List<List<Recipient>> recipientBlocks) {
 
-        CompletableFuture<List<GoogleResponse>> responseFuture = new CompletableFuture<>();
-        List<GoogleResponse> messagePartResponses = new ArrayList<>();
+        CompletableFuture<List<GcmResponse>> responseFuture = new CompletableFuture<>();
+        List<GcmResponse> messagePartResponses = new ArrayList<>();
 
         for (List<Recipient> block : recipientBlocks) {
             sendMessageRequest(message, block).thenApply(new Function<WSResponse, Void>() {
 
                 @Override
                 public Void apply(WSResponse response) {
-                    GoogleResponse googleResponse = parseCallResponse(response);
+                    GcmResponse gcmResponse = parseCallResponse(response);
 
-                    messagePartResponses.add(googleResponse);
+                    messagePartResponses.add(gcmResponse);
                     if (messagePartResponses.size() == recipientBlocks.size()) {
                         responseFuture.complete(messagePartResponses);
                     }
@@ -219,13 +216,13 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
      * @return MessageResult result from google for gcm message.
      */
     @Nonnull
-    private GoogleResponse parseCallResponse(@Nonnull WSResponse callResponse) {
+    private GcmResponse parseCallResponse(@Nonnull WSResponse callResponse) {
         if (callResponse.getStatus() != 200) {
             throw new PlatformEndpointException(callResponse.getStatus(), callResponse.getBody());
         }
 
-        GoogleResponse response = new Gson().fromJson(callResponse.getBody(), GoogleResponse.class);
-        Logger.debug(String.format("[$1%d] canonical ids.\n[$2%d] successful messages.\n[$3%d] failed messages.",
+        GcmResponse response = new Gson().fromJson(callResponse.getBody(), GcmResponse.class);
+        Logger.debug(String.format("[%1$d] canonical ids.\n[%2$d] successful messages.\n[%3$d] failed messages.",
                 response.mCanonicalIdCount, response.mSuccessCount, response.mFailCount));
 
         return response;
@@ -239,19 +236,18 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
      * @return The master GoogleResponse for the original message send back to the client.
      */
     @Nonnull
-    private MessageResult combineMessageResponses(@Nonnull Message message, @Nonnull List<GoogleResponse> responses) {
+    private MessageResult combineMessageResponses(@Nonnull Message message, @Nonnull List<GcmResponse> responses) {
         MessageResult messageResult = new MessageResult();
-        if (message.recipients != null) {
 
-            // Start the registrationCount before all of the message parts so inbound == outbound
+        if (message.recipients != null) {
             int runningRegCounter = 0;
 
             // Loop through each message response part.
-            for (GoogleResponse googleResponse : responses) {
+            for (GcmResponse gcmResponse : responses) {
 
                 // Loop through each response from each registration.
-                for (int i = 0; i < googleResponse.mResults.size(); i++) {
-                    GoogleResponse.ResultData resultData = googleResponse.mResults.get(i);
+                for (int i = 0; i < gcmResponse.mResults.size(); i++) {
+                    GcmResponse.ResultData resultData = gcmResponse.mResults.get(i);
                     Recipient originalRecipient = message.recipients.get(runningRegCounter);
 
                     // A successful message.

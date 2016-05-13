@@ -21,7 +21,7 @@ public class Alert extends Model implements Comparable {
     @Column(name = "id")
     @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
-    protected Long id;
+    public Long id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)

@@ -25,7 +25,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     @Column(name = "id")
     @SequenceGenerator(name = "route_id_seq_gen", sequenceName = "route_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_id_seq_gen")
-    protected String id;
+    public String id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
@@ -92,7 +92,8 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
                     externalUri != null && externalUri.equals(other.externalUri);
 
             boolean bothAlertsEmpty = alerts == null && other.alerts == null ||
-                    (alerts != null && alerts.isEmpty() && other.alerts != null && other.alerts.isEmpty());
+                    alerts == null && other.alerts.isEmpty() ||
+                    alerts.isEmpty() && other.alerts == null;
 
             boolean sameAlerts = bothAlertsEmpty ||
                     alerts != null && alerts != null && other.alerts != null &&

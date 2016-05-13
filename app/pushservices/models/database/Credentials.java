@@ -20,15 +20,7 @@ public class Credentials extends Model implements Cloneable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "credentials_id_seq_gen")
     protected Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "message_id",
-            table = "push_services.messages",
-            referencedColumnName = "id",
-            nullable = true,
-            unique = false,
-            insertable = true,
-            updatable = true)
+    @OneToOne(fetch = FetchType.EAGER)
     public Message message;
 
     @Enumerated(EnumType.STRING)

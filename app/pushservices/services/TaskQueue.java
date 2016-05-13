@@ -1,5 +1,6 @@
 package pushservices.services;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import services.splendidlog.Logger;
@@ -27,8 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @SuppressWarnings({"WeakerAccess", "Convert2streamapi"})
 public class TaskQueue {
-    private static final String TAG = TaskQueue.class.getSimpleName();
-
     // Delay each taskqueue polling to a 1/4 second so the server isn't flooded.
     private static final long TASKQUEUE_POLL_INTERVAL_MS = 250;
     private static final int TASKQUEUE_MAX_SIZE = 500;
@@ -40,24 +39,27 @@ public class TaskQueue {
     private QueueConsumer mQueueConsumer = new QueueConsumer();
     private Thread mTaskConsumerThread = new Thread(mQueueConsumer);
 
-    private GoogleMessageDispatcher mGoogleMessageDispatcher;
-    private TasksDao mTasksDao;
+    @Inject
+    private GcmMessageDispatcher mGcmMessageDispatcher;
 
-    /**
-     * Privately instantiate the TaskQueue with required Dependencies.
-     *
-     * @param tasksDao Task persistence.
-     * @param googleMessageDispatcher GCM Google message dispatcher.
-     */
-    TaskQueue(TasksDao tasksDao, GoogleMessageDispatcher googleMessageDispatcher) {
-        mTasksDao = tasksDao;
-        mGoogleMessageDispatcher = googleMessageDispatcher;
-    }
+    @Inject
+    private TasksDao mTasksDao;
 
     /**
      * Private constructor to disallow instantiation.
      */
     private TaskQueue() {
+    }
+
+    /**
+     * Privately instantiate the TaskQueue with required Dependencies.
+     *
+     * @param tasksDao Task persistence.
+     * @param gcmMessageDispatcher GCM Google message dispatcher.
+     */
+    TaskQueue(TasksDao tasksDao, GcmMessageDispatcher gcmMessageDispatcher) {
+        mTasksDao = tasksDao;
+        mGcmMessageDispatcher = gcmMessageDispatcher;
     }
 
     /**
@@ -87,6 +89,7 @@ public class TaskQueue {
      */
     private void dispatchTask(@Nonnull Task task, @Nonnull PlatformMessageCallback callback)
             throws TaskValidationException {
+        // Verify the Task has all required attributes.
         TaskHelper.verifyTask(task);
 
         // Task is ready for dispatch.
@@ -95,12 +98,10 @@ public class TaskQueue {
         //noinspection ConstantConditions
         for (Message message : task.messages) {
             int recipientsCount = 0;
-
             if (message.recipients != null) {
 
                 // Set recipient states to processing for ready recipients.
                 for (Recipient recipient : message.recipients) {
-
                     if (TaskHelper.isRecipientReady(recipient)) {
                         recipient.state = RecipientState.STATE_PROCESSING;
                         recipientsCount += 1;
@@ -113,7 +114,7 @@ public class TaskQueue {
 
             if (recipientsCount > 0) {
                 Logger.debug(String.format("Dispatching message to %d recipients", recipientsCount));
-                mGoogleMessageDispatcher.dispatchMessage(message, callback);
+                mGcmMessageDispatcher.dispatchMessage(message, callback);
 
             } else {
                 mPendingTaskQueue.add(task);
@@ -180,8 +181,7 @@ public class TaskQueue {
 
             if (message.recipients != null) {
                 PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
-                Logger.debug("200-OK from pushservices for message");
-
+                Logger.debug("200-OK from push-services for message");
 
                 // Add the task to the back of the queue.
                 if (!result.getRecipientsToRetry().isEmpty()) {
@@ -211,7 +211,6 @@ public class TaskQueue {
         @Override
         public void messageFailure(@Nonnull Message message, FailureType failureType) {
             PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
-
             if (taskCallback != null) {
                 taskCallback.failed(mTask, failureType);
                 mTaskClientListeners.remove(mTask.id, taskCallback);
@@ -219,7 +218,7 @@ public class TaskQueue {
 
             // Save the updated task.
             mTasksDao.updateTask(mTask);
-            Logger.error(TAG, String.format("%s response from push service for task %s", failureType.name(), mTask.name));
+            Logger.error(String.format("%s response from push service for task %s", failureType.name(), mTask.name));
         }
     }
 
@@ -234,15 +233,13 @@ public class TaskQueue {
         @Override
         public void run() {
             try {
-                // Loop through the tasks infinitely.
                 while (mPendingTaskQueue != null) {
-                    Logger.debug("TaskQueue processing received task");
-
                     // Sleep on while so often so the server isn't hammered.
                     Thread.sleep(TASKQUEUE_POLL_INTERVAL_MS);
 
                     // Take and remove the task from queue.
                     Task task = mPendingTaskQueue.take();
+                    Logger.debug("TaskQueue processing received task");
 
                     // Get the clientCallback listener for task if it is available.
                     dispatchTask(task, new PlatformMessageCallback(task));

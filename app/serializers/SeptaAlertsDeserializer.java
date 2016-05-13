@@ -246,10 +246,10 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             }
 
         } catch (IllegalStateException pe) {
-            Logger.error(TAG, "Error parsing json body into alert object", pe);
+            Logger.error("Error parsing json body into alert object", pe);
 
         } catch (ParseException e) {
-            Logger.error(TAG, "Error parsing json date(s) into alert object", e);
+            Logger.error("Error parsing json date(s) into alert object", e);
         }
 
         Collections.sort(mAgency.routes);

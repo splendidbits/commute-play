@@ -62,9 +62,10 @@ public class Agency extends Model implements Cloneable {
                     (utcOffset != null && other.utcOffset != null && utcOffset.equals(other.utcOffset));
 
             boolean bothRoutesEmpty = routes == null && other.routes == null ||
-                    (routes != null && routes.isEmpty() && other.routes != null && other.routes.isEmpty());
+                    routes == null && other.routes.isEmpty() ||
+                    routes.isEmpty() && other.routes == null;
 
-            boolean sameRoutes = bothRoutesEmpty || routes != null && other.routes != null &&
+            boolean sameRoutes = bothRoutesEmpty || routes != other.routes ||
                     (routes.containsAll(other.routes) && other.routes.containsAll(routes));
 
             // Match everything.

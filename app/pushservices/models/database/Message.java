@@ -109,9 +109,10 @@ public class Message extends Model implements Cloneable {
                     (payloadData.containsAll(other.payloadData) && other.payloadData.containsAll(payloadData));
 
             boolean bothRecipientsEmpty = recipients == null && other.recipients == null ||
-                    (recipients != null && recipients.isEmpty() && other.recipients != null && other.recipients.isEmpty());
+                    recipients == null && other.recipients.isEmpty() ||
+                    recipients.isEmpty() && other.recipients == null;
 
-            boolean sameRecipients = bothRecipientsEmpty || recipients != null && other.recipients != null &&
+            boolean sameRecipients = bothRecipientsEmpty || recipients != other.recipients ||
                     (recipients.containsAll(other.recipients) && other.recipients.containsAll(recipients));
 
             // Match everything.

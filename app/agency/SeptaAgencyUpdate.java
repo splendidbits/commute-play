@@ -10,7 +10,6 @@ import serializers.SeptaAlertsDeserializer;
 import services.AlertsUpdateManager;
 import services.splendidlog.Logger;
 
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -82,28 +81,34 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     /**
      * Updates all septa agency data from the septa endpoint.
      */
-    private CompletionStage<Boolean> updateAgencyData(@Nonnull WSResponse response) {
-        try {
-            Logger.debug("Downloaded SEPTA alerts");
-            final Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
-                    .create();
+    private CompletionStage<Boolean> updateAgencyData(WSResponse response) {
+        if (response != null) {
+            Agency agencyAlerts = null;
 
-            Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
+            if (response.getStatus() != 200) {
+                Logger.error(String.format("Response status-code from SEPTA alerts endpoint was %d", response.getStatus()));
+                return CompletableFuture.completedFuture(false);
+
+            } else {
+                Logger.debug("Downloaded SEPTA alerts");
+            }
+
+            try {
+                final Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
+                        .create();
+                agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
+
+            } catch (Exception exception) {
+                Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            }
+
             Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-
-            mAlertsUpdateManager.saveAndNotifyAgencySubscribers(agencyBundle);
+            mAlertsUpdateManager.saveAndNotifyAgencySubscribers(agencyAlerts);
             return CompletableFuture.completedFuture(true);
-
-        } catch (Exception exception) {
-            Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
 
-        if (response.getStatus() != 200) {
-            Logger.error("Response from SEPTA alerts json was null");
-            return CompletableFuture.completedFuture(false);
-        }
-
-        return CompletableFuture.completedFuture(true);
+        Logger.error("SEPTA alerts response was null");
+        return CompletableFuture.completedFuture(false);
     }
 }

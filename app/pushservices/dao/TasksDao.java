@@ -21,7 +21,6 @@ import java.util.List;
  * Copyright 5/10/16 Splendid Bits.
  */
 public class TasksDao {
-    private static final String TAG = TasksDao.class.getSimpleName();
 
     @Inject
     private EbeanServer mEbeanServer;
@@ -44,7 +43,7 @@ public class TasksDao {
             }
 
         } catch (Exception e) {
-            Logger.error(TAG, "Error inserting new task", e);
+            Logger.error("Error inserting new task", e);
             return false;
         }
 
@@ -66,7 +65,7 @@ public class TasksDao {
             }
 
         } catch (Exception e) {
-            Logger.error(TAG, "Error updating task", e);
+            Logger.error("Error updating task", e);
             return false;
         }
 
@@ -86,7 +85,7 @@ public class TasksDao {
             mEbeanServer.update(message);
 
         } catch (Exception e) {
-            Logger.error(TAG, "Error updating task message", e);
+            Logger.error("Error updating task message", e);
             return false;
         }
 
@@ -123,7 +122,7 @@ public class TasksDao {
                 pendingTasks.addAll(tasks);
             }
         } catch (Exception e) {
-            Logger.error(TAG, "Error fetching message tasks.", e);
+            Logger.error("Error fetching message tasks.", e);
         }
         return pendingTasks;
     }
@@ -144,7 +143,7 @@ public class TasksDao {
                         .findUnique();
 
             } catch (Exception e) {
-                Logger.error(TAG, String.format("Error getting task for id %d.", taskId), e);
+                Logger.error(String.format("Error getting task for id %d.", taskId), e);
             }
         }
         return null;

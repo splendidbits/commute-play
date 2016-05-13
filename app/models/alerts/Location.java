@@ -19,7 +19,7 @@ public class Location extends Model implements Comparable {
     @Column(name = "id")
     @SequenceGenerator(name = "location_id_seq_gen", sequenceName = "location_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq_gen")
-    protected Integer id;
+    public Integer id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

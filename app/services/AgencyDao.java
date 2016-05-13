@@ -14,10 +14,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Agency route / alert database storage functions.
+ * Agency route / alert database persistence functions.
  */
 public class AgencyDao {
-    private static final String TAG = AgencyDao.class.getSimpleName();
 
     @Inject
     private EbeanServer mEbeanServer;
@@ -33,26 +32,26 @@ public class AgencyDao {
      * @param newAgency list of route alerts.
      * @return boolean for success.
      */
-    public boolean saveAgencyAlerts(@Nonnull Agency newAgency) {
-        Collections.sort(newAgency.routes);
-
-        // Fetch [any] the persisted agency that matches the new agency
+    public boolean saveAgency(@Nonnull Agency newAgency) {
         Logger.debug("Persisting agency routes in database.");
-        Agency existingAgency = mEbeanServer.find(Agency.class)
-                .where()
-                .eq("id", newAgency.id)
-                .findUnique();
+        Agency existingAgency = getAgency(newAgency.id);
+        boolean persistedAgencyData = false;
 
         try {
-            // If there is an existing agency with routes, use those ids.
-            if (existingAgency != null) {
-                Collections.sort(existingAgency.routes);
+            // Check a previous agency exists / or non-null list of routes for agency.
+            if (existingAgency == null || existingAgency.routes == null) {
+                Logger.info(String.format("Agency %d does not exist. Saving all.", newAgency.id));
+                mEbeanServer.save(newAgency);
+                return true;
 
-                // Loop through each route and persist if anything is new.
+            } else if (newAgency.routes != null) {
+                Logger.info(String.format("Agency %d already exists. Checking routes.", newAgency.id));
+                Collections.sort(newAgency.routes);
+
                 for (Route newRoute : newAgency.routes) {
+                    Route existingRoute = null;
 
                     // Find an existing route deviceId that matches the updated route.
-                    Route existingRoute = null;
                     for (Route route : existingAgency.routes) {
                         if (route.routeId.equals(newRoute.routeId)) {
                             existingRoute = route;
@@ -60,51 +59,24 @@ public class AgencyDao {
                         }
                     }
 
-                    // If a new routeId matched an existing routeId, replace it. If not, replace all
-                    // existing route attributes with the new route apart deviceId.
-                    if (existingRoute != null) {
-                        Logger.debug(String.format("Found $1%d existing routes for $2%s.",
-                                existingAgency.routes.size(),
-                                existingAgency.name));
-
-                        // If something about the new route does not equal the existing route..
-                        if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
-
-                            // Delete all old alerts.
-                            Logger.debug(String.format("Replacing previous route: %s.", existingRoute.routeName));
-
-                            // Assign new attributes to the found routeId.
-                            existingRoute.routeId = newRoute.routeId;
-                            existingRoute.routeName = newRoute.routeName;
-                            existingRoute.agency = newRoute.agency;
-                            existingRoute.alerts = newRoute.alerts;
-                            existingRoute.subscriptions = newRoute.subscriptions;
-                            existingRoute.transitType = newRoute.transitType;
-                            existingRoute.routeFlag = newRoute.routeFlag;
-                            existingRoute.isSticky = newRoute.isSticky;
-                            existingRoute.isDefault = newRoute.isDefault;
-                            existingRoute.externalUri = newRoute.externalUri;
-
-                            // Delete the alerts for that route
-                            Logger.debug(String.format("Saving %d alerts for %s.",
-                                    newRoute.alerts != null ? newRoute.alerts.size() : 0, existingRoute.routeId));
-
-                            mEbeanServer.update(existingRoute);
-                        }
-
-                    } else {
-                        newRoute.agency = newAgency;
+                    // If an existing route for the new route does not exist, save it.
+                    if (existingRoute == null) {
+                        Logger.debug(String.format("Didn't find existing route: %s.", newRoute.routeName));
+                        newRoute.agency = existingAgency;
                         mEbeanServer.save(newRoute);
-                        Logger.info(String.format("Agency Route %s does not exist. Inserting.", newRoute.routeId));
+                        persistedAgencyData = true;
+
+                        // If it exists, but it is not the same, update it.
+                    } else if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
+                        Logger.debug(String.format("Updating route: %s.", newRoute.routeName));
+                        newRoute.id = existingRoute.id;
+                        mEbeanServer.update(newRoute);
+                        persistedAgencyData = true;
                     }
                 }
-
-            } else {
-                // There was no existing agency found locally. Simple save the entire agency.
-                Logger.info(String.format("Agency %s doesn't exist. Inserting all alerts.", newAgency.name));
-                mEbeanServer.save(newAgency);
             }
-            return true;
+
+            return persistedAgencyData;
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
@@ -154,22 +126,39 @@ public class AgencyDao {
      */
     @Nullable
     public List<Route> getAgencyRoutes(int agencyId) {
-        List<Route> routes = new ArrayList<>();
         try {
-            List<Route> fetchedRoutes = mEbeanServer.find(Route.class)
+            return mEbeanServer.find(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency")
+                    .fetch("alerts")
+                    .fetch("alerts.locations")
                     .where()
                     .eq("agency.id", agencyId)
                     .findList();
 
-            if (fetchedRoutes != null){
-                routes.addAll(fetchedRoutes);
-            }
+        } catch (Exception e) {
+            Logger.error("Error getting routes for agency.", e);
+        }
+        return null;
+    }
+
+    /**
+     * Get a s saved agency and all children.
+     *
+     * @param agencyId id of the agency.
+     * @return agency model with children, if found, or null.
+     */
+    @Nullable
+    public Agency getAgency(int agencyId) {
+        try {
+            return mEbeanServer.find(Agency.class)
+                    .where()
+                    .eq("id", agencyId)
+                    .findUnique();
 
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
         }
-        return routes;
+        return null;
     }
 }
