@@ -50,8 +50,8 @@ public class AlertsUpdateManager {
     public void saveAndNotifyAgencySubscribers(Agency updatedAgency) {
         if (updatedAgency != null) {
             AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
-            if (agencyModifications.hasModifiedRoutes()) {
 
+            if (agencyModifications.hasModifiedRoutes()) {
                 // Save the agency in the datastore.
                 Logger.debug("Saving new or updated agency data.");
                 boolean alertsPersisted = mAgencyService.saveAgency(updatedAgency);
@@ -62,6 +62,10 @@ public class AlertsUpdateManager {
                     Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
                     mPushMessageManager.dispatchAlerts(agencyModifications);
                 }
+
+            } else {
+                Logger.info(String.format("No updated or stale alerts found in updated agency: %d.",
+                        updatedAgency.id));
             }
         }
     }

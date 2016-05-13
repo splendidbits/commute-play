@@ -2,10 +2,9 @@ package pushservices.dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.OrderBy;
-import services.splendidlog.Logger;
 import pushservices.enums.RecipientState;
-import pushservices.models.database.Message;
 import pushservices.models.database.Task;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -74,26 +73,6 @@ public class TasksDao {
     }
 
     /**
-     * Inserts a message in the TaskQueue datastore, and cascades through
-     * children.
-     *
-     * @param message the message to update.
-     * @return true if the message was updated.
-     */
-    public boolean updateMessage(@Nonnull Message message) {
-        try {
-            mEbeanServer.update(message);
-
-        } catch (Exception e) {
-            Logger.error("Error updating task message", e);
-            return false;
-        }
-
-        // Return true if the task has an id (and thus was updated)
-        return true;
-    }
-
-    /**
      * Get all {@link Task}s from the database which have not yet fully
      * completed.
      */
@@ -108,6 +87,7 @@ public class TasksDao {
             List<Task> tasks = mEbeanServer.find(Task.class)
                     .setOrderBy(priorityOrder)
                     .fetch("messages.task")
+                    .fetch("messages.credentials")
                     .where()
                     .disjunction()
                     .eq("messages.recipients.state", "")

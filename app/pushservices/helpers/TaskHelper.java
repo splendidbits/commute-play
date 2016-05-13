@@ -79,9 +79,10 @@ public class TaskHelper {
         Calendar currentTime = Calendar.getInstance();
 
         // Add the registration to the new message.
-        return ((recipient.state.equals(RecipientState.STATE_WAITING_RETRY) ||
+        return (recipient.state == null ||
+                (recipient.state.equals(RecipientState.STATE_WAITING_RETRY) ||
                 recipient.state.equals(RecipientState.STATE_IDLE) ||
-                recipient.state.equals(RecipientState.STATE_PROCESSING)) &&
+                recipient.state.equals(RecipientState.STATE_PROCESSING)) ||
                 recipient.nextAttempt == null || recipient.nextAttempt.after(currentTime));
     }
 

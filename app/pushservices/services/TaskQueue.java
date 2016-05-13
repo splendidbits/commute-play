@@ -49,6 +49,7 @@ public class TaskQueue {
      * Private constructor to disallow instantiation.
      */
     private TaskQueue() {
+
     }
 
     /**
@@ -63,14 +64,35 @@ public class TaskQueue {
     }
 
     /**
-     * Checks that the task consumer thread is active and running, and starts the
+     * Checks that the task consumer process is active and running, and starts the
      * TaskQueue {@link Task} polling process if it is not.
      */
     public void start() {
         if (mTaskConsumerThread == null || !mTaskConsumerThread.isAlive()) {
-            Logger.debug("Starting the TaskQueue consumer thread.");
+            Logger.debug("Starting the TaskQueue process.");
             mTaskConsumerThread.start();
+            queuePendingTasks();
+        }
+    }
 
+    /**
+     * Checks that the task consumer process is active and running, and starts the
+     * TaskQueue {@link Task} polling process if it is not.
+     */
+    public void stop() {
+        if (mTaskConsumerThread != null && mTaskConsumerThread.isAlive()) {
+            Logger.debug("Stopping the TaskQueue Consumer process.");
+            mPendingTaskQueue = null;
+        }
+    }
+
+    /**
+     * Queue any tasks that have pending recipients. If you call this method, be sure that the tasks
+     * in question are not being processed by the ConsumerThread, or are awaiting results
+     * from the dispatcher. Ideally, the TaskQueue should not be started.
+     */
+    private void queuePendingTasks() {
+        if (mPendingTaskQueue != null) {
             // Get outstanding incomplete message tasks and start queue consumer thread..
             List<Task> pendingTasks = mTasksDao.fetchPendingTasks();
             for (Task task : pendingTasks) {
@@ -98,11 +120,14 @@ public class TaskQueue {
         //noinspection ConstantConditions
         for (Message message : task.messages) {
             int recipientsCount = 0;
+            Calendar currentTime = Calendar.getInstance();
+
             if (message.recipients != null) {
 
                 // Set recipient states to processing for ready recipients.
                 for (Recipient recipient : message.recipients) {
                     if (TaskHelper.isRecipientReady(recipient)) {
+                        recipient.previousAttempt = currentTime;
                         recipient.state = RecipientState.STATE_PROCESSING;
                         recipientsCount += 1;
 
@@ -116,7 +141,7 @@ public class TaskQueue {
                 Logger.debug(String.format("Dispatching message to %d recipients", recipientsCount));
                 mGcmMessageDispatcher.dispatchMessage(message, callback);
 
-            } else {
+            } else if (mPendingTaskQueue != null){
                 mPendingTaskQueue.add(task);
             }
         }
@@ -155,7 +180,8 @@ public class TaskQueue {
         // Queue the task or send it immediately.
         if (immediate) {
             dispatchTask(task, new PlatformMessageCallback(task));
-        } else {
+
+        } else if (mPendingTaskQueue != null){
             mPendingTaskQueue.add(task);
         }
     }
@@ -241,7 +267,7 @@ public class TaskQueue {
                     Task task = mPendingTaskQueue.take();
                     Logger.debug("TaskQueue processing received task");
 
-                    // Get the clientCallback listener for task if it is available.
+                    // Dispatch the queued task.
                     dispatchTask(task, new PlatformMessageCallback(task));
                 }
 

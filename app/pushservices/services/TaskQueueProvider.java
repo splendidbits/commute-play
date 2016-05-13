@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import pushservices.dao.TasksDao;
+import services.splendidlog.Logger;
 
 /**
  * Provides a single thread-safe instance of {@link TaskQueue} for dependency injection.
@@ -23,6 +24,7 @@ public class TaskQueueProvider implements Provider<TaskQueue> {
     @Provides
     @Override
     public TaskQueue get() {
+        Logger.debug("Creating new TaskQueue instance.");
         return new TaskQueue(mTasksDao, mGcmMessageDispatcher);
     }
 }

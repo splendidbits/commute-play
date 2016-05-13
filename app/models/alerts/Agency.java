@@ -65,8 +65,9 @@ public class Agency extends Model implements Cloneable {
                     routes == null && other.routes.isEmpty() ||
                     routes.isEmpty() && other.routes == null;
 
-            boolean sameRoutes = bothRoutesEmpty || routes != other.routes ||
-                    (routes.containsAll(other.routes) && other.routes.containsAll(routes));
+            boolean sameRoutes = bothRoutesEmpty ||
+                    routes != null && routes != null && other.routes != null &&
+                            (routes.containsAll(other.routes) && other.routes.containsAll(routes));
 
             // Match everything.
             return (sameId && sameName && samePhone && sameUri && sameUtcOffset && sameRoutes);
