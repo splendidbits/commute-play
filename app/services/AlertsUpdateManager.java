@@ -6,7 +6,7 @@ import helpers.CommuteAlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -30,12 +30,10 @@ public class AlertsUpdateManager {
 
     private AgencyDao mAgencyService;
     private PushMessageManager mPushMessageManager;
-    private Log mLog;
 
     @Inject
-    public AlertsUpdateManager(Log log, AgencyDao agencyService, PushMessageManager pushMessageManager) {
+    public AlertsUpdateManager(AgencyDao agencyService, PushMessageManager pushMessageManager) {
         mAgencyService = agencyService;
-        mLog = log;
         mPushMessageManager = pushMessageManager;
     }
 
@@ -54,13 +52,13 @@ public class AlertsUpdateManager {
         if (agencyModifications.hasModifiedRoutes()) {
 
             // Save the agency in the datastore.
-            mLog.d(TAG, "Saving new or updated agency data.");
+            Logger.debug("Saving new or updated agency data.");
             boolean alertsPersisted = mAgencyService.saveAgencyAlerts(updatedAgency);
 
             // NOTE: This is a sanity-check to ensure we don't bombard clients with
             // alerts if there's an issue with database persistence.
             if (alertsPersisted) {
-                mLog.d(TAG, "New Agency Alerts persisted. Sending to subscribers.");
+                Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
                 mPushMessageManager.dispatchAlerts(agencyModifications);
             }
         }

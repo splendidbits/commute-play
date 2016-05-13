@@ -3,6 +3,7 @@ package pushservices.models.database;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.ConcurrencyMode;
 import com.avaje.ebean.annotation.EntityConcurrencyMode;
+import com.avaje.ebean.enhance.agent.InterceptField;
 import main.Constants;
 import pushservices.helpers.PlatformMessageBuilder;
 
@@ -89,6 +90,23 @@ public class Task extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += name != null
+                ? name.hashCode()
+                : hashCode;
+
+        hashCode += priority;
+
+        hashCode += messages != null
+                ? messages.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+        @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

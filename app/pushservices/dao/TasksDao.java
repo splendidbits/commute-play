@@ -2,10 +2,10 @@ package pushservices.dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.OrderBy;
+import services.splendidlog.Logger;
+import pushservices.enums.RecipientState;
 import pushservices.models.database.Message;
 import pushservices.models.database.Task;
-import pushservices.enums.RecipientState;
-import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,9 +27,6 @@ public class TasksDao {
     private EbeanServer mEbeanServer;
 
     @Inject
-    private Log mLog;
-
-    @Inject
     public TasksDao() {
     }
 
@@ -47,7 +44,7 @@ public class TasksDao {
             }
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error inserting new task", e);
+            Logger.error(TAG, "Error inserting new task", e);
             return false;
         }
 
@@ -69,7 +66,7 @@ public class TasksDao {
             }
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error updating task", e);
+            Logger.error(TAG, "Error updating task", e);
             return false;
         }
 
@@ -86,10 +83,10 @@ public class TasksDao {
      */
     public boolean updateMessage(@Nonnull Message message) {
         try {
-            mEbeanServer.save(message);
+            mEbeanServer.update(message);
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error updating task message", e);
+            Logger.error(TAG, "Error updating task message", e);
             return false;
         }
 
@@ -126,7 +123,7 @@ public class TasksDao {
                 pendingTasks.addAll(tasks);
             }
         } catch (Exception e) {
-            mLog.e(TAG, "Error fetching message tasks.", e);
+            Logger.error(TAG, "Error fetching message tasks.", e);
         }
         return pendingTasks;
     }
@@ -147,7 +144,7 @@ public class TasksDao {
                         .findUnique();
 
             } catch (Exception e) {
-                mLog.e(TAG, String.format("Error getting task for id %d.", taskId), e);
+                Logger.error(TAG, String.format("Error getting task for id %d.", taskId), e);
             }
         }
         return null;

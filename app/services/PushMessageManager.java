@@ -15,7 +15,7 @@ import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.models.database.Task;
 import pushservices.services.TaskQueue;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -38,9 +38,6 @@ public class PushMessageManager {
 
     @Inject
     private DeviceDao mDeviceDao;
-
-    @Inject
-    private Log mLog;
 
     @Inject
     private TaskQueue mTaskQueue;
@@ -90,7 +87,7 @@ public class PushMessageManager {
                     completableFuture.complete(true);
                 }
             } catch (TaskValidationException e) {
-                mLog.e(TAG, "Commute Task threw an exception.");
+                Logger.error("Commute Task threw an exception.");
             }
         });
 
@@ -153,7 +150,7 @@ public class PushMessageManager {
             messageTask.addMessage(message);
 
         } else {
-            mLog.w(TAG, "Could not build registration confirmation message.");
+            Logger.warn(TAG, "Could not build registration confirmation message.");
             CompletableFuture.completedFuture(false);
         }
 
@@ -161,8 +158,9 @@ public class PushMessageManager {
         if (messageTask.messages != null) {
             try {
                 mTaskQueue.enqueueTask(messageTask, new SendAlertRecipientResponsePlatformCallback(), false);
+
             } catch (TaskValidationException e) {
-                mLog.e(TAG, "Commute Task threw an exception.");
+                Logger.error("Commute Task threw an exception.");
             }
         }
         return CompletableFuture.completedFuture(true);
@@ -174,7 +172,7 @@ public class PushMessageManager {
     private class SendAlertRecipientResponsePlatformCallback implements PlatformResponseCallback {
         @Override
         public void removeRecipients(@Nonnull Collection<Recipient> recipients) {
-            mLog.d(TAG, String.format("%d recipients need to be deleted.", recipients.size()));
+            Logger.debug(String.format("%d recipients need to be deleted.", recipients.size()));
             for (Recipient recipientToRemove : recipients) {
                 mDeviceDao.removeDevice(recipientToRemove.token);
             }
@@ -182,18 +180,18 @@ public class PushMessageManager {
 
         @Override
         public void updateRecipients(@Nonnull Collection<UpdatedRegistration> registrations) {
-            mLog.d(TAG, String.format("%d recipients require registration updates.", registrations.size()));
+            Logger.debug(String.format("%d recipients require registration updates.", registrations.size()));
 
         }
 
         @Override
         public void completed(@Nonnull Task task) {
-            mLog.d(TAG, String.format("The task %s completed successfully.", task.name));
+            Logger.debug(String.format("The task %s completed successfully.", task.name));
         }
 
         @Override
         public void failed(@Nonnull Task task, @Nonnull FailureType failure) {
-            mLog.d(TAG, String.format("The task %s$1 failed because of %s$2.", task.name, failure.name()));
+            Logger.debug(String.format("The task %s$1 failed because of %s$2.", task.name, failure.name()));
         }
     }
 }

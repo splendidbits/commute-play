@@ -13,7 +13,7 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import play.twirl.api.Html;
 import pushservices.enums.PlatformType;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
@@ -35,9 +35,6 @@ public class SignupController extends Controller {
 
     @Inject
     private FormFactory mFormFactory;
-
-    @Inject
-    private Log mLog;
 
     public Result signup() {
         return ok(signup.render(null, mFormFactory.form()));
@@ -105,7 +102,7 @@ public class SignupController extends Controller {
             mEbeanServer.save(pendingAccount);
 
         } else {
-            mLog.w(TAG, "No platforms were found for account signup: " + email);
+            Logger.warn(TAG, "No platforms were found for account signup: " + email);
         }
         Html formResult = signup.render("API request submitted. Check email junk-folder for messages from help@splendidbits.co",
                 new DynamicForm(formData, signupForm.errors(), null, null, null, null));
@@ -157,7 +154,7 @@ public class SignupController extends Controller {
 
             if (!passwordGood) {
                 signupForm.reject(new ValidationError("password_1", "Passwords must match and be more than 5 characters."));
-                mLog.i(TAG, "Account Signup, Signup password requirements not satisfied: " + email);
+                Logger.info("Account Signup, Signup password requirements not satisfied: " + email);
             }
 
             if (!emailGood) {

@@ -122,6 +122,39 @@ public class Message extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += collapseKey != null
+                ? collapseKey.hashCode()
+                : hashCode;
+
+        hashCode += credentials != null
+                ? credentials.hashCode()
+                : hashCode;
+
+        hashCode += messagePriority != null
+                ? messagePriority.hashCode()
+                : hashCode;
+
+        hashCode += ttlSeconds;
+
+        hashCode += shouldDelayWhileIdle ? 1 : 0;
+
+        hashCode += isDryRun ? 1 : 0;
+
+        hashCode += payloadData != null
+                ? payloadData.hashCode()
+                : hashCode;
+
+        hashCode += recipients != null
+                ? recipients.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

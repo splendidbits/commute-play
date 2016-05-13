@@ -72,6 +72,29 @@ public class Credentials extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += platformType != null
+                ? platformType.hashCode()
+                : hashCode;
+
+        hashCode += authorisationKey != null
+                ? authorisationKey.hashCode()
+                : hashCode;
+
+        hashCode += certificateBody != null
+                ? certificateBody.hashCode()
+                : hashCode;
+
+        hashCode += packageUri != null
+                ? packageUri.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

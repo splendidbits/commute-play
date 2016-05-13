@@ -23,7 +23,6 @@ import java.util.ArrayList;
  * Copyright 4/2/16 Splendid Bits.
  */
 class CommuteEbeanServerProvider implements Provider<EbeanServer> {
-
     private String name = "commute_gcm_server";
     private String driver = "org.postgresql.Driver";
     private String url = "jdbc:postgresql://localhost:5432/commute_gcm";

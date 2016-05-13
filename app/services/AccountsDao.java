@@ -5,7 +5,7 @@ import com.avaje.ebean.FetchConfig;
 import pushservices.enums.PlatformType;
 import models.accounts.Account;
 import models.alerts.Route;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,12 +20,10 @@ public class AccountsDao {
     private static final String TAG = AccountsDao.class.getSimpleName();
 
     private EbeanServer mEbeanServer;
-    private Log mLog;
 
     @Inject
-    public AccountsDao(EbeanServer ebeanServer, Log log) {
+    public AccountsDao(EbeanServer ebeanServer) {
         mEbeanServer = ebeanServer;
-        mLog = log;
     }
 
     /**
@@ -59,11 +57,11 @@ public class AccountsDao {
                     ? String.format("Found %d accounts for route %s", accounts.size(), route.routeId)
                     : String.format("No accounts found for route %s", route.routeId);
 
-            mLog.d(TAG, logString);
+            Logger.debug(logString);
             return accounts;
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error persisting subscription", e);
+            Logger.error("Error persisting subscription", e);
         }
         return null;
     }
@@ -87,7 +85,7 @@ public class AccountsDao {
                 ? String.format("Found an API account for email %s", email)
                 : String.format("No API account found for email %s", email);
 
-        mLog.d(TAG, logString);
+        Logger.debug(logString);
         return account;
     }
 
@@ -108,7 +106,7 @@ public class AccountsDao {
                 ? String.format("Found an API account found for key %s", apiKey)
                 : String.format("No API account found for key %s", apiKey);
 
-        mLog.d(TAG, logString);
+        Logger.debug(logString);
         return account;
     }
 }

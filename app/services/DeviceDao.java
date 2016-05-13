@@ -3,7 +3,7 @@ package services;
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;
 import models.devices.Device;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,12 +16,10 @@ public class DeviceDao {
     private static final String TAG = DeviceDao.class.getSimpleName();
 
     private EbeanServer mEbeanServer;
-    private Log mLog;
 
     @Inject
-    public DeviceDao(EbeanServer ebeanServer, Log log) {
+    public DeviceDao(EbeanServer ebeanServer) {
         mEbeanServer = ebeanServer;
-        mLog = log;
     }
 
     /**
@@ -43,11 +41,11 @@ public class DeviceDao {
                     ? String.format("Found device with deviceId %s", device.deviceId)
                     : String.format("No device found deviceId %s", deviceId);
 
-            mLog.d(TAG, logString);
+            Logger.debug(logString);
             return device;
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error persisting subscription", e);
+            Logger.error("Error persisting subscription", e);
         }
         return null;
     }
@@ -68,12 +66,12 @@ public class DeviceDao {
 
             if (foundDevice != null) {
                 mEbeanServer.delete(foundDevice);
-                mLog.d(TAG, String.format("Removed device for deviceId %s,", foundDevice.deviceId));
+                Logger.debug(String.format("Removed device for deviceId %s,", foundDevice.deviceId));
                 return true;
             }
 
         } catch (Exception e) {
-            mLog.e(TAG, String.format("Error deleting device for %s.", deviceToken), e);
+            Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
         }
         return false;
     }
@@ -116,7 +114,7 @@ public class DeviceDao {
                 return true;
 
             } catch (Exception e) {
-                mLog.e(TAG, String.format("Error saving device device for %s.", device.deviceId), e);
+                Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
             }
         }
         return false;

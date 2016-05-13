@@ -58,10 +58,10 @@ public class TaskHelper {
             }
 
             boolean containsAuthorisationKey = message.credentials.authorisationKey != null
-                    && message.credentials.authorisationKey.isEmpty();
+                    && !message.credentials.authorisationKey.isEmpty();
 
             boolean containsCertificateBody = message.credentials.certificateBody != null
-                    && message.credentials.certificateBody.isEmpty();
+                    && !message.credentials.certificateBody.isEmpty();
 
             if (!containsAuthorisationKey && !containsCertificateBody) {
                 throw new TaskValidationException("A Message's Credentials has no AuthorisationKey or CertificateBody.");

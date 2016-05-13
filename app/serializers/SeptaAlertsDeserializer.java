@@ -8,9 +8,8 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.text.ParseException;
@@ -25,11 +24,9 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static final String TAG = SeptaAlertsDeserializer.class.getSimpleName();
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
 
-    private Log mLog;
     private Agency mAgency;
 
-    public SeptaAlertsDeserializer(@Nonnull Log log, @Nullable Agency partialAgency) {
-        mLog = log;
+    public SeptaAlertsDeserializer(@Nullable Agency partialAgency) {
         mAgency = partialAgency;
 
         // Create agency if there was no partially filled agency from the client.
@@ -47,7 +44,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        mLog.d(TAG, "Started parsing SEPTA alerts json body");
+        Logger.debug("Started parsing SEPTA alerts json body");
 
         // The SEPTA alerts feed uses different date formats depending on the field
         // last_updated - Feb 20 2016 07:27:42:520PM
@@ -249,14 +246,14 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             }
 
         } catch (IllegalStateException pe) {
-            mLog.c(TAG, "Error parsing json body into alert object", pe);
+            Logger.error(TAG, "Error parsing json body into alert object", pe);
 
         } catch (ParseException e) {
-            mLog.c(TAG, "Error parsing json date(s) into alert object", e);
+            Logger.error(TAG, "Error parsing json date(s) into alert object", e);
         }
 
         Collections.sort(mAgency.routes);
-        mLog.d(TAG, "Finished creating and sorting SEPTA route-alert map.");
+        Logger.debug("Finished creating and sorting SEPTA route-alert map.");
 
         return mAgency;
     }

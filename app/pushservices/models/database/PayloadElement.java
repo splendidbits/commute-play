@@ -62,6 +62,22 @@ public class PayloadElement extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += name != null
+                ? name.hashCode()
+                : hashCode;
+
+        hashCode += value != null
+                ? value.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+
+    @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

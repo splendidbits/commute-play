@@ -5,16 +5,15 @@ import models.accounts.PlatformAccount;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.devices.Device;
+import services.splendidlog.Logger;
 import pushservices.enums.MessagePriority;
 import pushservices.enums.PlatformType;
 import pushservices.helpers.PlatformMessageBuilder;
 import pushservices.models.database.Credentials;
 import pushservices.models.database.Message;
-import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +23,6 @@ import java.util.List;
  */
 public class CommuteAlertHelper {
     private static final String TAG = CommuteAlertHelper.class.getSimpleName();
-
-    @Inject
-    private static Log mLog;
 
     /*
      * Different types of commute push message types.
@@ -219,16 +215,14 @@ public class CommuteAlertHelper {
 
     /**
      * Check if the Alert is "empty" (if there is no message, or type.
-     * @param alert the alert to check.
      *
+     * @param alert the alert to check.
      * @return true if the message is empty.
      */
     public static boolean isAlertEmpty(@Nonnull Alert alert) {
-        return (alert.messageBody != null &&
-                alert.type != null &&
+        return !(alert.messageBody != null &&
                 !alert.messageBody.isEmpty()) ||
-                alert.type != null &&
-                alert.type != AlertType.TYPE_NONE;
+                alert.type == null || AlertType.TYPE_NONE.equals(alert.type);
     }
 
     /**
@@ -272,12 +266,12 @@ public class CommuteAlertHelper {
     public static List<Alert> copyAlerts(List<Alert> alerts) {
         List<Alert> copiedAlerts = new ArrayList<>();
         if (alerts != null) {
-            for (Alert alert : alerts) {
-                try {
+            try {
+                for (Alert alert : alerts) {
                     copiedAlerts.add(copyAlerts(alert));
-                } catch (CloneNotSupportedException e) {
-                    mLog.e(TAG, "Error cloning task or task children.");
                 }
+            } catch (CloneNotSupportedException e) {
+                Logger.error("Error cloning task or task children.");
             }
             return copiedAlerts;
         }

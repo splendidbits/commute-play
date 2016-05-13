@@ -15,10 +15,6 @@ public class AgencyModifications {
     private List<Route> mUpdatedAlertRoutes = new ArrayList<>();
     private List<Route> mStaleAlertRoutes = new ArrayList<>();
 
-    @SuppressWarnings("unused")
-    private AgencyModifications() {
-    }
-
     /**
      * Create a alert modifications model for a specific agency.
      *

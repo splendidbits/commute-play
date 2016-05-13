@@ -40,7 +40,7 @@ public class RecipientFailure extends Model implements Cloneable {
     public FailureType type;
 
     @Column(name = "message")
-    public String message;
+    public String failureMessage;
 
     @Basic
     @Column(name = "fail_time", columnDefinition = "timestamp without time zone")
@@ -56,9 +56,9 @@ public class RecipientFailure extends Model implements Cloneable {
     public RecipientFailure() {
     }
 
-    public RecipientFailure(FailureType type, String message) {
+    public RecipientFailure(FailureType type, String failureMessage) {
         this.type = type;
-        this.message = message;
+        this.failureMessage = failureMessage;
     }
 
     @Override
@@ -69,19 +69,38 @@ public class RecipientFailure extends Model implements Cloneable {
             boolean sameType = (type == null && other.type == null) ||
                     (type != null && other.type != null && type.equals(other.type));
 
-            boolean sameMessage = (message == null && other.message == null) ||
-                    (message != null && other.message != null && message.equals(other.message));
+            boolean sameFailureMessage = (failureMessage == null && other.failureMessage == null) ||
+                    (failureMessage != null && other.failureMessage != null && failureMessage.equals(other.failureMessage));
 
             boolean sameRecipient = (recipient == null && other.recipient == null) ||
                     (recipient != null && other.recipient != null && recipient.equals(other.recipient));
 
             // Match everything.
-            return (sameType && sameMessage && sameRecipient);
+            return (sameType && sameFailureMessage && sameRecipient);
         }
         return obj.equals(this);
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += type != null
+                ? type.hashCode()
+                : hashCode;
+
+        hashCode += failureMessage != null
+                ? failureMessage.hashCode()
+                : hashCode;
+
+        hashCode += recipient != null
+                ? recipient.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+        @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

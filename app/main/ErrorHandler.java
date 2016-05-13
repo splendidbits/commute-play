@@ -4,7 +4,7 @@ import play.http.HttpErrorHandler;
 import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
@@ -21,16 +21,12 @@ public class ErrorHandler implements HttpErrorHandler{
     private static final String TAG = ErrorHandler.class.getSimpleName();
 
     @Inject
-    private Log mLog;
-
-    @Inject
     public ErrorHandler() {
     }
 
     public CompletionStage<Result> onClientError(Http.RequestHeader request, int statusCode, String message) {
         String logMessage = message != null ? message : "Exception was triggered";
-        String tag = request.method() != null ? request.method() : TAG;
-        mLog.e(tag, logMessage);
+        Logger.error(logMessage);
 
         return CompletableFuture.completedFuture(
                 Results.status(statusCode, "A client error occurred: " + message)
@@ -39,8 +35,7 @@ public class ErrorHandler implements HttpErrorHandler{
 
     public CompletionStage<Result> onServerError(Http.RequestHeader request, Throwable exception) {
         String logMessage = "Exception was triggered";
-        String tag = request.method() != null ? request.method() : TAG;
-        mLog.c(tag, logMessage, exception);
+        Logger.error(TAG, logMessage, exception);
 
         return CompletableFuture.completedFuture(
                 Results.internalServerError("A server error occurred")

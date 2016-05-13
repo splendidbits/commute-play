@@ -87,6 +87,26 @@ public class Recipient extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += token != null
+                ? token.hashCode()
+                : hashCode;
+
+        hashCode += state != null
+                ? state.hashCode()
+                : hashCode;
+
+        hashCode += failure != null
+                ? failure.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+
+    @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }

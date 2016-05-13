@@ -4,7 +4,7 @@ import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.OrderBy;
 import models.alerts.Agency;
 import models.alerts.Route;
-import services.splendidlog.Log;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,12 +23,8 @@ public class AgencyDao {
     private EbeanServer mEbeanServer;
 
     @Inject
-    private Log mLog;
-
-    @Inject
-    public AgencyDao(EbeanServer ebeanServer, Log log) {
+    public AgencyDao(EbeanServer ebeanServer) {
         mEbeanServer = ebeanServer;
-        mLog = log;
     }
 
     /**
@@ -41,7 +37,7 @@ public class AgencyDao {
         Collections.sort(newAgency.routes);
 
         // Fetch [any] the persisted agency that matches the new agency
-        mLog.d(TAG, "Persisting agency routes in database.");
+        Logger.debug("Persisting agency routes in database.");
         Agency existingAgency = mEbeanServer.find(Agency.class)
                 .where()
                 .eq("id", newAgency.id)
@@ -67,7 +63,7 @@ public class AgencyDao {
                     // If a new routeId matched an existing routeId, replace it. If not, replace all
                     // existing route attributes with the new route apart deviceId.
                     if (existingRoute != null) {
-                        mLog.d(TAG, String.format("Found $1%d existing routes for $2%s.",
+                        Logger.debug(String.format("Found $1%d existing routes for $2%s.",
                                 existingAgency.routes.size(),
                                 existingAgency.name));
 
@@ -75,7 +71,7 @@ public class AgencyDao {
                         if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
 
                             // Delete all old alerts.
-                            mLog.d(TAG, String.format("Replacing previous route: %s.", existingRoute.routeName));
+                            Logger.debug(String.format("Replacing previous route: %s.", existingRoute.routeName));
 
                             // Assign new attributes to the found routeId.
                             existingRoute.routeId = newRoute.routeId;
@@ -90,7 +86,7 @@ public class AgencyDao {
                             existingRoute.externalUri = newRoute.externalUri;
 
                             // Delete the alerts for that route
-                            mLog.d(TAG, String.format("Saving %d alerts for %s.",
+                            Logger.debug(String.format("Saving %d alerts for %s.",
                                     newRoute.alerts != null ? newRoute.alerts.size() : 0, existingRoute.routeId));
 
                             mEbeanServer.update(existingRoute);
@@ -99,19 +95,19 @@ public class AgencyDao {
                     } else {
                         newRoute.agency = newAgency;
                         mEbeanServer.save(newRoute);
-                        mLog.i(TAG, String.format("Agency Route %s does not exist. Inserting.", newRoute.routeId));
+                        Logger.info(String.format("Agency Route %s does not exist. Inserting.", newRoute.routeId));
                     }
                 }
 
             } else {
                 // There was no existing agency found locally. Simple save the entire agency.
-                mLog.i(TAG, String.format("Agency %s doesn't exist. Inserting all alerts.", newAgency.name));
+                Logger.info(String.format("Agency %s doesn't exist. Inserting all alerts.", newAgency.name));
                 mEbeanServer.save(newAgency);
             }
             return true;
 
         } catch (Exception e) {
-            mLog.e(TAG, String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
+            Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
             return false;
         }
     }
@@ -143,7 +139,7 @@ public class AgencyDao {
                     foundRoutes.addAll(routes);
 
                 } catch (Exception e) {
-                    mLog.e(TAG, "Error getting route for routeIds.", e);
+                    Logger.error("Error getting route for routeIds.", e);
                 }
             }
         }
@@ -172,7 +168,7 @@ public class AgencyDao {
             }
 
         } catch (Exception e) {
-            mLog.e(TAG, "Error getting routes for agency.", e);
+            Logger.error("Error getting routes for agency.", e);
         }
         return routes;
     }

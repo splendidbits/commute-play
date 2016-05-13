@@ -3,6 +3,7 @@ package pushservices.services;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
+import services.splendidlog.Logger;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import pushservices.enums.FailureType;
@@ -15,7 +16,6 @@ import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.models.database.RecipientFailure;
 import serializers.GcmMessageSerializer;
-import services.splendidlog.Log;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -41,9 +41,6 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
 
     @Inject
     private WSClient mWsClient;
-
-    @Inject
-    private Log mLog;
 
     @Inject
     protected GoogleMessageDispatcher() {
@@ -76,7 +73,7 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
 
             @Override
             public Void apply(Throwable exception) {
-                mLog.e(TAG, "Exception dispatching GCM message", exception);
+                Logger.error(TAG, "Exception dispatching GCM message", exception);
 
                 if (exception != null && exception instanceof PlatformEndpointException) {
                     PlatformEndpointException googleException = (PlatformEndpointException) exception;
@@ -133,8 +130,8 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
 
         CompletableFuture<List<GoogleResponse>> responseFuture = new CompletableFuture<>();
         List<GoogleResponse> messagePartResponses = new ArrayList<>();
-        for (List<Recipient> block : recipientBlocks) {
 
+        for (List<Recipient> block : recipientBlocks) {
             sendMessageRequest(message, block).thenApply(new Function<WSResponse, Void>() {
 
                 @Override
@@ -168,7 +165,6 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
             // Add each registration_id to the message in batches of 1000.
             List<Recipient> recipientBlock = new ArrayList<>();
             for (int i = 0; i < messageRecipients.size(); i++) {
-
                 Recipient recipient = messageRecipients.get(i);
 
                 // If there's ~1000 registrations, add the message to the pending messages
@@ -229,7 +225,7 @@ public class GoogleMessageDispatcher extends PlatformMessageDispatcher {
         }
 
         GoogleResponse response = new Gson().fromJson(callResponse.getBody(), GoogleResponse.class);
-        mLog.d(TAG, String.format("[$1%d] canonical ids.\n[$2%d] successful messages.\n[$3%d] failed messages.",
+        Logger.debug(String.format("[$1%d] canonical ids.\n[$2%d] successful messages.\n[$3%d] failed messages.",
                 response.mCanonicalIdCount, response.mSuccessCount, response.mFailCount));
 
         return response;

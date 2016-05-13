@@ -3,12 +3,12 @@ package agency;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import controllers.Application;
-import services.AlertsUpdateManager;
-import services.splendidlog.Log;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
+import services.AlertsUpdateManager;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -42,15 +42,11 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     private WSClient mWsClient;
 
     @Inject
-    private Log mLog;
-
-    @Inject
     private AlertsUpdateManager mAlertsUpdateManager;
 
     @Inject
-    public SeptaAgencyUpdate(WSClient wsClient, Log log, AlertsUpdateManager alertsUpdateManager) {
+    public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager) {
         mWsClient = wsClient;
-        mLog = log;
         mAlertsUpdateManager = alertsUpdateManager;
     }
 
@@ -58,7 +54,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     @Override
     public void updateAgency() {
         try {
-            mLog.d(TAG, "Starting download of SEPTA agency alert data.");
+            Logger.debug("Starting download of SEPTA agency alert data.");
             CompletionStage<WSResponse> resultPromise = mWsClient
                     .url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
@@ -68,7 +64,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
             resultPromise.thenAccept(new JsonDownloadConsumer());
 
         } catch (Exception exception) {
-            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
     }
 
@@ -88,23 +84,23 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
      */
     private CompletionStage<Boolean> updateAgencyData(@Nonnull WSResponse response) {
         try {
-            mLog.d(TAG, "Downloaded SEPTA alerts");
+            Logger.debug("Downloaded SEPTA alerts");
             final Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(mLog, null))
+                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
                     .create();
 
             Agency agencyBundle = gson.fromJson(response.getBody(), Agency.class);
-            mLog.d(TAG, "Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+            Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
 
             mAlertsUpdateManager.saveAndNotifyAgencySubscribers(agencyBundle);
             return CompletableFuture.completedFuture(true);
 
         } catch (Exception exception) {
-            mLog.e(TAG, "Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
         }
 
         if (response.getStatus() != 200) {
-            mLog.c(TAG, "Response from SEPTA alerts json was null");
+            Logger.error("Response from SEPTA alerts json was null");
             return CompletableFuture.completedFuture(false);
         }
 

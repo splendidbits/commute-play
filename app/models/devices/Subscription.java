@@ -48,6 +48,25 @@ public class Subscription extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar timeSubscribed = Calendar.getInstance();
 
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += device != null
+                ? device.hashCode()
+                : hashCode;
+
+        hashCode += route != null
+                ? route.hashCode()
+                : hashCode;
+
+        hashCode += timeSubscribed != null
+                ? timeSubscribed.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
     @SuppressWarnings("unused")
     public Subscription() {
     }

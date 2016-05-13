@@ -16,7 +16,6 @@ create table splendidlog.entries (
   application_id                bigint,
   created_at                    timestamp without time zone,
   level                         varchar(255),
-  tag                           varchar(255),
   message                       TEXT,
   constraint pk_entries primary key (id)
 );
