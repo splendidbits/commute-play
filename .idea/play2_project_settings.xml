@@ -39,7 +39,7 @@
                   <option value="play.libs.F" />
                 </list>
               </option>
-              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20Splendid%20Bits/commute-gcm-server" />
+              <option name="uri" value="$PROJECT_DIR$" />
             </ProjectSettingsEntry>
           </value>
         </entry>
@@ -72,7 +72,7 @@
                   <option value="play.libs.F" />
                 </list>
               </option>
-              <option name="uri" value="$PROJECT_DIR$/../../Bitbucket%20Splendid%20Bits/commute-gcm-server/modules/splendidlog" />
+              <option name="uri" value="$PROJECT_DIR$/modules/splendidlog" />
             </ProjectSettingsEntry>
           </value>
         </entry>

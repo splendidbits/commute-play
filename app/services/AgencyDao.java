@@ -40,12 +40,12 @@ public class AgencyDao {
         try {
             // Check a previous agency exists / or non-null list of routes for agency.
             if (existingAgency == null || existingAgency.routes == null) {
-                Logger.info(String.format("Agency %d does not exist. Saving all.", newAgency.id));
+                Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
                 mEbeanServer.save(newAgency);
                 return true;
 
             } else if (newAgency.routes != null) {
-                Logger.info(String.format("Agency %d already exists. Checking routes.", newAgency.id));
+                Logger.info(String.format("Agency %s already exists. Checking routes.", newAgency.name));
                 Collections.sort(newAgency.routes);
 
                 for (Route newRoute : newAgency.routes) {

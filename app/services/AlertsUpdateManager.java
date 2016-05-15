@@ -86,14 +86,14 @@ public class AlertsUpdateManager {
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
         if (existingRoutes == null || existingRoutes.isEmpty()) {
-            Logger.info(String.format("Existing routes for agency %1$d missing. Marked all as updated.", agency.id));
+            Logger.info(String.format("Existing routes for agency %s missing. Marked all as updated.", agency.name));
             modifiedRouteAlerts.addUpdatedRoute(agency.routes);
             return modifiedRouteAlerts;
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
         if (freshRoutes == null || freshRoutes.isEmpty()) {
-            Logger.info(String.format("New routes for agency %1$d missing. Marked all as stale.", agency.id));
+            Logger.info(String.format("New routes for agency %s missing. Marked all as stale.", agency.name));
             modifiedRouteAlerts.addStaleRoute(agency.routes);
             return modifiedRouteAlerts;
         }
@@ -132,7 +132,7 @@ public class AlertsUpdateManager {
                             if (!CommuteAlertHelper.isAlertEmpty(freshAlert) &&
                                     !existingRoute.alerts.contains(freshAlert)) {
 
-                                Logger.info(String.format("%1%s alert for existing route %2$s missing. Marked updated.",
+                                Logger.info(String.format("%1$s alert for existing route %2$s missing. Marked updated.",
                                         freshAlert.type, existingRoute.routeId));
 
                                 updatedAlertTypes.add(freshAlert.type);
@@ -153,7 +153,7 @@ public class AlertsUpdateManager {
                             if (!freshRoute.alerts.contains(existingAlert) &&
                                     !updatedAlertTypes.contains(existingAlert.type)) {
 
-                                Logger.info(String.format("%1%s alert for fresh route %2$s missing. Marked stale.",
+                                Logger.info(String.format("%1$s alert for fresh route %2$s missing. Marked stale.",
                                         existingAlert.type, existingRoute.routeId));
 
                                 freshRoute.alerts = new ArrayList<>();

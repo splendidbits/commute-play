@@ -43,7 +43,8 @@ public class TaskHelper {
      * @throws TaskValidationException fired when there are irrecoverable problems with the task.
      */
     public static void verifyTask(@Nonnull Task task) throws TaskValidationException {
-        // Throw an exception on missing messages.
+
+        // Throw an exception on missing task or message attributes.
         if (!TaskHelper.isTaskProcessReady(task)) {
             throw new TaskValidationException("Task must include messages with at least one STATE_IDLE recipient.");
         }
@@ -76,14 +77,16 @@ public class TaskHelper {
      * @return true if the recipient is ready to be included in a platform message.
      */
     public static boolean isRecipientReady(@Nonnull Recipient recipient) {
-        Calendar currentTime = Calendar.getInstance();
 
         // Add the registration to the new message.
+        Calendar currentTime = Calendar.getInstance();
+
         return (recipient.state == null ||
-                (recipient.state.equals(RecipientState.STATE_WAITING_RETRY) ||
+                recipient.state.equals(RecipientState.STATE_WAITING_RETRY) ||
                 recipient.state.equals(RecipientState.STATE_IDLE) ||
-                recipient.state.equals(RecipientState.STATE_PROCESSING)) ||
-                recipient.nextAttempt == null || recipient.nextAttempt.after(currentTime));
+                recipient.state.equals(RecipientState.STATE_PROCESSING) &&
+                recipient.nextAttempt == null ||
+                (recipient.nextAttempt != null && recipient.nextAttempt.before(currentTime)));
     }
 
     /**
@@ -95,20 +98,14 @@ public class TaskHelper {
      */
     public static boolean isTaskProcessReady(@Nonnull Task task) {
         if (task.messages != null && !task.messages.isEmpty()) {
-            for (Message message : task.messages) {
 
-                // If the message has at least 1 recipient,
+            for (Message message : task.messages) {
                 if (message.recipients != null && !message.recipients.isEmpty()) {
+
+                    // If the message has at least 1 recipient,
                     for (Recipient recipient : message.recipients) {
 
-                        // If the state is empty, reset it to idle.
-                        if (recipient.state == null) {
-                            recipient.state = RecipientState.STATE_IDLE;
-                            return true;
-                        }
-
-                        if (!recipient.state.equals(RecipientState.STATE_COMPLETE) &&
-                                !recipient.state.equals(RecipientState.STATE_FAILED)) {
+                        if (isRecipientReady(recipient)) {
                             return true;
                         }
                     }
@@ -117,4 +114,5 @@ public class TaskHelper {
         }
         return false;
     }
+
 }

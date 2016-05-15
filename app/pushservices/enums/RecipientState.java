@@ -12,12 +12,16 @@ import com.avaje.ebean.annotation.EnumValue;
 public enum RecipientState {
     @EnumValue("IDLE")
     STATE_IDLE,
+
     @EnumValue("PROCESSING")
     STATE_PROCESSING,
+
     @EnumValue("FAILED")
     STATE_FAILED,
+
     @EnumValue("WAITING_RETRY")
     STATE_WAITING_RETRY,
+
     @EnumValue("COMPLETE")
     STATE_COMPLETE;
 

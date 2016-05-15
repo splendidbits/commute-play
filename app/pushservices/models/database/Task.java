@@ -30,7 +30,6 @@ public class Task extends Model implements Cloneable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "task_id_seq_gen")
     public Long id;
 
-    @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "task", fetch = FetchType.EAGER)
     public List<Message> messages;
 
@@ -45,25 +44,12 @@ public class Task extends Model implements Cloneable {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated = Calendar.getInstance();
 
-    /**
-     * Add a platform message to the task. Ensure that the message contains the
-     * credentials attribute. Many different push services / accounts can be used per task.
-     *
-     * @param platformMessage The message to add. Use {@link PlatformMessageBuilder}
-     *                        to easily create a platform message.
-     */
-    public void addMessage(@Nonnull Message platformMessage) {
-        if (messages == null) {
-            messages = new ArrayList<>();
-        }
-        messages.add(platformMessage);
-    }
-
     @SuppressWarnings("unused")
-    public Task() {
+    protected Task() {
     }
 
     public Task(String name) {
+        this.messages = new ArrayList<>();
         this.name = name;
     }
 

@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Singleton
 public class TaskQueueScheduler {
-    private static final int TASKQUEUE_START_WARM_UP_SECONDS = 30;
+    private static final int TASKQUEUE_START_WARM_UP_SECONDS = 5;
     private static final int TASKQUEUE_CHECK_CONSUMER_RUNNING_MINS = 15;
 
     @Inject

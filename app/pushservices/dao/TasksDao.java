@@ -1,8 +1,11 @@
 package pushservices.dao;
 
 import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.FetchConfig;
 import com.avaje.ebean.OrderBy;
+import com.avaje.ebean.Transaction;
 import pushservices.enums.RecipientState;
+import pushservices.models.database.Message;
 import pushservices.models.database.Task;
 import services.splendidlog.Logger;
 
@@ -36,18 +39,24 @@ public class TasksDao {
      * @return true if the task was updated.
      */
     public boolean insertTask(@Nonnull Task task) {
+        Transaction transaction = mEbeanServer.createTransaction();
         try {
-            if (fetchTask(task.id) == null) {
-                mEbeanServer.insert(task);
+            if (task.id == null) {
+                mEbeanServer.insert(task, transaction);
+                transaction.commit();
+
+                return true;
             }
 
         } catch (Exception e) {
             Logger.error("Error inserting new task", e);
+            transaction.rollback();
             return false;
         }
 
         // Return true if the task has an id (and thus was inserted)
-        return task.id != null;
+        transaction.end();
+        return false;
     }
 
     /**
@@ -58,23 +67,51 @@ public class TasksDao {
      * @return true if the task was updated.
      */
     public boolean updateTask(@Nonnull Task task) {
+        Transaction transaction = mEbeanServer.createTransaction();
         try {
-            if (fetchTask(task.id) != null) {
-                mEbeanServer.update(task);
-            }
+            mEbeanServer.update(task, transaction);
+            transaction.commit();
+
+            return true;
 
         } catch (Exception e) {
             Logger.error("Error updating task", e);
-            return false;
+            transaction.rollback();
         }
 
-        // Return true if the task has an id (and thus was updated)
-        return task.id != null;
+        transaction.end();
+        return false;
     }
 
     /**
-     * Get all {@link Task}s from the database which have not yet fully
-     * completed.
+     * Inserts a message in the TaskQueue datastore, and cascades through
+     * children.
+     *
+     * @param message the message to update.
+     * @return true if the message was updated.
+     */
+    public boolean updateMessage(@Nonnull Message message) {
+        Transaction transaction = mEbeanServer.createTransaction();
+        try {
+            mEbeanServer.update(message, transaction);
+            transaction.commit();
+
+            return true;
+
+        } catch (Exception e) {
+            Logger.error("Error updating task message", e);
+            transaction.rollback();
+        }
+
+        transaction.end();
+        return false;
+    }
+
+    /**
+     * Get a list all {@link Task}s from the database which contains recipients who
+     * have not yet fully completed the push lifecycle. Do not filter out message properties,
+     * as we want tasks and messages to remain completely unadulterated, as a later .update
+     * will need to persist the entire bean children.
      */
     @Nonnull
     public List<Task> fetchPendingTasks() {
@@ -86,15 +123,13 @@ public class TasksDao {
 
             List<Task> tasks = mEbeanServer.find(Task.class)
                     .setOrderBy(priorityOrder)
-                    .fetch("messages.task")
-                    .fetch("messages.credentials")
+                    .fetch("messages.credentials", new FetchConfig().query())
                     .where()
                     .disjunction()
-                    .eq("messages.recipients.state", "")
-                    .ne("messages.recipients.state", RecipientState.STATE_COMPLETE)
+                    .eq("messages.recipients.state", RecipientState.STATE_IDLE)
+                    .eq("messages.recipients.state", RecipientState.STATE_PROCESSING)
+                    .eq("messages.recipients.state", RecipientState.STATE_WAITING_RETRY)
                     .endJunction()
-                    .filterMany("messages").ne("recipients.state", RecipientState.STATE_COMPLETE)
-                    .filterMany("messages").ne("recipients.state", RecipientState.STATE_FAILED)
                     .findList();
 
             // Add the saved pending tasks back into the queue

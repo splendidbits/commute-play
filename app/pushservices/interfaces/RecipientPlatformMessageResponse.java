@@ -8,6 +8,7 @@ import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
 
@@ -33,20 +34,21 @@ public abstract class RecipientPlatformMessageResponse implements PlatformMessag
      */
     @Override
     public void messageResult(@NotNull Message message, @Nonnull MessageResult result) {
+        message.recipients = new ArrayList<>();
 
         // If there were recipients to retry, modify the exponential backoff time, etc.
         if (!result.getRecipientsToRetry().isEmpty()) {
-            Calendar nextAttemptCal = Calendar.getInstance();
 
+            Calendar nextAttemptCal = Calendar.getInstance();
             Iterator<Recipient> recipientIterator = result.getRecipientsToRetry().iterator();
+
             while (recipientIterator.hasNext()) {
                 Recipient recipient = recipientIterator.next();
 
                 // Update the new backoff time, and count.
                 if (recipient.sendAttemptCount <= message.maximumRetries) {
                     recipient.state = RecipientState.STATE_WAITING_RETRY;
-
-                    recipient.sendAttemptCount = recipient.sendAttemptCount + 1;
+                    recipient.sendAttemptCount += 1;
                     nextAttemptCal.add(Calendar.MINUTE, (recipient.sendAttemptCount * 2));
                     recipient.nextAttempt = nextAttemptCal;
 
@@ -56,6 +58,9 @@ public abstract class RecipientPlatformMessageResponse implements PlatformMessag
                     result.addFailedRecipients(recipient, recipient.failure);
                     recipientIterator.remove();
                 }
+
+                // Add the retry recipient to the message recipients
+                message.recipients.add(recipient);
             }
         }
 
@@ -63,6 +68,9 @@ public abstract class RecipientPlatformMessageResponse implements PlatformMessag
         if (!result.getSuccessfulRecipients().isEmpty()) {
             for (Recipient recipient : result.getSuccessfulRecipients()) {
                 recipient.state = RecipientState.STATE_COMPLETE;
+
+                // Add the successful recipient to the message recipients
+                message.recipients.add(recipient);
             }
         }
 
@@ -70,6 +78,9 @@ public abstract class RecipientPlatformMessageResponse implements PlatformMessag
         if (!result.getFailedRecipients().isEmpty()) {
             for (Recipient recipient : result.getFailedRecipients().keySet()) {
                 recipient.state = RecipientState.STATE_FAILED;
+
+                // Add the failed recipient to the message recipients
+                message.recipients.add(recipient);
             }
         }
     }

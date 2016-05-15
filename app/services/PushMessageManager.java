@@ -109,7 +109,7 @@ public class PushMessageManager {
         List<Message> messages = new ArrayList<>();
 
         // Get all accounts with devices subscribed to that route.
-        List<Account> accounts = mAccountsDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, route);
+        List<Account> accounts = mAccountsDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route);
 
         // Iterate through each sending API account.
         if (accounts != null && route.alerts != null) {
@@ -147,7 +147,7 @@ public class PushMessageManager {
         Message message = CommuteAlertHelper.buildDeviceRegisteredMessage(device, platformAccounts);
 
         if (message != null) {
-            messageTask.addMessage(message);
+            messageTask.messages.add(message);
 
         } else {
             Logger.warn(TAG, "Could not build registration confirmation message.");

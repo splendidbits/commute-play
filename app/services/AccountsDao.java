@@ -27,7 +27,9 @@ public class AccountsDao {
     }
 
     /**
-     * Fetch list of API accounts for a given route and push service type.
+     * Fetch list of API accounts for a given route and push service type,
+     * containing a filtered list of devices that have subscriptions for the
+     * given routeId.
      *
      * @param platform Push service platform type.
      * @param agencyId Id of {@link models.alerts.Agency}
@@ -36,7 +38,7 @@ public class AccountsDao {
      * @return List of API accounts.
      */
     @Nullable
-    public List<Account> getAccounts(@Nonnull PlatformType platform, int agencyId, @Nonnull Route route) {
+    public List<Account> getAccountDevices(@Nonnull PlatformType platform, int agencyId, @Nonnull Route route) {
         try {
             List<Account> accounts = mEbeanServer.find(Account.class)
                     .fetch("devices", new FetchConfig().query())
@@ -56,12 +58,12 @@ public class AccountsDao {
             String logString = accounts != null && !accounts.isEmpty()
                     ? String.format("Found %d accounts for route %s", accounts.size(), route.routeId)
                     : String.format("No accounts found for route %s", route.routeId);
-
             Logger.debug(logString);
+
             return accounts;
 
         } catch (Exception e) {
-            Logger.error("Error persisting subscription", e);
+            Logger.error("Error fetching device / subscription accounts.", e);
         }
         return null;
     }

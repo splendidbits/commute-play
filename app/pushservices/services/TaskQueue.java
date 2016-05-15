@@ -3,7 +3,6 @@ package pushservices.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
-import services.splendidlog.Logger;
 import pushservices.dao.TasksDao;
 import pushservices.enums.FailureType;
 import pushservices.enums.RecipientState;
@@ -15,6 +14,7 @@ import pushservices.models.app.MessageResult;
 import pushservices.models.database.Message;
 import pushservices.models.database.Recipient;
 import pushservices.models.database.Task;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.Calendar;
@@ -55,7 +55,7 @@ public class TaskQueue {
     /**
      * Privately instantiate the TaskQueue with required Dependencies.
      *
-     * @param tasksDao Task persistence.
+     * @param tasksDao             Task persistence.
      * @param gcmMessageDispatcher GCM Google message dispatcher.
      */
     TaskQueue(TasksDao tasksDao, GcmMessageDispatcher gcmMessageDispatcher) {
@@ -93,6 +93,7 @@ public class TaskQueue {
      */
     private void queuePendingTasks() {
         if (mPendingTaskQueue != null) {
+
             // Get outstanding incomplete message tasks and start queue consumer thread..
             List<Task> pendingTasks = mTasksDao.fetchPendingTasks();
             for (Task task : pendingTasks) {
@@ -114,18 +115,17 @@ public class TaskQueue {
         // Verify the Task has all required attributes.
         TaskHelper.verifyTask(task);
 
-        // Task is ready for dispatch.
-        task.lastUpdated = Calendar.getInstance();
-
         //noinspection ConstantConditions
         for (Message message : task.messages) {
             int recipientsCount = 0;
-            Calendar currentTime = Calendar.getInstance();
 
+            Calendar currentTime = Calendar.getInstance();
             if (message.recipients != null) {
 
                 // Set recipient states to processing for ready recipients.
                 for (Recipient recipient : message.recipients) {
+
+                    // If the recipient is within the back-off period.
                     if (TaskHelper.isRecipientReady(recipient)) {
                         recipient.previousAttempt = currentTime;
                         recipient.state = RecipientState.STATE_PROCESSING;
@@ -135,19 +135,21 @@ public class TaskQueue {
                         recipient.state = RecipientState.STATE_WAITING_RETRY;
                     }
                 }
+
+                // Update the task message in the database.
+                mTasksDao.updateMessage(message);
             }
 
             if (recipientsCount > 0) {
                 Logger.debug(String.format("Dispatching message to %d recipients", recipientsCount));
+                task.lastUpdated = Calendar.getInstance();
                 mGcmMessageDispatcher.dispatchMessage(message, callback);
 
-            } else if (mPendingTaskQueue != null){
+            } else if (mPendingTaskQueue != null) {
                 mPendingTaskQueue.add(task);
             }
         }
 
-        // Update the task message in the database.
-        mTasksDao.updateTask(task);
     }
 
     /**
@@ -181,7 +183,7 @@ public class TaskQueue {
         if (immediate) {
             dispatchTask(task, new PlatformMessageCallback(task));
 
-        } else if (mPendingTaskQueue != null){
+        } else if (mPendingTaskQueue != null) {
             mPendingTaskQueue.add(task);
         }
     }
@@ -205,11 +207,14 @@ public class TaskQueue {
         public void messageResult(@NotNull Message message, @Nonnull MessageResult result) {
             super.messageResult(message, result);
 
+            // Update the message entry.
+            mTasksDao.updateMessage(message);
+
             if (message.recipients != null) {
-                PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
                 Logger.debug("200-OK from push-services for message");
 
                 // Add the task to the back of the queue.
+                PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
                 if (!result.getRecipientsToRetry().isEmpty()) {
                     mPendingTaskQueue.add(mTask);
                 }
@@ -225,26 +230,24 @@ public class TaskQueue {
                 }
 
                 if (taskCallback != null) {
-                    taskCallback.completed(mTask);
                     mTaskClientListeners.remove(mTask.id, taskCallback);
+                    taskCallback.completed(mTask);
                 }
-
-                // Save the updated task.
-                mTasksDao.updateTask(mTask);
             }
         }
 
         @Override
         public void messageFailure(@Nonnull Message message, FailureType failureType) {
+            Logger.error(String.format("%s response from push service for task %s", failureType.name(), mTask.name));
+
+            // Update the message entry.
+            mTasksDao.updateMessage(message);
+
             PlatformResponseCallback taskCallback = mTaskClientListeners.get(mTask.id);
             if (taskCallback != null) {
                 taskCallback.failed(mTask, failureType);
                 mTaskClientListeners.remove(mTask.id, taskCallback);
             }
-
-            // Save the updated task.
-            mTasksDao.updateTask(mTask);
-            Logger.error(String.format("%s response from push service for task %s", failureType.name(), mTask.name));
         }
     }
 
@@ -267,16 +270,17 @@ public class TaskQueue {
                     Task task = mPendingTaskQueue.take();
                     Logger.debug("TaskQueue processing received task");
 
-                    // Dispatch the queued task.
-                    dispatchTask(task, new PlatformMessageCallback(task));
+                    // Dispatch the queued task on the main thread.
+                    try {
+                        dispatchTask(task, new PlatformMessageCallback(task));
+
+                    } catch (TaskValidationException e) {
+                        Logger.debug("A Task was corrupt and threw a PlatformTaskException.");
+                    }
                 }
 
             } catch (InterruptedException e) {
                 Logger.debug("TaskQueue consumer thread was interrupted.");
-
-            } catch (TaskValidationException e) {
-                Logger.debug("A Task was corrupt and threw a PlatformTaskException.");
-                start();
             }
         }
     }
