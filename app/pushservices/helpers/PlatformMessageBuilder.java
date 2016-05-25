@@ -7,10 +7,7 @@ import pushservices.models.database.PayloadElement;
 import pushservices.models.database.Recipient;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Easily build a Push Service's Platform {@link Message} which can be then
@@ -21,7 +18,7 @@ public class PlatformMessageBuilder {
     public static class Builder {
         private static final int ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
 
-        private static List<String> mMessageTokens = new ArrayList<>();
+        private static Set<String> mMessageTokens = new HashSet<>();
         private static Credentials mCredentials;
         private static Map<String, String> mMessageData = new HashMap<>();
         private static MessagePriority mMessagePriority = MessagePriority.PRIORITY_LOW;
@@ -62,20 +59,10 @@ public class PlatformMessageBuilder {
         /**
          * Add a of platform device token for the message to be sent to.
          *
-         * @param token device tokens to send message to.
-         */
-        public Builder addDeviceToken(@Nonnull String token) {
-            mMessageTokens.add(token);
-            return this;
-        }
-
-        /**
-         * Set a list of platform device tokens for the message to be sent to.
-         *
          * @param tokens device tokens to send message to.
          */
-        public Builder setDeviceTokens(@Nonnull List<String> tokens) {
-            mMessageTokens.addAll(tokens);
+        public Builder setDeviceTokens(@Nonnull Set<String> tokens) {
+            mMessageTokens = tokens;
             return this;
         }
 

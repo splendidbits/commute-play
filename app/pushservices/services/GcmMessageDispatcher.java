@@ -170,8 +170,9 @@ class GcmMessageDispatcher extends PlatformMessageDispatcher {
                     recipientBlock = new ArrayList<>();
                 }
 
-                // Add the registration to the new message.
-                if (TaskHelper.isRecipientReady(recipient)) {
+                // Add the registration to the new message if it's ready.
+                if (TaskHelper.isRecipientStatePending(recipient) &&
+                        !TaskHelper.isRecipientCoolingOff(recipient)) {
                     recipientBlock.add(recipient);
                 }
 

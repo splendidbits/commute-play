@@ -5,7 +5,6 @@ import models.accounts.PlatformAccount;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.devices.Device;
-import services.splendidlog.Logger;
 import pushservices.enums.MessagePriority;
 import pushservices.enums.PlatformType;
 import pushservices.helpers.PlatformMessageBuilder;
@@ -15,14 +14,15 @@ import pushservices.models.database.Message;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Used to easily create relevant push platform messages for different app alert types,
  * which can be sent out using the dispatchers.
  */
 public class CommuteAlertHelper {
-    private static final String TAG = CommuteAlertHelper.class.getSimpleName();
 
     /*
      * Different types of commute push message types.
@@ -92,11 +92,14 @@ public class CommuteAlertHelper {
         Credentials credentials = getMessageCredentials(platformAccount);
 
         if (device.token != null && credentials != null) {
+            Set<String> tokens = new HashSet<>();
+            tokens.add(device.token);
+
             return new PlatformMessageBuilder.Builder()
                     .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setPlatformCredentials(credentials)
-                    .addDeviceToken(device.token)
+                    .setDeviceTokens(tokens)
                     .putData(MessageType.TYPE_REGISTRATION.key, MessageType.TYPE_REGISTRATION.value)
                     .build();
         }
@@ -128,10 +131,6 @@ public class CommuteAlertHelper {
                         .putData(AlertMessageKey.KEY_ROUTE_NAME.name, route.routeName)
                         .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.name, alert.messageBody);
 
-                for (Device device : devices) {
-                    messageBuilder.addDeviceToken(device.token);
-                }
-
                 switch (alert.type) {
                     case TYPE_DETOUR:
                         messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
@@ -159,6 +158,13 @@ public class CommuteAlertHelper {
                         messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
                         break;
                 }
+
+                Set<String> tokenSet = new HashSet<>();
+                for (Device device : devices) {
+                    tokenSet.add(device.token);
+                }
+
+                messageBuilder.setDeviceTokens(tokenSet);
                 messages.add(messageBuilder.build());
             }
         }
@@ -187,9 +193,12 @@ public class CommuteAlertHelper {
                     .putData(AlertMessageKey.KEY_ROUTE_ID.name, route.routeId)
                     .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
 
+            Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
-                messageBuilder.addDeviceToken(device.token);
+                tokenSet.add(device.token);
             }
+
+            messageBuilder.setDeviceTokens(tokenSet);
             messages.add(messageBuilder.build());
         }
         return messages;
@@ -254,37 +263,5 @@ public class CommuteAlertHelper {
      */
     public static Route copyRoutes(@Nonnull Route route) throws CloneNotSupportedException {
         return (Route) route.clone();
-    }
-
-    /**
-     * Deep copy a list of Alerts including all of its children.
-     *
-     * @param alerts {@link List<Alert>} list to copy.
-     * @return copied {@link List<Alert>}.
-     */
-    @Nullable
-    public static List<Alert> copyAlerts(List<Alert> alerts) {
-        List<Alert> copiedAlerts = new ArrayList<>();
-        if (alerts != null) {
-            try {
-                for (Alert alert : alerts) {
-                    copiedAlerts.add(copyAlerts(alert));
-                }
-            } catch (CloneNotSupportedException e) {
-                Logger.error("Error cloning task or task children.");
-            }
-            return copiedAlerts;
-        }
-        return null;
-    }
-
-    /**
-     * Deep copy an Alert including all of its children.
-     *
-     * @param alert {@link Alert} alert to copy.
-     * @return copied {@link Alert}.
-     */
-    public static Alert copyAlerts(@Nonnull Alert alert) throws CloneNotSupportedException {
-        return (Alert) alert.clone();
     }
 }

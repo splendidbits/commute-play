@@ -1,7 +1,6 @@
 package pushservices.serializers;
 
 import com.google.gson.*;
-import pushservices.helpers.TaskHelper;
 import pushservices.models.database.Message;
 import pushservices.models.database.PayloadElement;
 import pushservices.models.database.Recipient;
@@ -15,9 +14,10 @@ public class GcmMessageSerializer implements JsonSerializer<Message> {
 
     public GcmMessageSerializer(@Nonnull List<Recipient> recipients) {
         for (Recipient recipient : recipients) {
-            if (TaskHelper.isRecipientReady(recipient)) {
-                mJsonRegistrationIds.add(new JsonPrimitive(recipient.token));
-            }
+
+            // Extra safeguard to ensure we don't add invalid recipients.
+            JsonPrimitive jsonRecipientToken = new JsonPrimitive(recipient.token != null ? recipient.token : "");
+            mJsonRegistrationIds.add(jsonRecipientToken);
         }
     }
 

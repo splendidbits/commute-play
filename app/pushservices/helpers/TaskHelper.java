@@ -30,7 +30,6 @@ public class TaskHelper {
 
         try {
             return (Task) task.clone();
-
         } catch (CloneNotSupportedException e) {
             throw new TaskValidationException(e.getMessage());
         }
@@ -52,9 +51,8 @@ public class TaskHelper {
         for (Message message : task.messages) {
             if (message.credentials == null) {
                 throw new TaskValidationException("A Task Message is missing a Credentials model.");
-            }
 
-            if (message.credentials.platformType == null) {
+            } else if (message.credentials.platformType == null) {
                 throw new TaskValidationException("A Message's Credentials is missing a PlatformType.");
             }
 
@@ -71,27 +69,35 @@ public class TaskHelper {
     }
 
     /**
-     * Check if a recipient is ready to send a message.
+     * Returns true if a recipient is ready to send a message. (not in backoff and is in
+     * a non-complete send state).
      *
      * @param recipient recipient to check.
      * @return true if the recipient is ready to be included in a platform message.
      */
-    public static boolean isRecipientReady(@Nonnull Recipient recipient) {
-
-        // Add the registration to the new message.
-        Calendar currentTime = Calendar.getInstance();
-
-        return (recipient.state == null ||
+    public static boolean isRecipientStatePending(@Nonnull Recipient recipient) {
+        return (recipient.token != null && (recipient.state == null ||
                 recipient.state.equals(RecipientState.STATE_WAITING_RETRY) ||
                 recipient.state.equals(RecipientState.STATE_IDLE) ||
-                recipient.state.equals(RecipientState.STATE_PROCESSING) &&
-                recipient.nextAttempt == null ||
-                (recipient.nextAttempt != null && recipient.nextAttempt.before(currentTime)));
+                recipient.state.equals(RecipientState.STATE_PROCESSING)));
     }
 
     /**
-     * Returns true if the {@link Task} ready to be dispatched (not waiting for next interval
-     * and hasn't failed or isn't currently processing)
+     * Returns true if the recipient is within the cool-down backoff period, and is
+     * not yet ready to be included in a message dispatch.
+     *
+     * @param recipient recipient to check.
+     * @return true if the recipient is still within the backoff period. False if the
+     * recipient is ready to be included in message.
+     */
+    public static boolean isRecipientCoolingOff(@Nonnull Recipient recipient) {
+        Calendar currentTime = Calendar.getInstance();
+        return recipient.nextAttempt != null && recipient.nextAttempt.after(currentTime);
+    }
+
+    /**
+     * Returns true if the {@link Task} is ready to be dispatched (All recipients have
+     * states that have not failed or completed.)
      *
      * @param task The task to start work on.
      * @return true if the task can be processed. false if it is invalid or has completed..
@@ -104,8 +110,7 @@ public class TaskHelper {
 
                     // If the message has at least 1 recipient,
                     for (Recipient recipient : message.recipients) {
-
-                        if (isRecipientReady(recipient)) {
+                        if (isRecipientStatePending(recipient)) {
                             return true;
                         }
                     }

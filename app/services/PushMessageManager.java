@@ -116,17 +116,15 @@ public class PushMessageManager {
             for (Account account : accounts) {
 
                 // Build a new message for the platform task per API and then Platform account.
-                if (account.devices == null || account.platformAccounts == null ||
-                        account.devices.isEmpty() || account.platformAccounts.isEmpty()) {
-                    // Continue to next account if there are 0 devices or platforms for API account..
-                    continue;
-                }
+                if (account.devices != null && account.platformAccounts != null && !account.devices.isEmpty() &&
+                        !account.platformAccounts.isEmpty()) {
 
-                // Create a message for each new alert in the route.
-                for (PlatformAccount platformAccount : account.platformAccounts) {
-                    List<Message> alertMessages = CommuteAlertHelper.getAlertMessages(route,
-                            account.devices, platformAccount);
-                    messages.addAll(alertMessages);
+                    // Create a message for each new alert in the route.
+                    for (PlatformAccount platformAccount : account.platformAccounts) {
+                        List<Message> alertMessages = CommuteAlertHelper.getAlertMessages(route,
+                                account.devices, platformAccount);
+                        messages.addAll(alertMessages);
+                    }
                 }
             }
         }

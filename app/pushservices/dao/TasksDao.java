@@ -29,6 +29,7 @@ public class TasksDao {
 
     @Inject
     public TasksDao() {
+
     }
 
     /**
@@ -108,7 +109,7 @@ public class TasksDao {
     }
 
     /**
-     * Get a list all {@link Task}s from the database which contains recipients who
+     * Get a list of all {@link Task}s from the database which contains recipients who
      * have not yet fully completed the push lifecycle. Do not filter out message properties,
      * as we want tasks and messages to remain completely unadulterated, as a later .update
      * will need to persist the entire bean children.
@@ -123,6 +124,8 @@ public class TasksDao {
 
             List<Task> tasks = mEbeanServer.find(Task.class)
                     .setOrderBy(priorityOrder)
+                    .fetch("messages", new FetchConfig().query())
+                    .fetch("messages.recipients", new FetchConfig().query())
                     .fetch("messages.credentials", new FetchConfig().query())
                     .where()
                     .disjunction()

@@ -112,44 +112,64 @@ public class TaskQueue {
      */
     private void dispatchTask(@Nonnull Task task, @Nonnull PlatformMessageCallback callback)
             throws TaskValidationException {
+        Calendar currentTime = Calendar.getInstance();
+
         // Verify the Task has all required attributes.
         TaskHelper.verifyTask(task);
 
+        // Record whether any of the messages in the task were dispatched, as non-dispatched
+        // tasks should be re-queued.
+        boolean taskDispatched = false;
+
         //noinspection ConstantConditions
         for (Message message : task.messages) {
-            int recipientsCount = 0;
 
-            Calendar currentTime = Calendar.getInstance();
+            int messageRecipientCount = 0;
             if (message.recipients != null) {
 
                 // Set recipient states to processing for ready recipients.
                 for (Recipient recipient : message.recipients) {
 
-                    // If the recipient is within the back-off period.
-                    if (TaskHelper.isRecipientReady(recipient)) {
-                        recipient.previousAttempt = currentTime;
-                        recipient.state = RecipientState.STATE_PROCESSING;
-                        recipientsCount += 1;
+                    // Fail the recipient if it doesn't contain a token.
+                    if (recipient.token == null || recipient.token.isEmpty()) {
+                        recipient.state = RecipientState.STATE_FAILED;
+                        continue;
+                    }
 
-                    } else {
-                        recipient.state = RecipientState.STATE_WAITING_RETRY;
+                    // The recipient has either already failed or completed.
+                    if (TaskHelper.isRecipientStatePending(recipient)) {
+
+                        // The recipient is not in the cooling off period.
+                        if (!TaskHelper.isRecipientCoolingOff(recipient)) {
+                            recipient.previousAttempt = currentTime;
+                            recipient.state = RecipientState.STATE_PROCESSING;
+                            messageRecipientCount += 1;
+
+                        } else {
+                            // If the recipient is within the back-off period.
+                            recipient.state = RecipientState.STATE_WAITING_RETRY;
+                        }
                     }
                 }
-
                 // Update the task message in the database.
                 mTasksDao.updateMessage(message);
             }
 
-            if (recipientsCount > 0) {
-                Logger.debug(String.format("Dispatching message to %d recipients", recipientsCount));
+            // If there are pendingRecipients, dispatch the entire task.
+            if (messageRecipientCount > 0) {
+                Logger.debug(String.format("Dispatching message to %d recipients", messageRecipientCount));
                 task.lastUpdated = Calendar.getInstance();
                 mGcmMessageDispatcher.dispatchMessage(message, callback);
 
-            } else if (mPendingTaskQueue != null) {
-                mPendingTaskQueue.add(task);
+                // A message in the task had recipients so was dispatched.
+                taskDispatched = true;
             }
         }
 
+        // If the task was not dispatched, re-add task to tail of queue.
+        if (!taskDispatched) {
+            mPendingTaskQueue.add(task);
+        }
     }
 
     /**
@@ -185,6 +205,24 @@ public class TaskQueue {
 
         } else if (mPendingTaskQueue != null) {
             mPendingTaskQueue.add(task);
+        }
+    }
+
+    /**
+     * Fail all recipients in all messages for a given task.
+     *
+     * @param task the task to fail.
+     */
+    private void failTask(@Nonnull Task task) {
+        if (task.id != null && task.messages != null) {
+            for (Message message : task.messages) {
+                if (message.recipients != null) {
+                    for (Recipient recipient : message.recipients) {
+                        recipient.state = RecipientState.STATE_FAILED;
+                    }
+                }
+            }
+            mTasksDao.updateTask(task);
         }
     }
 
@@ -276,6 +314,7 @@ public class TaskQueue {
 
                     } catch (TaskValidationException e) {
                         Logger.debug("A Task was corrupt and threw a PlatformTaskException.");
+                        failTask(task);
                     }
                 }
 
