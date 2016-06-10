@@ -18,7 +18,6 @@ import java.util.concurrent.CompletionStage;
  * Copyright 3/23/16 Splendid Bits.
  */
 public class ErrorHandler implements HttpErrorHandler{
-    private static final String TAG = ErrorHandler.class.getSimpleName();
 
     @Inject
     public ErrorHandler() {

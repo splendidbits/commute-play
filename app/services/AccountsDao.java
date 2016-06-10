@@ -2,7 +2,7 @@ package services;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
-import pushservices.enums.PlatformType;
+import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.alerts.Route;
 import services.splendidlog.Logger;
@@ -17,8 +17,6 @@ import java.util.List;
  * <p>
  */
 public class AccountsDao {
-    private static final String TAG = AccountsDao.class.getSimpleName();
-
     private EbeanServer mEbeanServer;
 
     @Inject

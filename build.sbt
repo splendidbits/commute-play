@@ -9,10 +9,16 @@ lazy val splendidlog = (project in file("modules/splendidlog"))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .settings(buildSettings: _*)
 
+lazy val pushservices = (project in file("modules/pushservices"))
+  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
+  .settings(buildSettings: _*)
+
 lazy val commutegcm = (project in file("."))
   .enablePlugins(PlayJava, PlayEbean)
-  .aggregate(splendidlog)
   .dependsOn(splendidlog)
+  .aggregate(splendidlog)
+  .dependsOn(pushservices)
+  .aggregate(pushservices)
   .settings(buildSettings: _*)
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
@@ -29,10 +35,6 @@ libraryDependencies ++= Seq(
   "junit" % "junit" % "4.11" % Test,
   "com.google.code.gson" % "gson" % "2.2")
 
-val appDependencies = Seq(
-  // Add your project dependencies
-)
-
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 //resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/local")
 
@@ -40,11 +42,11 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 // other, legacy style, accesses its actions statically.
 routesGenerator := InjectedRoutesGenerator
 
+playEbeanAgentArgs += ("detect" -> "true")
 playEbeanDebugLevel := 4
 playEbeanModels in Compile := Seq(
   "models.alerts.*",
   "models.accounts.*",
-  "pushservices.models.database.*",
   "models.devices.*"
 )
 

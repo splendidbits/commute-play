@@ -2,7 +2,6 @@ package agency;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import controllers.Application;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
@@ -33,7 +32,6 @@ import java.util.function.Consumer;
  */
 public class SeptaAgencyUpdate implements AgencyUpdate {
 
-    private static final String TAG = Application.class.getSimpleName();
     private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
 //  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 

@@ -21,7 +21,6 @@ import java.util.*;
  * the commute GCM agency alerts bundle models.
  */
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
-    private static final String TAG = SeptaAlertsDeserializer.class.getSimpleName();
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
 
     private Agency mAgency;

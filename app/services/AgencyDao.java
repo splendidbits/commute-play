@@ -17,8 +17,6 @@ import java.util.List;
  * Agency route / alert database persistence functions.
  */
 public class AgencyDao {
-
-    @Inject
     private EbeanServer mEbeanServer;
 
     @Inject

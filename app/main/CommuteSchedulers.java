@@ -18,8 +18,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Singleton
 public class CommuteSchedulers {
-    private static final String TAG = CommuteStartModule.class.getSimpleName();
-
     @Inject
     public CommuteSchedulers(ActorSystem actorSystem, @Named(AgencyUpdateActor.ACTOR_NAME) ActorRef agencyActor) {
         startAgencyUpdateSchedule(actorSystem, agencyActor);

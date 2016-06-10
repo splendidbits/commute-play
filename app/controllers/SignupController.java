@@ -1,6 +1,7 @@
 package controllers;
 
 import com.avaje.ebean.EbeanServer;
+import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -12,7 +13,6 @@ import play.data.validation.ValidationError;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.twirl.api.Html;
-import pushservices.enums.PlatformType;
 import services.splendidlog.Logger;
 import views.html.signup;
 
@@ -27,7 +27,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public class SignupController extends Controller {
-    private static final String TAG = SignupController.class.getSimpleName();
     private static final String COMMUTE_IO_API_KEY = "UfhV6Lt";
 
     @Inject
@@ -102,7 +101,7 @@ public class SignupController extends Controller {
             mEbeanServer.save(pendingAccount);
 
         } else {
-            Logger.warn(TAG, "No platforms were found for account signup: " + email);
+            Logger.warn("No platforms were found for account signup: " + email);
         }
         Html formResult = signup.render("API request submitted. Check email junk-folder for messages from help@splendidbits.co",
                 new DynamicForm(formData, signupForm.errors(), null, null, null, null));

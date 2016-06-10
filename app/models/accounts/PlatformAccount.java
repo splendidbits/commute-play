@@ -1,8 +1,8 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
+import enums.pushservices.PlatformType;
 import main.Constants;
-import pushservices.enums.PlatformType;
 
 import javax.persistence.*;
 

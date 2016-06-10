@@ -13,8 +13,6 @@ import javax.inject.Inject;
  * A DAO class for both device device / subscription data.
  */
 public class DeviceDao {
-    private static final String TAG = DeviceDao.class.getSimpleName();
-
     private EbeanServer mEbeanServer;
 
     @Inject

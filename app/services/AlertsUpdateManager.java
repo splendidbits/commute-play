@@ -25,9 +25,6 @@ import java.util.Set;
  * 6: send data in batches of 1000 to google.
  */
 public class AlertsUpdateManager {
-
-    private static final String TAG = AlertsUpdateManager.class.getSimpleName();
-
     private AgencyDao mAgencyService;
     private PushMessageManager mPushMessageManager;
 

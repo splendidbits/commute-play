@@ -1,14 +1,14 @@
 package controllers;
 
-import services.PushMessageManager;
+import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.devices.Device;
 import play.mvc.Controller;
 import play.mvc.Result;
-import pushservices.enums.PlatformType;
 import services.AccountsDao;
 import services.DeviceDao;
+import services.PushMessageManager;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;

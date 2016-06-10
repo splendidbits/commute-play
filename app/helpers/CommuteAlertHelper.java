@@ -1,15 +1,15 @@
 package helpers;
 
 import enums.AlertType;
+import enums.pushservices.MessagePriority;
+import enums.pushservices.PlatformType;
+import helpers.pushservices.PlatformMessageBuilder;
 import models.accounts.PlatformAccount;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.devices.Device;
-import pushservices.enums.MessagePriority;
-import pushservices.enums.PlatformType;
-import pushservices.helpers.PlatformMessageBuilder;
-import pushservices.models.database.Credentials;
-import pushservices.models.database.Message;
+import models.pushservices.Credentials;
+import models.pushservices.Message;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

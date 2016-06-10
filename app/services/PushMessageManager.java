@@ -1,24 +1,24 @@
 package services;
 
 import agency.AgencyModifications;
+import appmodels.pushservices.UpdatedRegistration;
+import com.google.inject.Inject;
+import enums.pushservices.FailureType;
+import enums.pushservices.PlatformType;
+import exceptions.pushservices.TaskValidationException;
 import helpers.CommuteAlertHelper;
+import interfaces.pushservices.PlatformResponseCallback;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Route;
 import models.devices.Device;
-import pushservices.enums.FailureType;
-import pushservices.enums.PlatformType;
-import pushservices.exceptions.TaskValidationException;
-import pushservices.interfaces.PlatformResponseCallback;
-import pushservices.models.app.UpdatedRegistration;
-import pushservices.models.database.Message;
-import pushservices.models.database.Recipient;
-import pushservices.models.database.Task;
-import pushservices.services.TaskQueue;
+import models.pushservices.Message;
+import models.pushservices.Recipient;
+import models.pushservices.Task;
+import services.pushservices.TaskQueue;
 import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,16 +31,16 @@ import java.util.concurrent.CompletionStage;
  */
 @SuppressWarnings("WeakerAccess")
 public class PushMessageManager {
-    private static final String TAG = PushMessageManager.class.getSimpleName();
-
-    @Inject
     private AccountsDao mAccountsDao;
-
-    @Inject
     private DeviceDao mDeviceDao;
+    private TaskQueue mTaskQueue;
 
     @Inject
-    private TaskQueue mTaskQueue;
+    public PushMessageManager(AccountsDao accountsDao, DeviceDao deviceDao, TaskQueue taskQueue) {
+        mAccountsDao = accountsDao;
+        mDeviceDao = deviceDao;
+        mTaskQueue = taskQueue;
+    }
 
     /**
      * Notify Push subscribers of the agency alerts that have changed.
@@ -148,7 +148,7 @@ public class PushMessageManager {
             messageTask.messages.add(message);
 
         } else {
-            Logger.warn(TAG, "Could not build registration confirmation message.");
+            Logger.warn("Could not build registration confirmation message.");
             CompletableFuture.completedFuture(false);
         }
 

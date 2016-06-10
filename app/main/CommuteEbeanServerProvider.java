@@ -4,6 +4,7 @@ import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
+import com.google.inject.Inject;
 import com.google.inject.Provider;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -13,7 +14,7 @@ import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
-import pushservices.models.database.*;
+import play.Configuration;
 
 import java.util.ArrayList;
 
@@ -22,21 +23,31 @@ import java.util.ArrayList;
  * (This means you can use it as you wish, host and share modifications.)
  * Copyright 4/2/16 Splendid Bits.
  */
-class CommuteEbeanServerProvider implements Provider<EbeanServer> {
-    private String name = "commute_gcm_server";
-    private String driver = "org.postgresql.Driver";
-    private String url = "jdbc:postgresql://localhost:5432/commute_gcm";
-    private String username = "splendidbits";
-    private String password = "kYBaf34sfd8L";
+public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
+    private final static String SERVER_NAME = "commute_gcm_server";
+    private final static String SERVER_CONFIG_PREFIX = "db." + SERVER_NAME + ".";
+
+    private Configuration mConfiguration;
+
+    @Inject
+    public CommuteEbeanServerProvider(Configuration configuration) {
+        mConfiguration = configuration;
+    }
 
     @Override
     public EbeanServer get() {
+        String datasourceUrl = mConfiguration.getString(SERVER_CONFIG_PREFIX + "url");
+        String datasourceUsername = mConfiguration.getString(SERVER_CONFIG_PREFIX + "username");
+        String datasourcePassword = mConfiguration.getString(SERVER_CONFIG_PREFIX + "password");
+        String datasourceDriver = mConfiguration.getString(SERVER_CONFIG_PREFIX + "driver");
+
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
-        dataSourceConfig.setUrl(url);
-        dataSourceConfig.setHeartbeatTimeoutSeconds(10);
-        dataSourceConfig.setDriver(driver);
-        dataSourceConfig.setUsername(username);
-        dataSourceConfig.setPassword(password);
+        dataSourceConfig.setUrl(datasourceUrl);
+        dataSourceConfig.setMaxConnections(1024);
+        dataSourceConfig.setDriver(datasourceDriver);
+        dataSourceConfig.setUsername(datasourceUsername);
+        dataSourceConfig.setPassword(datasourcePassword);
+        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
         dataSourceConfig.setCaptureStackTrace(true);
 
         // Agency, API Account, Device, and TaskQueue models.
@@ -49,16 +60,10 @@ class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Location.class);
         models.add(Device.class);
         models.add(Subscription.class);
-        models.add(Credentials.class);
-        models.add(Message.class);
-        models.add(PayloadElement.class);
-        models.add(RecipientFailure.class);
-        models.add(Recipient.class);
-        models.add(Task.class);
 
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
-        serverConfig.setName(name);
+        serverConfig.setName(SERVER_NAME);
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setRegister(true);
