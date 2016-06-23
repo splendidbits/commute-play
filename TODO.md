@@ -1,28 +1,39 @@
 
 
+
 # Project TODO:
 
 ##ASAP
 * ~~Finish automatic scheduling.~~
 * ~~Make entire logging system dependency injectable~~
 * ~~Implement TaskQueue task~~.
-
-* split push-services into own submodule
-* stats return for push-services
-
-
-* Go through TODOs
+* ~~split push-services into own submodule~~
 * ~~Add non-dispatch message listener callback from client~~.
-
 * ~~Solidify URL endpoints. https://alerts.commuteapp.io/1.0/gcm/~~
-* Refresh device tokens on response from GCM.
-* Authenticate external app logging.
-* Create json agency alert endpoints with caching
+* ~~Authenticate external app logging.~~
 * ~~Change splendid log password~~
 * ~~Test alerts removal sends cancel_message~~
 * ~~Test alerts adding sends message~~
 * ~~Remove automatic evolutions~~
-* ~~TEST TEST TEST~~
+* ~~add @version to all models~~
+* ~~rename agency_updates schema to agency_alerts~~
+
+* Commit module dependencies under correct private / public branches
+* change push_services internal branch to use splendid_log
+
+* verify unexpected results from GCM.
+	- 1100 Recipients in a message.
+	- Correct Recipients to update behaviour.
+	- Correct Recipients to fail behaviour.
+	- Correct re-try behaviour
+	- Correct fetch unprocessed tasks behaviour.
+
+* Add expiresAt and startsAt attributes on Task
+* Refresh device tokens on response from GCM.
+* stats return for push-services?
+* alerts / routes / agencies public json feeds
+* add caching to above endpoints
+* Remove code TODO:s
 
 ## model updates
 ### subscriptions_registrations
@@ -36,7 +47,6 @@
 ### route
 * ~~Add websiteURL~~
 * ~~Add transport_type~~
-
 * ~~isSticky~~
 * ~~isDefaultSubscription~~
 

@@ -6,12 +6,11 @@ import models.devices.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.AgencyDao;
-import services.DeviceDao;
+import dao.AgencyDao;
+import dao.DeviceDao;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -107,7 +106,6 @@ public class SubscriptionController extends Controller {
                         Subscription subscription = new Subscription();
                         subscription.device = device;
                         subscription.route = route;
-                        subscription.timeSubscribed = Calendar.getInstance();
                         subscriptions.add(subscription);
                     }
 

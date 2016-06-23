@@ -1,23 +1,21 @@
 package models.devices;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import main.Constants;
 import models.accounts.Account;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "devices", schema = "device_information")
 public class Device extends Model {
-    public static Finder<Long, Device> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Device.class);
+    public static Finder<Long, Device> find = new Model.Finder<>(Device.class);
 
     @Id
     @Column(name = "id")
@@ -55,7 +53,11 @@ public class Device extends Model {
     @Basic
     @Column(name = "time_registered", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar timeRegistered = Calendar.getInstance();
+    public Date timeRegistered;
+
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
 
     @SuppressWarnings("unused")
     public Device() {
@@ -109,5 +111,10 @@ public class Device extends Model {
                 : hashCode;
 
         return hashCode.hashCode();
+    }
+
+    @PrePersist
+    public void prePersist() {
+        timeRegistered = new Date();
     }
 }

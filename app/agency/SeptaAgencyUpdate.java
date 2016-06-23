@@ -3,6 +3,8 @@ package agency;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import models.alerts.Agency;
+import models.alerts.Alert;
+import models.alerts.Route;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
@@ -10,6 +12,7 @@ import services.AlertsUpdateManager;
 import services.splendidlog.Logger;
 
 import javax.inject.Inject;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -33,12 +36,9 @@ import java.util.function.Consumer;
 public class SeptaAgencyUpdate implements AgencyUpdate {
 
     private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
-//  public static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+//    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
-    @Inject
     private WSClient mWsClient;
-
-    @Inject
     private AlertsUpdateManager mAlertsUpdateManager;
 
     @Inject
@@ -69,7 +69,6 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
      * Promise result from agency json download.
      */
     private class JsonDownloadConsumer implements Consumer<WSResponse> {
-
         @Override
         public void accept(WSResponse response) {
             updateAgencyData(response);
@@ -99,6 +98,18 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
 
             } catch (Exception exception) {
                 Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            }
+
+            // TODO: Remove load test
+            if (false) {
+                for (Route route : agencyAlerts.routes) {
+                    for (Alert alert : route.alerts) {
+                        String randomAlertString = UUID.randomUUID().toString();
+                        alert.messageTitle = randomAlertString;
+                        alert.messageSubtitle = randomAlertString;
+                        alert.messageBody = randomAlertString;
+                    }
+                }
             }
 
             Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");

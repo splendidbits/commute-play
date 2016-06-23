@@ -1,20 +1,17 @@
 package models.devices;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
-import main.Constants;
 import models.alerts.Route;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Date;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "subscriptions", schema = "device_information")
 public class Subscription extends Model {
-    public static Finder<Long, Subscription> find = new Model.Finder<>(
-            Constants.COMMUTE_GCM_DB_SERVER, Subscription.class);
+    public static Finder<Long, Subscription> find = new Model.Finder<>(Subscription.class);
 
     @Id
     @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)
@@ -36,7 +33,7 @@ public class Subscription extends Model {
     @Column(name = "route_id")
     @JoinColumn(
             name = "route_id",
-            table = "agency_updates.routes",
+            table = "agency_alerts.routes",
             referencedColumnName = "id",
             nullable = true,
             unique = false,
@@ -46,7 +43,11 @@ public class Subscription extends Model {
     @Basic
     @Column(name = "time_subscribed", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar timeSubscribed = Calendar.getInstance();
+    public Date timeSubscribed;
+
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
 
     @Override
     public int hashCode() {
@@ -67,7 +68,8 @@ public class Subscription extends Model {
         return hashCode.hashCode();
     }
 
-    @SuppressWarnings("unused")
-    public Subscription() {
+    @PrePersist
+    public void prePersist(){
+        timeSubscribed = new Date();
     }
 }

@@ -6,8 +6,8 @@ import models.accounts.PlatformAccount;
 import models.devices.Device;
 import play.mvc.Controller;
 import play.mvc.Result;
-import services.AccountsDao;
-import services.DeviceDao;
+import dao.AccountsDao;
+import dao.DeviceDao;
 import services.PushMessageManager;
 
 import javax.annotation.Nonnull;

@@ -2,7 +2,7 @@ package main;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.config.DataSourceConfig;
+import com.avaje.ebean.Transaction;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -14,6 +14,7 @@ import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
+import org.avaje.datasource.DataSourceConfig;
 import play.Configuration;
 
 import java.util.ArrayList;
@@ -24,8 +25,9 @@ import java.util.ArrayList;
  * Copyright 4/2/16 Splendid Bits.
  */
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
-    private final static String SERVER_NAME = "commute_gcm_server";
-    private final static String SERVER_CONFIG_PREFIX = "db." + SERVER_NAME + ".";
+    private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
+    private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
+    private final static int DATABASE_HEARTBEAT_SECS = 30;
 
     private Configuration mConfiguration;
 
@@ -42,15 +44,20 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         String datasourceDriver = mConfiguration.getString(SERVER_CONFIG_PREFIX + "driver");
 
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
+        dataSourceConfig.setAutoCommit(false);
+        dataSourceConfig.setHeartbeatFreqSecs(DATABASE_HEARTBEAT_SECS);
+        dataSourceConfig.setHeartbeatTimeoutSeconds(120);
+        dataSourceConfig.setMaxConnections(100);
         dataSourceConfig.setUrl(datasourceUrl);
-        dataSourceConfig.setMaxConnections(1024);
         dataSourceConfig.setDriver(datasourceDriver);
         dataSourceConfig.setUsername(datasourceUsername);
         dataSourceConfig.setPassword(datasourcePassword);
-        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
         dataSourceConfig.setCaptureStackTrace(true);
 
-        // Agency, API Account, Device, and TaskQueue models.
+        // Set the isolation level so reads wait for uncommitted data.
+        // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
+        dataSourceConfig.setIsolationLevel(Transaction.REPEATABLE_READ);
+
         ArrayList<Class<?>> models = new ArrayList<>();
         models.add(Account.class);
         models.add(PlatformAccount.class);
@@ -62,14 +69,17 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Subscription.class);
 
         ServerConfig serverConfig = new ServerConfig();
+        serverConfig.setDatabaseSequenceBatchSize(1);
+        serverConfig.setName(Constants.DATABASE_SERVER_NAME);
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
-        serverConfig.setName(SERVER_NAME);
+        serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setRegister(true);
+        serverConfig.setDefaultServer(true);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);
-        serverConfig.setUpdatesDeleteMissingChildren(true);
+        serverConfig.setDdlGenerate(true);
 
         return EbeanServerFactory.create(serverConfig);
     }

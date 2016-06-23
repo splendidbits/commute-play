@@ -2,7 +2,7 @@ name := """commute-gcm"""
 version := "0.1"
 
 lazy val buildSettings = Seq(
-  scalaVersion := "2.11.7"
+  scalaVersion := "2.11.8"
 )
 
 lazy val splendidlog = (project in file("modules/splendidlog"))
@@ -14,10 +14,10 @@ lazy val pushservices = (project in file("modules/pushservices"))
   .settings(buildSettings: _*)
 
 lazy val commutegcm = (project in file("."))
-  .enablePlugins(PlayJava, PlayEbean)
+  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .dependsOn(splendidlog)
-  .aggregate(splendidlog)
   .dependsOn(pushservices)
+  .aggregate(splendidlog)
   .aggregate(pushservices)
   .settings(buildSettings: _*)
 
@@ -26,14 +26,16 @@ resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/reposi
 libraryDependencies ++= Seq(
   javaCore,
   javaJdbc,
-  evolutions,
   cache,
   javaWs,
   javaJpa,
   "org.avaje" % "avaje-agentloader" % "2.1.2",
   "org.postgresql" % "postgresql" % "9.4.1208",
   "junit" % "junit" % "4.11" % Test,
-  "com.google.code.gson" % "gson" % "2.2")
+  "com.google.code.gson" % "gson" % "2.2"
+)
+dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "7.13.1"
+dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "4.10.1"
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 //resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/local")
@@ -42,7 +44,6 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 // other, legacy style, accesses its actions statically.
 routesGenerator := InjectedRoutesGenerator
 
-playEbeanAgentArgs += ("detect" -> "true")
 playEbeanDebugLevel := 4
 playEbeanModels in Compile := Seq(
   "models.alerts.*",

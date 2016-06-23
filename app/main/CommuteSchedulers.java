@@ -11,16 +11,21 @@ import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * Starts scheduled tasks such as agency alert feed downloads, and periodic taskqueue
  * consumer verification. Runs on application startup.
  */
 @Singleton
 public class CommuteSchedulers {
+    private ActorSystem mActorSystem;
+    private ActorRef mAgencyActor;
+
     @Inject
     public CommuteSchedulers(ActorSystem actorSystem, @Named(AgencyUpdateActor.ACTOR_NAME) ActorRef agencyActor) {
-        startAgencyUpdateSchedule(actorSystem, agencyActor);
+        mActorSystem = actorSystem;
+        mAgencyActor = agencyActor;
+
+        startAgencyUpdateSchedule(mActorSystem, mAgencyActor);
     }
 
     /**

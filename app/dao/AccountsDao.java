@@ -1,4 +1,4 @@
-package services;
+package dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;
@@ -16,12 +16,11 @@ import java.util.List;
  * A DAO class for platform + API account functions.
  * <p>
  */
-public class AccountsDao {
-    private EbeanServer mEbeanServer;
+public class AccountsDao extends BaseDao {
 
     @Inject
     public AccountsDao(EbeanServer ebeanServer) {
-        mEbeanServer = ebeanServer;
+        super(ebeanServer);
     }
 
     /**

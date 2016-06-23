@@ -1,18 +1,19 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
-import main.Constants;
 import models.devices.Device;
 
 import javax.annotation.Nullable;
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 @Entity
 @Table(name = "accounts", schema = "api_accounts")
 public class Account extends Model {
-    public static Finder<Long, Account> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Account.class);
+    public static Finder<Long, Account> find = new Finder<>(Account.class);
 
     @Id
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
@@ -52,14 +53,18 @@ public class Account extends Model {
     @Basic
     @Column(name = "time_enrolled", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar timeEnrolled = Calendar.getInstance();
+    public Date timeEnrolled;
+
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
 
     @SuppressWarnings("unused")
     public Account() {
     }
 
     @PrePersist
-    public void initialValues() {
-        timeEnrolled = Calendar.getInstance();
+    public void prePersist() {
+        timeEnrolled = new Date();
     }
 }

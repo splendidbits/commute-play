@@ -117,11 +117,12 @@ public class CommuteAlertHelper {
     @Nonnull
     private static List<Message> buildAlertUpdateMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
-        Credentials credentials = getMessageCredentials(platformAccount);
 
         List<Message> messages = new ArrayList<>();
-        if (credentials != null && route.alerts != null && route.routeId != null) {
+        if (route.alerts != null && route.routeId != null) {
+
             for (Alert alert : route.alerts) {
+                Credentials credentials = getMessageCredentials(platformAccount);
 
                 PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
@@ -182,10 +183,10 @@ public class CommuteAlertHelper {
     @Nullable
     private static List<Message> buildAlertCancelMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
-        Credentials credentials = getMessageCredentials(platformAccount);
-
         List<Message> messages = new ArrayList<>();
-        if (credentials != null && route.routeId != null) {
+        if (route.routeId != null) {
+            Credentials credentials = getMessageCredentials(platformAccount);
+
             PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                     .setCollapseKey(route.routeId)
                     .setMessagePriority(MessagePriority.PRIORITY_NORMAL)

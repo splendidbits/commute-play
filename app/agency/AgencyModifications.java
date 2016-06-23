@@ -31,7 +31,7 @@ public class AgencyModifications {
      * @return true if the agency has updated alerts within this model.
      */
     public boolean hasModifiedRoutes() {
-        return !mUpdatedAlertRoutes.isEmpty() || !mStaleAlertRoutes.isEmpty();
+        return !(mUpdatedAlertRoutes.isEmpty() && mStaleAlertRoutes.isEmpty());
     }
 
     /**

@@ -1,4 +1,4 @@
-package services;
+package dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.OrderBy;
@@ -9,6 +9,7 @@ import services.splendidlog.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.persistence.PersistenceException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,12 +17,11 @@ import java.util.List;
 /**
  * Agency route / alert database persistence functions.
  */
-public class AgencyDao {
-    private EbeanServer mEbeanServer;
+public class AgencyDao extends BaseDao {
 
     @Inject
     public AgencyDao(EbeanServer ebeanServer) {
-        mEbeanServer = ebeanServer;
+        super(ebeanServer);
     }
 
     /**
@@ -38,12 +38,18 @@ public class AgencyDao {
         try {
             // Check a previous agency exists / or non-null list of routes for agency.
             if (existingAgency == null || existingAgency.routes == null) {
+                // Agency doesn't exist or Routes empty:
+                mEbeanServer.beginTransaction();
+
                 Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
                 mEbeanServer.save(newAgency);
+                mEbeanServer.commitTransaction();
                 return true;
 
             } else if (newAgency.routes != null) {
+                // Agency exists and contains Routes:
                 Logger.info(String.format("Agency %s already exists. Checking routes.", newAgency.name));
+
                 Collections.sort(newAgency.routes);
 
                 for (Route newRoute : newAgency.routes) {
@@ -57,18 +63,24 @@ public class AgencyDao {
                         }
                     }
 
-                    // If an existing route for the new route does not exist, save it.
                     if (existingRoute == null) {
+                        // Agency route_id does not exist:
                         Logger.debug(String.format("Didn't find existing route: %s.", newRoute.routeName));
+
+                        mEbeanServer.beginTransaction();
                         newRoute.agency = existingAgency;
                         mEbeanServer.save(newRoute);
+                        mEbeanServer.commitTransaction();
                         persistedAgencyData = true;
 
-                        // If it exists, but it is not the same, update it.
                     } else if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
+                        // Agency route_id exists and is updated:
                         Logger.debug(String.format("Updating route: %s.", newRoute.routeName));
+
+                        mEbeanServer.beginTransaction();
                         newRoute.id = existingRoute.id;
                         mEbeanServer.update(newRoute);
+                        mEbeanServer.commitTransaction();
                         persistedAgencyData = true;
                     }
                 }
@@ -76,9 +88,22 @@ public class AgencyDao {
 
             return persistedAgencyData;
 
+        } catch (PersistenceException e) {
+            if (e.getMessage() != null &&
+                    e.getMessage().contains("does not exist") &&
+                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
+//                createDatabase();
+            }
+            mEbeanServer.rollbackTransaction();
+            return false;
+
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
+            mEbeanServer.rollbackTransaction();
             return false;
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
     }
 
@@ -89,7 +114,10 @@ public class AgencyDao {
      * @param routeIds list of routeIds to retrieve.
      * @return List of Routes.
      */
+    @Nullable
     public List<Route> getAgencyRoutes(int agencyId, String... routeIds) {
+        mEbeanServer.beginTransaction();
+
         List<Route> foundRoutes = new ArrayList<>();
         if (routeIds != null) {
 
@@ -98,7 +126,7 @@ public class AgencyDao {
                 routeId = routeId.trim().toLowerCase();
 
                 try {
-                    List<Route> routes = mEbeanServer.find(Route.class)
+                    return mEbeanServer.find(Route.class)
                             .setOrder(new OrderBy<>("routeId"))
                             .fetch("agency")
                             .where()
@@ -106,14 +134,22 @@ public class AgencyDao {
                             .eq("routeId", routeId.toLowerCase())
                             .findList();
 
-                    foundRoutes.addAll(routes);
+                } catch (PersistenceException e) {
+                    if (e.getMessage() != null &&
+                            e.getMessage().contains("does not exist") &&
+                            e.getMessage().contains("Query threw SQLException:ERROR:")) {
+                        createDatabase();
+                    }
 
                 } catch (Exception e) {
                     Logger.error("Error getting route for routeIds.", e);
+
+                } finally {
+                    mEbeanServer.endTransaction();
                 }
             }
         }
-        return foundRoutes;
+        return null;
     }
 
     /**
@@ -124,6 +160,8 @@ public class AgencyDao {
      */
     @Nullable
     public List<Route> getAgencyRoutes(int agencyId) {
+        mEbeanServer.beginTransaction();
+
         try {
             return mEbeanServer.find(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
@@ -134,8 +172,18 @@ public class AgencyDao {
                     .eq("agency.id", agencyId)
                     .findList();
 
+        } catch (PersistenceException e) {
+            if (e.getMessage() != null &&
+                    e.getMessage().contains("does not exist") &&
+                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
+                createDatabase();
+            }
+
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
         return null;
     }
@@ -148,14 +196,24 @@ public class AgencyDao {
      */
     @Nullable
     public Agency getAgency(int agencyId) {
+        mEbeanServer.beginTransaction();
+
         try {
             return mEbeanServer.find(Agency.class)
                     .where()
                     .eq("id", agencyId)
                     .findUnique();
 
+        } catch (PersistenceException e) {
+            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
+                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
+                createDatabase();
+            }
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
         return null;
     }

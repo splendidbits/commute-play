@@ -12,10 +12,11 @@ public class CommuteStartModule extends AbstractModule implements AkkaGuiceSuppo
 
     @Override
     protected void configure() {
-        // Bind the database server
         bind(EbeanServer.class)
                 .toProvider(CommuteEbeanServerProvider.class)
                 .asEagerSingleton();
+
+        bind(ApplicationLifecycleListener.class).asEagerSingleton();
 
         bindActor(AgencyUpdateActor.class, AgencyUpdateActor.ACTOR_NAME);
 

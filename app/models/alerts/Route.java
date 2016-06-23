@@ -1,25 +1,22 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.RouteFlag;
 import enums.TransitType;
-import main.Constants;
 import models.devices.Subscription;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "routes", schema = "agency_updates")
+@Table(name = "routes", schema = "agency_alerts")
 public class Route extends Model implements Comparable<Route>, Cloneable {
-    public static Finder<String, Route> find = new Model.Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Route.class);
+    public static Finder<String, Route> find = new Model.Finder<>(Route.class);
 
     @Id
     @Column(name = "id")
@@ -31,7 +28,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "agency_id",
-            table = "agency_updates.agencies",
+            table = "agency_alerts.agencies",
             referencedColumnName = "id",
             unique = false,
             updatable = true)
@@ -69,6 +66,10 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Route) {
@@ -76,6 +77,11 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
 
             boolean sameRouteId = routeId == null && other.routeId == null ||
                     routeId != null && routeId.equals(other.routeId);
+
+            // Always return false immediately if the routes do not match.
+            if (sameRouteId) {
+                return false;
+            }
 
             boolean sameRouteName = routeName == null && other.routeName == null ||
                     routeName != null && routeName.equals(other.routeName);
@@ -99,8 +105,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
                     alerts != null && alerts != null && other.alerts != null &&
                             (alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
 
-            return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType &&
-                    sameDefaults && sameUri && sameAlerts;
+            return sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
         }
         return obj.equals(this);
     }

@@ -1,6 +1,7 @@
 package services;
 
 import agency.AgencyModifications;
+import dao.AgencyDao;
 import enums.AlertType;
 import helpers.CommuteAlertHelper;
 import models.alerts.Agency;
@@ -61,8 +62,7 @@ public class AlertsUpdateManager {
                 }
 
             } else {
-                Logger.info(String.format("No updated or stale alerts found in updated agency: %d.",
-                        updatedAgency.id));
+                Logger.info(String.format("No alerts found in updated agency: %d.", updatedAgency.id));
             }
         }
     }
@@ -82,7 +82,7 @@ public class AlertsUpdateManager {
         List<Route> existingRoutes = CommuteAlertHelper.copyRoutes(mAgencyService.getAgencyRoutes(agency.id));
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
-        if (existingRoutes == null || existingRoutes.isEmpty()) {
+        if (existingRoutes.isEmpty()) {
             Logger.info(String.format("Existing routes for agency %s missing. Marked all as updated.", agency.name));
             modifiedRouteAlerts.addUpdatedRoute(agency.routes);
             return modifiedRouteAlerts;
@@ -95,24 +95,23 @@ public class AlertsUpdateManager {
             return modifiedRouteAlerts;
         }
 
+        // Iterate through the new routes (outer), and existing routes (inner).
         for (Route freshRoute : freshRoutes) {
             for (Route existingRoute : existingRoutes) {
 
-                // Existing and new Routes are the same.
+                // Check existing and new Routes are the same.
                 if (freshRoute.routeId.equals(existingRoute.routeId)) {
 
-                    // If there are no new alerts and there are existing alerts.
-                    if ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
-                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty())) {
-                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
-                        break;
-                    }
+                    // If there are no new alerts but there are existing alerts.
+                    boolean missingFreshRouteAlerts = ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
+                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty()));
 
-                    // If there are no existing alerts and there are new alerts.
-                    if ((existingRoute.alerts == null || existingRoute.alerts.isEmpty()) &&
-                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty())) {
+                    // If there are no existing alerts but there are new alerts.
+                    boolean missingExistingRouteAlerts = ((existingRoute.alerts == null || existingRoute.alerts.isEmpty()) &&
+                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty()));
+
+                    if (missingFreshRouteAlerts || missingExistingRouteAlerts) {
                         modifiedRouteAlerts.addUpdatedRoute(freshRoute);
-                        break;
                     }
 
                     Set<AlertType> updatedAlertTypes = new HashSet<>();
@@ -129,7 +128,7 @@ public class AlertsUpdateManager {
                             if (!CommuteAlertHelper.isAlertEmpty(freshAlert) &&
                                     !existingRoute.alerts.contains(freshAlert)) {
 
-                                Logger.info(String.format("%1$s alert for existing route %2$s missing. Marked updated.",
+                                Logger.info(String.format("%1$s alert for existing route %2$s has updated.",
                                         freshAlert.type, existingRoute.routeId));
 
                                 updatedAlertTypes.add(freshAlert.type);
@@ -150,7 +149,7 @@ public class AlertsUpdateManager {
                             if (!freshRoute.alerts.contains(existingAlert) &&
                                     !updatedAlertTypes.contains(existingAlert.type)) {
 
-                                Logger.info(String.format("%1$s alert for fresh route %2$s missing. Marked stale.",
+                                Logger.info(String.format("%1$s alert for fresh route %2$s went stale.",
                                         existingAlert.type, existingRoute.routeId));
 
                                 freshRoute.alerts = new ArrayList<>();

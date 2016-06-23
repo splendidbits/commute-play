@@ -1,4 +1,4 @@
-package services;
+package dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;
@@ -28,6 +28,8 @@ public class DeviceDao {
      */
     @Nullable
     public Device getDevice(@Nonnull String deviceId) {
+        mEbeanServer.beginTransaction();
+
         try {
             Device device = mEbeanServer.find(Device.class)
                     .fetch("subscriptions")
@@ -44,6 +46,9 @@ public class DeviceDao {
 
         } catch (Exception e) {
             Logger.error("Error persisting subscription", e);
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
         return null;
     }
@@ -56,6 +61,8 @@ public class DeviceDao {
      * @return true or false depending on if the device was deleted.
      */
     public boolean removeDevice(@Nonnull String deviceToken) {
+        mEbeanServer.beginTransaction();
+
         try {
             Device foundDevice = mEbeanServer.createQuery(Device.class)
                     .where()
@@ -64,12 +71,17 @@ public class DeviceDao {
 
             if (foundDevice != null) {
                 mEbeanServer.delete(foundDevice);
+                mEbeanServer.commitTransaction();
+
                 Logger.debug(String.format("Removed device for deviceId %s,", foundDevice.deviceId));
                 return true;
             }
 
         } catch (Exception e) {
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
+
+        } finally {
+            mEbeanServer.endTransaction();
         }
         return false;
     }
@@ -83,6 +95,8 @@ public class DeviceDao {
      */
     public boolean saveDevice(@Nonnull Device device) {
         if (device.token != null || device.deviceId != null) {
+            mEbeanServer.beginTransaction();
+
             try {
                 // Build a query depending on if we have a token, and or device identifier.
                 ExpressionList<Device> existingDeviceExpression = mEbeanServer
@@ -109,10 +123,16 @@ public class DeviceDao {
                 } else {
                     mEbeanServer.insert(device);
                 }
+
+                mEbeanServer.commitTransaction();
                 return true;
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
+                mEbeanServer.rollbackTransaction();
+
+            } finally {
+                mEbeanServer.endTransaction();
             }
         }
         return false;

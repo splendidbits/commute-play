@@ -1,19 +1,16 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
-import com.avaje.ebean.annotation.ConcurrencyMode;
-import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import main.Constants;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
 
 @Entity
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
-@Table(name = "locations", schema = "agency_updates")
+@Table(name = "locations", schema = "agency_alerts")
 public class Location extends Model implements Comparable {
-    public static Finder<Long, Location> find = new Finder<>(Constants.COMMUTE_GCM_DB_SERVER, Location.class);
+    public static Finder<Long, Location> find = new Finder<>(Location.class);
 
     @Id
     @Column(name = "id")
@@ -25,7 +22,7 @@ public class Location extends Model implements Comparable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "alert_id",
-            table = "agency_updates.alerts",
+            table = "agency_alerts.alerts",
             referencedColumnName = "id",
             unique = false,
             updatable = true)
@@ -50,6 +47,10 @@ public class Location extends Model implements Comparable {
     @Column(name = "date", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar date;
+
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
 
     @Override
     public boolean equals(Object o) {

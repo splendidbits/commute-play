@@ -1,1 +1,0 @@
-VBoxManage startvm commute-server

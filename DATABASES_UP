@@ -2,48 +2,33 @@
 CREATE USER splendidbits;
 CREATE USER splendidlog;
 
------
+CREATE DATABASE commute_gcm;
+GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
 
 CREATE DATABASE push_services;
 GRANT ALL PRIVILEGES ON DATABASE push_services to splendidbits;
 
------
-
-CREATE SCHEMA push_services;
-GRANT USAGE ON SCHEMA push_services TO splendidbits;
-
-GRANT ALL PRIVILEGES ON DATABASE push_services to splendidbits;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA push_services TO splendidbits;
-ALTER DEFAULT PRIVILEGES IN SCHEMA push_services GRANT ALL ON TABLES TO postgres;
-
-GRANT ALL ON SCHEMA push_services TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA push_services to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA push_services TO splendidbits;
-
+CREATE DATABASE splendid_log;
+GRANT ALL PRIVILEGES ON DATABASE splendid_log to splendidlog;
 
 -----
 
-CREATE DATABASE commute_gcm;
-GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
-
---
-
-CREATE SCHEMA agency_updates;
+CREATE SCHEMA agency_alerts;
 CREATE SCHEMA device_information;
 CREATE SCHEMA api_accounts;
 
-GRANT USAGE ON SCHEMA agency_updates TO splendidbits;
+GRANT USAGE ON SCHEMA agency_alerts TO splendidbits;
 GRANT USAGE ON SCHEMA device_information TO splendidbits;
 GRANT USAGE ON SCHEMA api_accounts TO splendidbits;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_updates TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA device_information TO splendidbits;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA api_accounts TO splendidbits;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA agency_updates GRANT ALL ON TABLES TO postgres;
-GRANT ALL ON SCHEMA agency_updates TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA agency_updates to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA agency_updates TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA agency_alerts GRANT ALL ON TABLES TO postgres;
+GRANT ALL ON SCHEMA agency_alerts TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA agency_alerts to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA agency_alerts TO splendidbits;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA device_information GRANT ALL ON TABLES TO postgres;
 GRANT ALL ON SCHEMA device_information TO splendidbits;
@@ -57,17 +42,25 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA api_accounts TO splendidbits;
 
 -----
 
-CREATE DATABASE splendid_log;
-GRANT ALL PRIVILEGES ON DATABASE splendid_log to splendidlog;
+CREATE SCHEMA push_services;
 
---
+GRANT USAGE ON SCHEMA push_services TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA push_services TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA push_services GRANT ALL ON TABLES TO postgres;
 
-CREATE SCHEMA splendidlog;
-GRANT USAGE ON SCHEMA splendidlog TO splendidlog;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA splendidlog TO splendidlog;
+GRANT ALL ON SCHEMA push_services TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA push_services to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA push_services TO splendidbits;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA splendidlog GRANT ALL ON TABLES TO postgres;
-GRANT ALL ON SCHEMA splendidlog TO splendidlog;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA splendidlog to splendidlog;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA splendidlog TO splendidlog;
+-----
+
+CREATE SCHEMA splendid_log;
+
+GRANT USAGE ON SCHEMA splendid_log TO splendidlog;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA splendid_log TO splendidlog;
+ALTER DEFAULT PRIVILEGES IN SCHEMA splendid_log GRANT ALL ON TABLES TO postgres;
+
+GRANT ALL ON SCHEMA splendid_log TO splendidlog;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA splendid_log to splendidlog;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA splendid_log TO splendidlog;
 

@@ -2,15 +2,14 @@ package models.accounts;
 
 import com.avaje.ebean.Model;
 import enums.pushservices.PlatformType;
-import main.Constants;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 
 @Entity
 @Table(name = "platform_accounts", schema = "api_accounts")
 public class PlatformAccount extends Model {
-    public static Finder<String, PlatformAccount> find = new Finder<>(
-            Constants.COMMUTE_GCM_DB_SERVER, PlatformAccount.class);
+    public static Finder<String, PlatformAccount> find = new Finder<>(PlatformAccount.class);
 
     public PlatformAccount() {
     }
@@ -42,4 +41,8 @@ public class PlatformAccount extends Model {
     @Enumerated(EnumType.STRING)
     @Column(name = "platform")
     public PlatformType platformType;
+
+    @Version
+    @Column(name = "version_modified")
+    public Timestamp versionModified;
 }
