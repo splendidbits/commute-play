@@ -16,7 +16,7 @@ public class CommuteStartModule extends AbstractModule implements AkkaGuiceSuppo
                 .toProvider(CommuteEbeanServerProvider.class)
                 .asEagerSingleton();
 
-        bind(ApplicationLifecycleListener.class).asEagerSingleton();
+        bind(main.pushservices.ApplicationLifecycleListener.class).asEagerSingleton();
 
         bindActor(AgencyUpdateActor.class, AgencyUpdateActor.ACTOR_NAME);
 
