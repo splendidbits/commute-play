@@ -11,11 +11,11 @@ import serializers.SeptaAlertsDeserializer;
 import services.AlertsUpdateManager;
 import services.splendidlog.Logger;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collections;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Download SEPTA alerts from the json server and send them to the
@@ -52,13 +52,13 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     public void updateAgency() {
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
-            CompletionStage<WSResponse> resultPromise = mWsClient
+            CompletionStage<WSResponse> downloadStage = mWsClient
                     .url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();
 
-            resultPromise.thenAccept(new JsonDownloadConsumer());
+            downloadStage.thenApply(new ParseAgencyFunction());
 
         } catch (Exception exception) {
             Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
@@ -66,58 +66,63 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
     }
 
     /**
-     * Promise result from agency json download.
+     * Parses and updates all downloaded Json Data
      */
-    private class JsonDownloadConsumer implements Consumer<WSResponse> {
-        @Override
-        public void accept(WSResponse response) {
-            updateAgencyData(response);
-        }
-    }
+    private class ParseAgencyFunction implements Function<WSResponse, Agency> {
 
-    /**
-     * Updates all septa agency data from the septa endpoint.
-     */
-    private CompletionStage<Boolean> updateAgencyData(WSResponse response) {
-        if (response != null) {
-            Agency agencyAlerts = null;
+        /**
+         * Modify the data in a series of route alerts to test things.
+         *
+         * @param agency agency bundle.
+         */
+        private void createLoadTestUpdates(@Nonnull Agency agency) {
+            if (agency.routes != null) {
+                Alert previousAlert = null;
 
-            if (response.getStatus() != 200) {
-                Logger.error(String.format("Response status-code from SEPTA alerts endpoint was %d", response.getStatus()));
-                return CompletableFuture.completedFuture(false);
+                Collections.shuffle(agency.routes);
+                for (Route route : agency.routes) {
 
-            } else {
-                Logger.debug("Downloaded SEPTA alerts");
-            }
-
-            try {
-                final Gson gson = new GsonBuilder()
-                        .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
-                        .create();
-                agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
-
-            } catch (Exception exception) {
-                Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
-            }
-
-            // TODO: Remove load test
-            if (false) {
-                for (Route route : agencyAlerts.routes) {
+                    Collections.shuffle(route.alerts);
                     for (Alert alert : route.alerts) {
-                        String randomAlertString = UUID.randomUUID().toString();
-                        alert.messageTitle = randomAlertString;
-                        alert.messageSubtitle = randomAlertString;
-                        alert.messageBody = randomAlertString;
+                        alert.messageTitle = previousAlert != null
+                                ? previousAlert.messageTitle
+                                : alert.messageTitle;
+
+                        alert.messageSubtitle = previousAlert != null
+                                ? previousAlert.messageSubtitle
+                                : alert.messageSubtitle;
+
+                        alert.messageBody = previousAlert != null
+                                ? previousAlert.messageBody
+                                : alert.messageBody;
+
+                        previousAlert = alert;
                     }
                 }
             }
-
-            Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-            mAlertsUpdateManager.saveAndNotifyAgencySubscribers(agencyAlerts);
-            return CompletableFuture.completedFuture(true);
         }
 
-        Logger.error("SEPTA alerts response was null");
-        return CompletableFuture.completedFuture(false);
+        @Override
+        public Agency apply(WSResponse response) {
+            Agency agencyAlerts = null;
+            if (response != null && response.getStatus() == 200) {
+                Logger.debug("Downloaded SEPTA alerts");
+
+                // Create gson serializer
+                final Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
+                        .create();
+
+                Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+                agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
+
+                // TODO: Comment to disable load test.
+//                createLoadTestUpdates(agencyAlerts);
+
+                mAlertsUpdateManager.processAgencyDownload(agencyAlerts);
+            }
+            return agencyAlerts;
+        }
     }
 }
+

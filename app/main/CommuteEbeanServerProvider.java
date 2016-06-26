@@ -76,7 +76,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setRegister(true);
-        serverConfig.setDefaultServer(true);
+        serverConfig.setAutoCommitMode(false);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setDdlGenerate(true);

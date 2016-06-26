@@ -8,7 +8,6 @@ create table api_accounts.accounts (
   message_limit_day             bigint,
   active                        boolean default false,
   time_enrolled                 timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint pk_accounts primary key (id)
 );
 create sequence account_id_seq increment by 1;
@@ -19,7 +18,6 @@ create table agency_alerts.agencies (
   phone                         varchar(255),
   external_uri                  TEXT,
   utc_offset                    float,
-  version_modified              timestamptz not null,
   constraint pk_agencies primary key (id)
 );
 
@@ -32,7 +30,6 @@ create table agency_alerts.alerts (
   message_body                  TEXT,
   external_uri                  TEXT,
   last_updated                  timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint ck_alerts_type check ( type in ('','DISRUPTION','APP','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
   constraint pk_alerts primary key (id)
 );
@@ -46,7 +43,6 @@ create table device_information.devices (
   user_key                      varchar(255),
   account_id                    bigint,
   time_registered               timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint pk_devices primary key (id)
 );
 create sequence device_id_seq increment by 1;
@@ -60,7 +56,6 @@ create table agency_alerts.locations (
   message                       TEXT,
   sequence                      integer,
   date                          timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint pk_locations primary key (id)
 );
 create sequence location_id_seq increment by 1;
@@ -72,7 +67,6 @@ create table api_accounts.platform_accounts (
   authorisation_key             varchar(255),
   certificate_body              TEXT,
   platform                      varchar(4),
-  version_modified              timestamptz not null,
   constraint ck_platform_accounts_platform check ( platform in ('GCM','APNS')),
   constraint pk_platform_accounts primary key (id)
 );
@@ -88,7 +82,6 @@ create table agency_alerts.routes (
   is_default                    boolean,
   is_sticky                     boolean,
   external_uri                  TEXT,
-  version_modified              timestamptz not null,
   constraint ck_routes_route_flag check ( route_flag in ('PRIVATE','TEMPORARY_ROUTE','OWL','CLOSED_PERMANENTLY','CLOSED_TEMPORARILY')),
   constraint ck_routes_transit_type check ( transit_type in ('SPECIAL','BUS','SUBWAY','CABLE','FERRY','BIKE_SHARE','RAIL','LIGHT_RAIL')),
   constraint pk_routes primary key (id)
@@ -100,7 +93,6 @@ create table device_information.subscriptions (
   device_id                     bigint not null,
   route_id                      varchar(255),
   time_subscribed               timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint pk_subscriptions primary key (id)
 );
 create sequence subscriptions_id_seq increment by 1;

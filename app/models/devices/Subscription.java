@@ -45,10 +45,6 @@ public class Subscription extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Date timeSubscribed;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @Override
     public int hashCode() {
         Long hashCode = 0L;

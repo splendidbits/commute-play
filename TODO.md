@@ -15,7 +15,7 @@
 * ~~Test alerts removal sends cancel_message~~
 * ~~Test alerts adding sends message~~
 * ~~Remove automatic evolutions~~
-* ~~add @version to all models~~
+* ~~add @Version to all models~~
 * ~~rename agency_updates schema to agency_alerts~~
 
 * Commit module dependencies under correct private / public branches

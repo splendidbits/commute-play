@@ -159,7 +159,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             Calendar detourStartCalendar = Calendar.getInstance(timezone, Locale.US);
                             Calendar detourEndCalendar = Calendar.getInstance(timezone, Locale.US);
 
-                            // Add the detour start and end locations if they exist.
+                            // Add the detour startup and end locations if they exist.
                             ArrayList<Location> detourLocations = new ArrayList<>();
                             if (detourMessage.isEmpty() && !detourStartDate.isEmpty()) {
                                 detourStartCalendar.setTime(detourDateFormat.parse(detourStartDate));

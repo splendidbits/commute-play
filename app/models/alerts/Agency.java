@@ -30,10 +30,6 @@ public class Agency extends Model implements Cloneable {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
     public List<Route> routes;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @SuppressWarnings("unused")
     public Agency() {
     }

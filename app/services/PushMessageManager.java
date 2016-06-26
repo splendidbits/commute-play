@@ -1,11 +1,11 @@
 package services;
 
 import agency.AgencyModifications;
-import appmodels.pushservices.UpdatedRegistration;
 import com.google.inject.Inject;
 import dao.AccountsDao;
 import dao.DeviceDao;
 import enums.pushservices.PlatformType;
+import enums.pushservices.RecipientState;
 import exceptions.pushservices.TaskValidationException;
 import helpers.CommuteAlertHelper;
 import interfaces.pushservices.TaskQueueCallback;
@@ -22,8 +22,9 @@ import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -168,7 +169,7 @@ public class PushMessageManager {
     }
 
     /**
-     * Result Callbacks from the push-services.
+     * TaskQueue Task Result Callbacks from the platform provider(s).
      */
     private class SendMessagePlatformQueueCallback implements TaskQueueCallback {
         private CompletableFuture<Boolean> mCompletableFuture;
@@ -178,27 +179,47 @@ public class PushMessageManager {
         }
 
         @Override
-        public void removeRecipients(@Nonnull Collection<Recipient> recipients) {
-            Logger.debug(String.format("%d recipients need to be deleted.", recipients.size()));
+        public void updatedRecipient(@Nonnull Map<Recipient, Recipient> updatedRegistrations) {
+            Logger.info(String.format("%d recipients require registration updates.", updatedRegistrations.size()));
+        }
+
+        @Override
+        public void invalidRecipients(@Nonnull Set<Recipient> recipients) {
+            Logger.warn(String.format("%d recipients need to be deleted.", recipients.size()));
             for (Recipient recipientToRemove : recipients) {
                 mDeviceDao.removeDevice(recipientToRemove.token);
             }
         }
 
         @Override
-        public void updatedRecipients(@Nonnull Collection<UpdatedRegistration> registrations) {
-            Logger.debug(String.format("%d recipients require registration updates.", registrations.size()));
+        public void failedRecipient(@Nonnull Recipient failedRecipient, @Nonnull PlatformFailure failure) {
+            Logger.warn(String.format("Recipient %d failed - %s.", failedRecipient.id, failure.failureMessage));
         }
 
         @Override
         public void messageCompleted(@Nonnull Message originalMessage) {
             Logger.debug(String.format("Message %d completed.", originalMessage.id));
+
+            // Sanity check that all recipients are completed or failed.
+            for (Recipient recipient : originalMessage.recipients) {
+                if (!(recipient.state == RecipientState.STATE_COMPLETE ||
+                        recipient.state == RecipientState.STATE_FAILED)) {
+                    throw new RuntimeException("messageCompleted() response did not match recipient states.");
+                }
+            }
         }
 
         @Override
         public void messageFailed(@Nonnull Message originalMessage, PlatformFailure failure) {
             Logger.debug(String.format("Message %d failed - %s.", originalMessage.id, failure.failureMessage));
             mCompletableFuture.complete(false);
+
+            // Sanity check that all recipients are failed.
+            for (Recipient recipient : originalMessage.recipients) {
+                if (recipient.state != RecipientState.STATE_FAILED) {
+                    throw new RuntimeException("messageFailed() response did not match recipient states.");
+                }
+            }
         }
     }
 }

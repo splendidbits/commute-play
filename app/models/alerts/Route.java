@@ -66,10 +66,6 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     @Column(name = "external_uri", columnDefinition = "TEXT")
     public String externalUri;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Route) {

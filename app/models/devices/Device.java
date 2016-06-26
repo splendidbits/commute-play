@@ -55,10 +55,6 @@ public class Device extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Date timeRegistered;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @SuppressWarnings("unused")
     public Device() {
     }

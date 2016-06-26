@@ -55,10 +55,6 @@ public class Account extends Model {
     @Temporal(TemporalType.TIMESTAMP)
     public Date timeEnrolled;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @SuppressWarnings("unused")
     public Account() {
     }

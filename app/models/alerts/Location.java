@@ -48,10 +48,6 @@ public class Location extends Model implements Comparable {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar date;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @Override
     public boolean equals(Object o) {
         if (o instanceof Location) {

@@ -5,7 +5,6 @@ create table push_services.credentials (
   authorisation_key             TEXT,
   certificate_body              TEXT,
   package_uri                   TEXT,
-  version_modified              timestamptz not null,
   constraint ck_credentials_platform check ( platform in ('GCM','APNS')),
   constraint uq_credentials_message_id unique (message_id),
   constraint pk_credentials primary key (id)
@@ -22,7 +21,6 @@ create table push_services.messages (
   dry_run                       boolean,
   maximum_retries               integer,
   sent_time                     timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint ck_messages_priority check ( priority in ('normal','low','high')),
   constraint pk_messages primary key (id)
 );
@@ -33,7 +31,6 @@ create table push_services.payload_element (
   element_name                  varchar(255),
   element_value                 TEXT,
   message_id                    bigint,
-  version_modified              timestamptz not null,
   constraint pk_payload_element primary key (id)
 );
 create sequence element_id_seq increment by 1;
@@ -44,7 +41,6 @@ create table push_services.recipient_failures (
   type                          varchar(30),
   message                       varchar(255),
   fail_time                     timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint ck_recipient_failures_type check ( type in ('PLATFORM_LIMIT_EXCEEDED','MESSAGE_PAYLOAD_INVALID','MESSAGE_TTL_INVALID','MESSAGE_PACKAGE_INVALID','RECIPIENT_RATE_EXCEEDED','PLATFORM_AUTH_MISMATCHED','RECIPIENT_REGISTRATION_INVALID','MESSAGE_TOO_LARGE','PLATFORM_UNAVAILABLE','RECIPIENT_NOT_REGISTERED','PLATFORM_AUTH_INVALID','MESSAGE_REGISTRATIONS_MISSING','ERROR_UNKNOWN')),
   constraint uq_recipient_failures_recipient_id unique (recipient_id),
   constraint pk_recipient_failures primary key (id)
@@ -60,7 +56,6 @@ create table push_services.recipients (
   send_attempts                 integer,
   previous_attempt              timestamp without time zone,
   next_attempt                  timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint ck_recipients_state check ( state in ('WAITING_RETRY','COMPLETE','FAILED','IDLE','PROCESSING')),
   constraint pk_recipients primary key (id)
 );
@@ -70,7 +65,6 @@ create table push_services.tasks (
   id                            bigint not null,
   name                          varchar(255),
   priority                      integer,
-  version_modified              timestamptz not null,
   constraint pk_tasks primary key (id)
 );
 create sequence task_id_seq increment by 1;

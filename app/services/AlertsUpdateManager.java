@@ -45,7 +45,7 @@ public class AlertsUpdateManager {
      *
      * @param updatedAgency The agency which has been updated.
      */
-    public void saveAndNotifyAgencySubscribers(Agency updatedAgency) {
+    public void processAgencyDownload(Agency updatedAgency) {
         if (updatedAgency != null) {
             AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
 
@@ -62,7 +62,7 @@ public class AlertsUpdateManager {
                 }
 
             } else {
-                Logger.info(String.format("No alerts found in updated agency: %d.", updatedAgency.id));
+                Logger.info(String.format("No alerts found for agency: %s.", updatedAgency.name));
             }
         }
     }

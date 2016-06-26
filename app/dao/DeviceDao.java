@@ -2,6 +2,8 @@ package dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;
+import com.avaje.ebean.Query;
+import com.avaje.ebean.Transaction;
 import models.devices.Device;
 import services.splendidlog.Logger;
 
@@ -28,14 +30,17 @@ public class DeviceDao {
      */
     @Nullable
     public Device getDevice(@Nonnull String deviceId) {
-        mEbeanServer.beginTransaction();
+        Transaction transaction = mEbeanServer.createTransaction();
+        transaction.setReadOnly(true);
 
         try {
-            Device device = mEbeanServer.find(Device.class)
+            Query<Device> deviceQuery = mEbeanServer.find(Device.class)
                     .fetch("subscriptions")
                     .where()
                     .eq("deviceId", deviceId)
-                    .findUnique();
+                    .query();
+
+            Device device = mEbeanServer.findUnique(deviceQuery, transaction);
 
             String logString = device != null
                     ? String.format("Found device with deviceId %s", device.deviceId)
@@ -46,11 +51,13 @@ public class DeviceDao {
 
         } catch (Exception e) {
             Logger.error("Error persisting subscription", e);
+            return null;
 
         } finally {
-            mEbeanServer.endTransaction();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
-        return null;
     }
 
 
@@ -58,32 +65,24 @@ public class DeviceDao {
      * Delete a device device, and all route subscriptions.
      *
      * @param deviceToken the device token for the device.
-     * @return true or false depending on if the device was deleted.
+     * @return true if the device was deleted, or false if there was an exception
+     * or never existed in the first place.
      */
     public boolean removeDevice(@Nonnull String deviceToken) {
-        mEbeanServer.beginTransaction();
-
         try {
-            Device foundDevice = mEbeanServer.createQuery(Device.class)
+            Query<Device> deviceQuery = mEbeanServer.createQuery(Device.class)
                     .where()
                     .eq("token", deviceToken)
-                    .findUnique();
+                    .query();
 
-            if (foundDevice != null) {
-                mEbeanServer.delete(foundDevice);
-                mEbeanServer.commitTransaction();
-
-                Logger.debug(String.format("Removed device for deviceId %s,", foundDevice.deviceId));
-                return true;
-            }
+            mEbeanServer.delete(deviceQuery);
+            Logger.debug(String.format("Removed device %s,", deviceToken));
+            return true;
 
         } catch (Exception e) {
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
-
-        } finally {
-            mEbeanServer.endTransaction();
+            return false;
         }
-        return false;
     }
 
     /**
@@ -95,7 +94,6 @@ public class DeviceDao {
      */
     public boolean saveDevice(@Nonnull Device device) {
         if (device.token != null || device.deviceId != null) {
-            mEbeanServer.beginTransaction();
 
             try {
                 // Build a query depending on if we have a token, and or device identifier.
@@ -124,15 +122,10 @@ public class DeviceDao {
                     mEbeanServer.insert(device);
                 }
 
-                mEbeanServer.commitTransaction();
                 return true;
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
-                mEbeanServer.rollbackTransaction();
-
-            } finally {
-                mEbeanServer.endTransaction();
             }
         }
         return false;

@@ -2,7 +2,6 @@ create table splendid_log.applications (
   id                            bigint not null,
   name                          varchar(255),
   created_at                    timestamp without time zone,
-  version_modified              timestamptz not null,
   constraint pk_applications primary key (id)
 );
 create sequence log_application_id_seq increment by 1;
@@ -13,7 +12,6 @@ create table splendid_log.entries (
   created_at                    timestamp without time zone,
   level                         varchar(255),
   message                       TEXT,
-  version_modified              timestamptz not null,
   constraint pk_entries primary key (id)
 );
 create sequence log_entry_gen increment by 1;

@@ -10,6 +10,8 @@ import models.alerts.Route;
 import models.devices.Device;
 import models.pushservices.Credentials;
 import models.pushservices.Message;
+import models.pushservices.PayloadElement;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,6 +25,8 @@ import java.util.Set;
  * which can be sent out using the dispatchers.
  */
 public class CommuteAlertHelper {
+    private static final int MAX_MESSAGE_PAYLOAD_LENGTH = 2048;
+    private static final int ALERT_BODY_MINIMUM_LENGTH = 12;
 
     /*
      * Different types of commute push message types.
@@ -53,10 +57,10 @@ public class CommuteAlertHelper {
         KEY_ROUTE_NAME("route_name"),
         KEY_ROUTE_MESSAGE("message");
 
-        private String name;
+        private String key;
 
-        AlertMessageKey(String name) {
-            this.name = name;
+        AlertMessageKey(String key) {
+            this.key = key;
         }
     }
 
@@ -71,8 +75,18 @@ public class CommuteAlertHelper {
     public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
                                                  @Nonnull PlatformAccount platformAccount) {
         if (route.alerts != null && !route.alerts.isEmpty()) {
-            // If there are route alerts, create messages for each alert in the route.
-            return buildAlertUpdateMessage(route, devices, platformAccount);
+
+            // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
+            List<Message> messages = buildAlertUpdateMessage(route, devices, platformAccount);
+            for (Message message : messages) {
+                int payloadLength = messagePayloadCount(message);
+
+                if (payloadLength >= MAX_MESSAGE_PAYLOAD_LENGTH) {
+                    int truncateAmount = payloadLength - MAX_MESSAGE_PAYLOAD_LENGTH;
+                    truncateMessagePayload(message, truncateAmount);
+                }
+            }
+            return messages;
 
         } else {
             // If the alerts list is empty or null, this route is cancelled.
@@ -124,49 +138,54 @@ public class CommuteAlertHelper {
             for (Alert alert : route.alerts) {
                 Credentials credentials = getMessageCredentials(platformAccount);
 
-                PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
-                        .setCollapseKey(route.routeId)
-                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
-                        .setPlatformCredentials(credentials)
-                        .putData(AlertMessageKey.KEY_ROUTE_ID.name, route.routeId)
-                        .putData(AlertMessageKey.KEY_ROUTE_NAME.name, route.routeName)
-                        .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.name, alert.messageBody);
+                if (credentials != null) {
+                    PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
+                            .setCollapseKey(route.routeId)
+                            .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
+                            .setPlatformCredentials(credentials)
+                            .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
+                            .putData(AlertMessageKey.KEY_ROUTE_NAME.key, route.routeName)
+                            .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.key, alert.messageBody);
 
-                switch (alert.type) {
-                    case TYPE_DETOUR:
-                        messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
-                        break;
+                    switch (alert.type) {
+                        case TYPE_DETOUR:
+                            messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
+                            break;
 
-                    case TYPE_INFORMATION:
-                        messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
-                        break;
+                        case TYPE_INFORMATION:
+                            messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
+                            break;
 
-                    case TYPE_DISRUPTION:
-                        messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                        break;
+                        case TYPE_DISRUPTION:
+                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
+                            break;
 
-                    case TYPE_WEATHER:
-                        messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
-                        break;
+                        case TYPE_WEATHER:
+                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            break;
 
-                    case TYPE_APP:
-                        messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
-                        break;
+                        case TYPE_APP:
+                            messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            break;
 
-                    case TYPE_MAINTENANCE:
-                        messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                        break;
+                        case TYPE_MAINTENANCE:
+                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
+                            break;
+                    }
+
+                    Set<String> tokenSet = new HashSet<>();
+                    for (Device device : devices) {
+                        tokenSet.add(device.token);
+                    }
+
+                    messageBuilder.setDeviceTokens(tokenSet);
+                    messages.add(messageBuilder.build());
+
+                } else {
+                    Logger.error("No Credentials model found for update message.");
                 }
-
-                Set<String> tokenSet = new HashSet<>();
-                for (Device device : devices) {
-                    tokenSet.add(device.token);
-                }
-
-                messageBuilder.setDeviceTokens(tokenSet);
-                messages.add(messageBuilder.build());
             }
         }
         return messages;
@@ -187,22 +206,116 @@ public class CommuteAlertHelper {
         if (route.routeId != null) {
             Credentials credentials = getMessageCredentials(platformAccount);
 
-            PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
-                    .setCollapseKey(route.routeId)
-                    .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
-                    .setPlatformCredentials(credentials)
-                    .putData(AlertMessageKey.KEY_ROUTE_ID.name, route.routeId)
-                    .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
+            if (credentials != null) {
+                PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
+                        .setCollapseKey(route.routeId)
+                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
+                        .setPlatformCredentials(credentials)
+                        .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
+                        .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
 
-            Set<String> tokenSet = new HashSet<>();
-            for (Device device : devices) {
-                tokenSet.add(device.token);
+                Set<String> tokenSet = new HashSet<>();
+                for (Device device : devices) {
+                    tokenSet.add(device.token);
+                }
+
+                messageBuilder.setDeviceTokens(tokenSet);
+                messages.add(messageBuilder.build());
+
+            } else {
+                Logger.error("No Credentials model found for cancel message.");
             }
-
-            messageBuilder.setDeviceTokens(tokenSet);
-            messages.add(messageBuilder.build());
         }
         return messages;
+    }
+
+    /**
+     * Return a byte count of the total length of the message payload.
+     *
+     * @param message the message to count the contents of.
+     * @return size of all fields in the payload.
+     */
+    private static int messagePayloadCount(@Nonnull Message message) {
+        List<PayloadElement> messagePayload = message.payloadData;
+        final int controlCharCount = 6; // {, ", }, ,
+
+        int payloadByteCount = 0;
+        if (messagePayload != null) {
+
+            for (PayloadElement element : messagePayload) {
+                payloadByteCount += element.key.length();
+                payloadByteCount += element.value.length();
+                payloadByteCount += controlCharCount;
+            }
+        }
+        return payloadByteCount;
+    }
+
+    /**
+     * Truncate message payload values so that a GCM message fits with the provider. This should only
+     * attempt to truncate the route message at the moment.
+     *
+     * @param message        message to truncate.
+     * @param truncateAmount amount to reduce the payload contents by.
+     * @return true if the message could be fully trimmed to the length of lengthToTruncate;
+     */
+    private static boolean truncateMessagePayload(@Nonnull Message message, int truncateAmount) {
+        List<PayloadElement> messagePayload = message.payloadData;
+        if (messagePayload != null && isAlertMessage(message) && truncateAmount > 0) {
+
+            for (PayloadElement element : messagePayload) {
+                String messageBody = element.value;
+
+                // First, try to trim the alert message itself as much as possible.
+                if (element.key.equals(AlertMessageKey.KEY_ROUTE_MESSAGE.key) && !messageBody.isEmpty()) {
+
+                    /*
+                     * The payload message can't just be truncated by amount sent, as this may
+                     * encroach into the important minimum body side shown. Instead work out how much
+                     * the predicted slice would encroach on ALERT_BODY_MINIMUM_LENGTH (or "overslice") by.
+                     */
+                    int oversliceAmount = 0;
+                    int remainderAfterSlice = messageBody.length() - truncateAmount;
+
+                    if (remainderAfterSlice < 1) {
+                        oversliceAmount = ALERT_BODY_MINIMUM_LENGTH;
+                    } else if (remainderAfterSlice < ALERT_BODY_MINIMUM_LENGTH) {
+                        oversliceAmount = ALERT_BODY_MINIMUM_LENGTH - remainderAfterSlice;
+                    }
+
+                    // Now calculate the exact length to truncate.
+                    truncateAmount = (truncateAmount - oversliceAmount);
+                    int sliceAnchorEnd = messageBody.length() - (truncateAmount - oversliceAmount);
+
+                    // Truncate the model in place.
+                    element.value = messageBody.substring(0, sliceAnchorEnd);
+
+                    Logger.warn(String.format("Sliced %1$d bytes off message type %2$s payload end.",
+                            (truncateAmount - oversliceAmount), message.collapseKey));
+                }
+            }
+        }
+        return truncateAmount < 1;
+    }
+
+    /**
+     * Ascertain if the message is a new or updated agency alert message.
+     *
+     * @param message the message to check.
+     * @return true if the message an agency alert message.
+     */
+    private static boolean isAlertMessage(@Nonnull Message message) {
+        List<PayloadElement> messagePayload = message.payloadData;
+        if (messagePayload != null) {
+            for (PayloadElement element : messagePayload) {
+                if (element.key.equals(MessageType.TYPE_CURRENT_MESSAGE.key) ||
+                        element.key.equals(MessageType.TYPE_DETOUR_MESSAGE.key) ||
+                        element.key.equals(MessageType.TYPE_ADVISORY_MESSAGE.key)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -262,6 +375,7 @@ public class CommuteAlertHelper {
      * @param route {@link Route} to copy.
      * @return copied {@link Route}.
      */
+    @SuppressWarnings("WeakerAccess")
     public static Route copyRoutes(@Nonnull Route route) throws CloneNotSupportedException {
         return (Route) route.clone();
     }

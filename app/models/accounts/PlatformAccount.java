@@ -42,7 +42,4 @@ public class PlatformAccount extends Model {
     @Column(name = "platform")
     public PlatformType platformType;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
 }

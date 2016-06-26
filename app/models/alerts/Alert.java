@@ -54,10 +54,6 @@ public class Alert extends Model implements Comparable {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
 
-    @Version
-    @Column(name = "version_modified")
-    public Timestamp versionModified;
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Alert) {
