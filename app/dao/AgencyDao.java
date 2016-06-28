@@ -1,6 +1,9 @@
 package dao;
 
-import com.avaje.ebean.*;
+import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.OrderBy;
+import com.avaje.ebean.Query;
+import com.avaje.ebean.Transaction;
 import models.alerts.Agency;
 import models.alerts.Route;
 import services.splendidlog.Logger;
@@ -31,13 +34,14 @@ public class AgencyDao extends BaseDao {
     public boolean saveAgency(@Nonnull Agency newAgency) {
         Logger.debug("Persisting agency routes in database.");
         Agency existingAgency = getAgency(newAgency.id);
-        boolean persistedAgencyData = false;
+        boolean modifiedData = false;
         Transaction transaction = null;
 
         try {
             // Check a previous agency exists / or non-null list of routes for agency.
             if (existingAgency == null || existingAgency.routes == null) {
                 // Agency doesn't exist or Routes empty:
+
                 Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
                 transaction = mEbeanServer.createTransaction();
 
@@ -47,17 +51,17 @@ public class AgencyDao extends BaseDao {
                 return true;
 
             } else if (newAgency.routes != null) {
-
                 // Agency exists and contains Routes:
+
                 Logger.info(String.format("Agency %s already exists. Checking routes.", newAgency.name));
                 Collections.sort(newAgency.routes);
 
-                for (Route newRoute : newAgency.routes) {
+                for (Route freshRoute : newAgency.routes) {
                     Route existingRoute = null;
 
                     // Find an existing route deviceId that matches the updated route.
                     for (Route route : existingAgency.routes) {
-                        if (route.routeId.equals(newRoute.routeId)) {
+                        if (route.routeId.equals(freshRoute.routeId)) {
                             existingRoute = route;
                             break;
                         }
@@ -65,30 +69,48 @@ public class AgencyDao extends BaseDao {
 
                     if (existingRoute == null) {
                         // Agency route_id does not exist:
-                        Logger.debug(String.format("Didn't find existing route: %s.", newRoute.routeName));
+
+                        Logger.debug(String.format("Didn't find existing route: %s.", freshRoute.routeName));
                         transaction = mEbeanServer.createTransaction();
 
-                        newRoute.agency = existingAgency;
-                        mEbeanServer.save(newRoute, transaction);
+                        freshRoute.agency = existingAgency;
+                        mEbeanServer.insert(freshRoute, transaction);
                         transaction.commit();
                         transaction.end();
-                        persistedAgencyData = true;
+                        modifiedData = true;
 
-                    } else if (existingRoute.routeId.equals(newRoute.routeId) && !existingRoute.equals(newRoute)) {
-                        // Agency route_id exists and is updated:
-                        Logger.debug(String.format("Updating route: %s.", newRoute.routeName));
+                    } else if (existingRoute.routeId.equals(freshRoute.routeId) &&
+                            (freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
+                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty())) {
+                        // Agency route_id exists and all children are stale:
+
+                        Logger.debug(String.format("Deleting all stale alerts for route: %s.", freshRoute.routeName));
                         transaction = mEbeanServer.createTransaction();
 
-                        newRoute.id = existingRoute.id;
-                        mEbeanServer.update(newRoute, transaction);
+                        mEbeanServer.deleteAll(existingRoute.alerts, transaction);
                         transaction.commit();
                         transaction.end();
-                        persistedAgencyData = true;
+
+                        modifiedData = true;
+
+                    } else if (existingRoute.routeId.equals(freshRoute.routeId) && !existingRoute.equals(freshRoute)) {
+                        // Agency route_id exists and children have been updated:
+
+                        Logger.debug(String.format("Updating route: %s.", freshRoute.routeName));
+                        freshRoute.id = existingRoute.id;
+                        transaction = mEbeanServer.createTransaction();
+
+                        mEbeanServer.deleteAll(existingRoute.alerts, transaction);
+                        mEbeanServer.insertAll(freshRoute.alerts, transaction);
+                        transaction.commit();
+                        transaction.end();
+
+                        modifiedData = true;
                     }
                 }
             }
 
-            return persistedAgencyData;
+            return modifiedData;
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving message model to database: %s.", e.getMessage()));
@@ -96,8 +118,7 @@ public class AgencyDao extends BaseDao {
                 transaction.rollback();
             }
 
-            if (e.getMessage() != null &&
-                    e.getMessage().contains("does not exist") &&
+            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
                     e.getMessage().contains("Query threw SQLException:ERROR:")) {
                 createDatabase();
             }
@@ -187,7 +208,7 @@ public class AgencyDao extends BaseDao {
                     .eq("agency.id", agencyId)
                     .query();
 
-        return mEbeanServer.findList(query, transaction);
+            return mEbeanServer.findList(query, transaction);
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency model to database: %s.", e.getMessage()));

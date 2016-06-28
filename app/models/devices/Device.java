@@ -7,8 +7,6 @@ import models.accounts.Account;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -39,10 +37,7 @@ public class Device extends Model {
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
-            referencedColumnName = "id",
-            nullable = true,
-            unique = false,
-            updatable = true)
+            referencedColumnName = "id")
     public Account account;
 
     @JsonIgnore

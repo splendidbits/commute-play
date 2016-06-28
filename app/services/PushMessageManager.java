@@ -1,13 +1,13 @@
 package services;
 
-import agency.AgencyModifications;
+import agency.AgencyAlertModifications;
 import com.google.inject.Inject;
 import dao.AccountsDao;
 import dao.DeviceDao;
 import enums.pushservices.PlatformType;
 import enums.pushservices.RecipientState;
 import exceptions.pushservices.TaskValidationException;
-import helpers.CommuteAlertHelper;
+import helpers.AlertHelper;
 import interfaces.pushservices.TaskQueueCallback;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -49,31 +49,30 @@ public class PushMessageManager {
      *
      * @param agencyUpdates Collection of modified route alerts.
      */
-    public CompletableFuture<Boolean> dispatchAlerts(@Nonnull AgencyModifications agencyUpdates) {
+    public CompletableFuture<Boolean> dispatchAlerts(@Nonnull AgencyAlertModifications agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
         List<Task> taskList = new ArrayList<>();
+        
+        List<Route> updatedAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getUpdatedAlerts());
+        List<Route> staleAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getStaleAlerts());
 
-        // Iterate through the new Alerts to send.
-        for (Route updatedRoute : agencyUpdates.getUpdatedAlertRoutes()) {
+        // Iterate through the updated (fresh) Alert Routes to send messages for.
+        for (Route updatedRoute : updatedAlertRoutes) {
             Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s",
                     updatedRoute.agency != null ? updatedRoute.agency.id : -1, updatedRoute.routeId));
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
 
-            List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), updatedRoute);
-            if (!messages.isEmpty()) {
-                updatedRoutesTask.messages = new ArrayList<>();
-                updatedRoutesTask.messages.addAll(messages);
-                taskList.add(updatedRoutesTask);
-            }
+            updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute);
+            taskList.add(updatedRoutesTask);
         }
 
-        // Iterate through the stale (canceled) Alerts to send.
-        for (Route staleRoute : agencyUpdates.getStaleAlertRoutes()) {
+        // Iterate through the stale (canceled) Alert Routes to send messages for.
+        for (Route staleRoute : staleAlertRoutes) {
             Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s",
                     staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
             staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
 
-            List<Message> messages = createAlertGcmMessages(agencyUpdates.getAgencyId(), staleRoute);
+            List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute);
             if (!messages.isEmpty()) {
                 staleRoutesTask.messages = new ArrayList<>();
                 staleRoutesTask.messages.addAll(messages);
@@ -102,30 +101,27 @@ public class PushMessageManager {
      * Creates a list of separate messages for every {@link PlatformAccount} in every {@link Account}.
      *
      * @param agencyId The agencyId for the route.
-     * @param route    A route which contains cancelled route alerts to dispatch.
+     * @param route    Route with messages to send.
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertGcmMessages(int agencyId, @Nonnull Route route) {
+    private List<Message> createAlertMessages(int agencyId, @Nonnull Route route) {
+        if (route.alerts == null) {
+            throw new RuntimeException("Route does not contain any alerts.");
+        }
+
         List<Message> messages = new ArrayList<>();
+        List<Account> accounts = mAccountsDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route.routeId);
+        for (Account account : accounts) {
 
-        // Get all accounts with devices subscribed to that route.
-        List<Account> accounts = mAccountsDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route);
+            // Build a new message for the platform task per API and then Platform account.
+            if (account.devices != null && account.platformAccounts != null && !account.devices.isEmpty() &&
+                    !account.platformAccounts.isEmpty()) {
 
-        // Iterate through each sending API account.
-        if (accounts != null && route.alerts != null) {
-            for (Account account : accounts) {
-
-                // Build a new message for the platform task per API and then Platform account.
-                if (account.devices != null && account.platformAccounts != null && !account.devices.isEmpty() &&
-                        !account.platformAccounts.isEmpty()) {
-
-                    // Create a message for each new alert in the route.
-                    for (PlatformAccount platformAccount : account.platformAccounts) {
-                        List<Message> alertMessages = CommuteAlertHelper.getAlertMessages(route, account.devices,
-                                platformAccount);
-                        messages.addAll(alertMessages);
-                    }
+                // Create a message for each new alert in the route.
+                for (PlatformAccount platformAccount : account.platformAccounts) {
+                    List<Message> alertMessages = AlertHelper.getAlertMessages(route, account.devices, platformAccount);
+                    messages.addAll(alertMessages);
                 }
             }
         }
@@ -145,7 +141,7 @@ public class PushMessageManager {
 
         Task messageTask = new Task("registration-response");
         messageTask.priority = Task.TASK_PRIORITY_HIGH;
-        Message message = CommuteAlertHelper.buildDeviceRegisteredMessage(device, accounts);
+        Message message = AlertHelper.buildDeviceRegisteredMessage(device, accounts);
 
         if (message != null) {
             messageTask.messages.add(message);
@@ -179,8 +175,11 @@ public class PushMessageManager {
         }
 
         @Override
-        public void updatedRecipient(@Nonnull Map<Recipient, Recipient> updatedRegistrations) {
+        public void updatedRegistrations(@Nonnull Map<Recipient, Recipient> updatedRegistrations) {
             Logger.info(String.format("%d recipients require registration updates.", updatedRegistrations.size()));
+            for (Map.Entry<Recipient, Recipient> recipientEntry : updatedRegistrations.entrySet()) {
+                mDeviceDao.saveUpdatedToken(recipientEntry.getKey().token, recipientEntry.getValue().token);
+            }
         }
 
         @Override

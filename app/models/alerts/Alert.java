@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.AlertType;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 
@@ -25,9 +24,7 @@ public class Alert extends Model implements Comparable {
     @JoinColumn(
             name = "route_id",
             table = "agency_alerts.routes",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
+            referencedColumnName = "id")
     public Route route;
 
     @Column(name = "type")
@@ -53,6 +50,8 @@ public class Alert extends Model implements Comparable {
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
+
+
 
     @Override
     public boolean equals(Object obj) {
@@ -90,6 +89,41 @@ public class Alert extends Model implements Comparable {
         return obj.equals(this);
     }
 
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += type != null
+                ? type.hashCode()
+                : hashCode;
+
+        hashCode += messageTitle != null
+                ? messageTitle.hashCode()
+                : hashCode;
+
+        hashCode += messageSubtitle != null
+                ? messageSubtitle.hashCode()
+                : hashCode;
+
+        hashCode += messageBody != null
+                ? messageBody.hashCode()
+                : hashCode;
+
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += lastUpdated != null
+                ? lastUpdated.hashCode()
+                : hashCode;
+
+        hashCode += locations != null
+                ? locations.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
     @SuppressWarnings("unused")
     public Alert() {
     }
@@ -107,8 +141,19 @@ public class Alert extends Model implements Comparable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        id = null;
-        markPropertyUnset("id");
-        return super.clone();
+        markAsDirty();
+
+        Alert alert = new Alert();
+        alert.id = id;
+        alert.type = type;
+        alert.messageTitle = messageTitle;
+        alert.messageSubtitle = messageSubtitle;
+        alert.messageBody = messageBody;
+        alert.externalUri = externalUri;
+        alert.lastUpdated = lastUpdated;
+        alert.route = route;
+        alert.locations = locations;
+
+        return alert;
     }
 }

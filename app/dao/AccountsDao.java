@@ -10,6 +10,7 @@ import services.splendidlog.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,39 +31,41 @@ public class AccountsDao extends BaseDao {
      *
      * @param platform Push service platform type.
      * @param agencyId Id of {@link models.alerts.Agency}
-     * @param route An Agency {@link Route}.
+     * @param routeId An Agency {@link Route} routeId.
      *
      * @return List of API accounts.
      */
-    @Nullable
-    public List<Account> getAccountDevices(@Nonnull PlatformType platform, int agencyId, @Nonnull Route route) {
+    @Nonnull
+    public List<Account> getAccountDevices(@Nonnull PlatformType platform, int agencyId, @Nonnull String routeId) {
+        List<Account> accounts = new ArrayList<>();
+
         try {
-            List<Account> accounts = mEbeanServer.find(Account.class)
+            accounts = mEbeanServer.find(Account.class)
                     .fetch("devices", new FetchConfig().query())
                     .fetch("devices.subscriptions", new FetchConfig().query())
                     .fetch("platformAccounts", new FetchConfig().query())
                     .where()
                     .conjunction()
                     .eq("platformAccounts.platformType", platform)
-                    .eq("devices.subscriptions.route.routeId", route.routeId)
+                    .eq("devices.subscriptions.route.routeId", routeId)
                     .eq("devices.subscriptions.route.agency.id", agencyId)
                     .endJunction()
                     .filterMany("platformAccounts").eq("platformType", platform)
                     .filterMany("devices").eq("subscriptions.route.agency.id", agencyId)
-                    .filterMany("devices").eq("subscriptions.route.routeId", route.routeId)
+                    .filterMany("devices").eq("subscriptions.route.routeId", routeId)
                     .findList();
 
             String logString = accounts != null && !accounts.isEmpty()
-                    ? String.format("Found %d accounts for route %s", accounts.size(), route.routeId)
-                    : String.format("No accounts found for route %s", route.routeId);
-            Logger.debug(logString);
+                    ? String.format("Found %d accounts for route %s", accounts.size(), routeId)
+                    : String.format("No accounts found for route %s", routeId);
 
-            return accounts;
+            Logger.debug(logString);
 
         } catch (Exception e) {
             Logger.error("Error fetching device / subscription accounts.", e);
         }
-        return null;
+
+        return accounts != null ? accounts : new ArrayList<>();
     }
 
     /**

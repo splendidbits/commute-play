@@ -4,7 +4,6 @@ import com.avaje.ebean.Model;
 import enums.pushservices.PlatformType;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 
 @Entity
 @Table(name = "platform_accounts", schema = "api_accounts")
@@ -24,9 +23,7 @@ public class PlatformAccount extends Model {
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
+            referencedColumnName = "id")
     public Account account;
 
     @Column(name = "package_uri")

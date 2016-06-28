@@ -24,8 +24,8 @@ import java.util.Set;
  * Used to easily create relevant push platform messages for different app alert types,
  * which can be sent out using the dispatchers.
  */
-public class CommuteAlertHelper {
-    private static final int MAX_MESSAGE_PAYLOAD_LENGTH = 2048;
+public class AlertHelper {
+    private static final int MAX_MESSAGE_PAYLOAD_LENGTH = 1500;
     private static final int ALERT_BODY_MINIMUM_LENGTH = 12;
 
     /*
@@ -74,10 +74,11 @@ public class CommuteAlertHelper {
      */
     public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
                                                  @Nonnull PlatformAccount platformAccount) {
-        if (route.alerts != null && !route.alerts.isEmpty()) {
 
-            // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
+        // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
+        if (route.alerts != null && !route.alerts.isEmpty()) {
             List<Message> messages = buildAlertUpdateMessage(route, devices, platformAccount);
+
             for (Message message : messages) {
                 int payloadLength = messagePayloadCount(message);
 
@@ -337,15 +338,44 @@ public class CommuteAlertHelper {
     }
 
     /**
+     * Get a list of Agency Routes for the given alerts, with the alerts added to their respective routes.
+     *
+     * @param alerts list of alerts.
+     * @return list of unique routes.
+     */
+    public static List<Route> getSortedAlertRoutes(List<Alert> alerts) {
+        List<Route> routes = new ArrayList<>();
+        if (alerts != null) {
+
+            for (Alert alert : alerts) {
+                if (alert.route != null && alert.route.routeId != null && !routes.contains(alert.route)) {
+                    alert.route.subscriptions = new ArrayList<>();
+                    alert.route.alerts = new ArrayList<>();
+                    routes.add(alert.route);
+                }
+            }
+
+            for (Route route : routes) {
+                for (Alert alert : alerts) {
+                    if (alert.route.routeId.equals(route.routeId) && route.alerts != null) {
+                        route.alerts.add(alert);
+                        alert.route = route;
+                    }
+                }
+            }
+        }
+        return routes;
+    }
+
+    /**
      * Check if the Alert is "empty" (if there is no message, or type.
      *
      * @param alert the alert to check.
      * @return true if the message is empty.
      */
     public static boolean isAlertEmpty(@Nonnull Alert alert) {
-        return !(alert.messageBody != null &&
-                !alert.messageBody.isEmpty()) ||
-                alert.type == null || AlertType.TYPE_NONE.equals(alert.type);
+        return ((alert.messageBody == null || alert.messageBody.isEmpty()) ||
+                (alert.type == null || AlertType.TYPE_NONE.equals(alert.type)));
     }
 
     /**
@@ -354,15 +384,11 @@ public class CommuteAlertHelper {
      * @param routes {@link List<Route>} list to copy.
      * @return copied {@link List<Route>}.
      */
-    public static List<Route> copyRoutes(List<Route> routes) {
+    public static List<Route> copyRoute(List<Route> routes) {
         List<Route> copiedRoutes = new ArrayList<>();
         if (routes != null) {
             for (Route route : routes) {
-                try {
-                    copiedRoutes.add(copyRoutes(route));
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                copiedRoutes.add(copyRoute(route));
             }
         }
         return copiedRoutes;
@@ -376,7 +402,13 @@ public class CommuteAlertHelper {
      * @return copied {@link Route}.
      */
     @SuppressWarnings("WeakerAccess")
-    public static Route copyRoutes(@Nonnull Route route) throws CloneNotSupportedException {
-        return (Route) route.clone();
+    public static Route copyRoute(@Nonnull Route route){
+        try {
+            return (Route) route.clone();
+
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

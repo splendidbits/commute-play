@@ -4,7 +4,6 @@ import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.util.Calendar;
 
 @Entity
@@ -19,13 +18,11 @@ public class Location extends Model implements Comparable {
     public Integer id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "alert_id",
             table = "agency_alerts.alerts",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
+            referencedColumnName = "id")
     public Alert alert;
 
     @Column(name = "name")
@@ -81,6 +78,37 @@ public class Location extends Model implements Comparable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += name != null
+                ? name.hashCode()
+                : hashCode;
+
+        hashCode += message != null
+                ? message.hashCode()
+                : hashCode;
+
+        hashCode += latitude != null
+                ? latitude.hashCode()
+                : hashCode;
+
+        hashCode += longitude != null
+                ? longitude.hashCode()
+                : hashCode;
+
+        hashCode += sequence != null
+                ? sequence.hashCode()
+                : hashCode;
+
+        hashCode += date != null
+                ? date.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
     public int compareTo(Object o) {
         if (o instanceof Location) {
             Location other = (Location) o;
@@ -93,8 +121,18 @@ public class Location extends Model implements Comparable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        id = null;
-        markPropertyUnset("id");
-        return super.clone();
+        markAsDirty();
+
+        Location location = new Location();
+        location.id = id;
+        location.name = name;
+        location.message = message;
+        location.latitude = latitude;
+        location.longitude = longitude;
+        location.sequence = sequence;
+        location.date = date;
+        location.alert = alert;
+
+        return location;
     }
 }

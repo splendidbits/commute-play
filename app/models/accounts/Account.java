@@ -5,8 +5,6 @@ import models.devices.Device;
 
 import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -62,5 +60,28 @@ public class Account extends Model {
     @PrePersist
     public void prePersist() {
         timeEnrolled = new Date();
+    }
+
+    @Override
+    public int hashCode() {
+        if (apiKey != null) {
+            return apiKey.hashCode();
+        }
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Account) {
+            Account other = (Account) obj;
+
+            boolean bothApiKeysEmpty = (apiKey == null || other.apiKey.isEmpty()) &&
+                    (other.apiKey == null || other.apiKey.isEmpty());
+
+            boolean bothApiKeysMatch = bothApiKeysEmpty || (apiKey != null && apiKey.equals(other.apiKey));
+
+            return bothApiKeysEmpty || bothApiKeysMatch;
+        }
+        return super.equals(obj);
     }
 }

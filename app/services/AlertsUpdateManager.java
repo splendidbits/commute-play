@@ -1,9 +1,9 @@
 package services;
 
-import agency.AgencyModifications;
+import agency.AgencyAlertModifications;
 import dao.AgencyDao;
 import enums.AlertType;
-import helpers.CommuteAlertHelper;
+import helpers.AlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -11,10 +11,7 @@ import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Receives agency bundles and performs the following actions.
@@ -47,9 +44,9 @@ public class AlertsUpdateManager {
      */
     public void processAgencyDownload(Agency updatedAgency) {
         if (updatedAgency != null) {
-            AgencyModifications agencyModifications = getUpdatedRoutesAlerts(updatedAgency);
+            AgencyAlertModifications agencyAlertModifications = getUpdatedRoutesAlerts(updatedAgency);
 
-            if (agencyModifications.hasModifiedRoutes()) {
+            if (agencyAlertModifications.hasModifiedAlerts()) {
                 // Save the agency in the datastore.
                 Logger.debug("Saving new or updated agency data.");
                 boolean alertsPersisted = mAgencyService.saveAgency(updatedAgency);
@@ -58,11 +55,11 @@ public class AlertsUpdateManager {
                 // alerts if there's an issue with database persistence.
                 if (alertsPersisted) {
                     Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
-                    mPushMessageManager.dispatchAlerts(agencyModifications);
+                    mPushMessageManager.dispatchAlerts(agencyAlertModifications);
                 }
 
             } else {
-                Logger.info(String.format("No alerts found for agency: %s.", updatedAgency.name));
+                Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
             }
         }
     }
@@ -74,105 +71,125 @@ public class AlertsUpdateManager {
      * @return A list of removed and added alerts for that agency.
      */
     @Nonnull
-    private AgencyModifications getUpdatedRoutesAlerts(@Nonnull Agency agency) {
-        AgencyModifications modifiedRouteAlerts = new AgencyModifications(agency.id);
+    private AgencyAlertModifications getUpdatedRoutesAlerts(@Nonnull Agency agency) {
+        AgencyAlertModifications modifiedRouteAlerts = new AgencyAlertModifications(agency.id);
 
         // Get all new routes, and the current routes that exist for the agency.
-        List<Route> freshRoutes = CommuteAlertHelper.copyRoutes(agency.routes);
-        List<Route> existingRoutes = CommuteAlertHelper.copyRoutes(mAgencyService.getAgencyRoutes(agency.id));
+        List<Route> freshRoutes = AlertHelper.copyRoute(agency.routes);
+        List<Route> existingRoutes = AlertHelper.copyRoute(mAgencyService.getAgencyRoutes(agency.id));
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
-        if (existingRoutes.isEmpty()) {
+        if (freshRoutes != null && existingRoutes.isEmpty()) {
             Logger.info(String.format("Existing routes for agency %s missing. Marked all as updated.", agency.name));
-            modifiedRouteAlerts.addUpdatedRoute(agency.routes);
+
+            for (Route freshRoute : freshRoutes) {
+                modifiedRouteAlerts.addUpdatedAlerts(freshRoute.alerts);
+            }
             return modifiedRouteAlerts;
         }
 
         // If there are no fetched alerts at all, mark all existing alerts as stale.
         if (freshRoutes == null || freshRoutes.isEmpty()) {
             Logger.info(String.format("New routes for agency %s missing. Marked all as stale.", agency.name));
-            modifiedRouteAlerts.addStaleRoute(agency.routes);
+            for (Route staleRoute : existingRoutes) {
+                modifiedRouteAlerts.addUpdatedAlerts(staleRoute.alerts);
+            }
             return modifiedRouteAlerts;
         }
 
-        // Iterate through the new routes (outer), and existing routes (inner).
+        List<Alert> updatedAlerts = new ArrayList<>();
+        List<Alert> staleAlerts = new ArrayList<>();
         for (Route freshRoute : freshRoutes) {
+
+            // Iterate through the existing routes and check existing and fresh Routes are the same.
             for (Route existingRoute : existingRoutes) {
 
-                // Check existing and new Routes are the same.
                 if (freshRoute.routeId.equals(existingRoute.routeId)) {
-
-                    // If there are no new alerts but there are existing alerts.
-                    boolean missingFreshRouteAlerts = ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
-                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty()));
-
-                    // If there are no existing alerts but there are new alerts.
-                    boolean missingExistingRouteAlerts = ((existingRoute.alerts == null || existingRoute.alerts.isEmpty()) &&
-                            (existingRoute.alerts != null && !existingRoute.alerts.isEmpty()));
-
-                    if (missingFreshRouteAlerts || missingExistingRouteAlerts) {
-                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
-                    }
-
-                    Set<AlertType> updatedAlertTypes = new HashSet<>();
-                    List<Alert> updatedAlerts = new ArrayList<>();
-
-                    /*
-                     * Add a route alert as updated if:
-                     * 1) The fresh alert does not exist in the new route alert list.
-                     */
-                    if (freshRoute.alerts != null) {
-                        for (Alert freshAlert : freshRoute.alerts) {
-
-                            // Record the new alert, and alertType.
-                            if (!CommuteAlertHelper.isAlertEmpty(freshAlert) &&
-                                    !existingRoute.alerts.contains(freshAlert)) {
-
-                                Logger.info(String.format("%1$s alert for existing route %2$s has updated.",
-                                        freshAlert.type, existingRoute.routeId));
-
-                                updatedAlertTypes.add(freshAlert.type);
-                                updatedAlerts.add(freshAlert);
-                            }
-                        }
-                    }
-
-                    /*
-                     * Add a route alert as stale if:
-                     * 1) An existing alert for the route no longer exists in the fresh route.
-                     * 2) The alertType was not previously recorded as being updated.
-                     */
-                    List<Route> staleRoutes = new ArrayList<>();
-                    if (existingRoute.alerts != null) {
-
-                        for (Alert existingAlert : existingRoute.alerts) {
-                            if (!freshRoute.alerts.contains(existingAlert) &&
-                                    !updatedAlertTypes.contains(existingAlert.type)) {
-
-                                Logger.info(String.format("%1$s alert for fresh route %2$s went stale.",
-                                        existingAlert.type, existingRoute.routeId));
-
-                                freshRoute.alerts = new ArrayList<>();
-                                staleRoutes.add(freshRoute);
-                                break;
-                            }
-                        }
-                    }
-
-                    // Add only the new updated fresh alerts into the freshRoute.
-                    if (!updatedAlerts.isEmpty()) {
-                        freshRoute.alerts = updatedAlerts;
-                        modifiedRouteAlerts.addUpdatedRoute(freshRoute);
-                    }
-
-                    // Set the stale routes.
-                    modifiedRouteAlerts.addStaleRoute(staleRoutes);
+                    updatedAlerts.addAll(getUpdatedAlerts(existingRoute, existingRoute.alerts, freshRoute.alerts));
+                    staleAlerts.addAll(getStaleAlerts(existingRoute, existingRoute.alerts, freshRoute.alerts));
 
                     // There was a route match so skip the inner loop.
                     break;
                 }
             }
         }
+
+        // Remove any alert from the stale alerts where the route type was updated.
+        Iterator<Alert> staleAlertsIterator = staleAlerts.iterator();
+        while (staleAlertsIterator.hasNext()) {
+            Alert staleAlert = staleAlertsIterator.next();
+
+            // If the stale alert type is the same as an updated type, remove the stale alert.
+            for (Alert updatedAlert : updatedAlerts) {
+                if (updatedAlert.type != null && updatedAlert.type.equals(staleAlert.type)) {
+                    staleAlertsIterator.remove();
+                    break;
+                }
+            }
+        }
+
+        modifiedRouteAlerts.addUpdatedAlerts(updatedAlerts);
+        modifiedRouteAlerts.addStaleAlerts(staleAlerts);
         return modifiedRouteAlerts;
+    }
+
+    /**
+     * Get a list of fresh (new) alerts that do not exist in the previous (existing) collection.
+     *
+     * @param existingAlerts The previous stored agency route alerts.
+     * @param freshAlerts    The current fresh agency route alerts.
+     * @return The list of updated route alerts.
+     */
+    @Nonnull
+    private List<Alert> getUpdatedAlerts(@Nonnull Route route, List<Alert> existingAlerts, List<Alert> freshAlerts) {
+        List<Alert> updatedAlerts = new ArrayList<>();
+
+        if (freshAlerts != null) {
+            for (Alert freshAlert : freshAlerts) {
+
+                if (!AlertHelper.isAlertEmpty(freshAlert) &&
+                        (existingAlerts == null || existingAlerts.isEmpty() || !existingAlerts.contains(freshAlert))) {
+                    Logger.info(String.format("Alert in route %1$s was new or updated.", route.routeId));
+                    freshAlert.route = route;
+                    updatedAlerts.add(freshAlert);
+                }
+            }
+        }
+
+        return updatedAlerts;
+    }
+
+    /**
+     * An stale alert is defined as an existing {@link enums.AlertType} for the route which no longer
+     * exists in the fresh route alert yupes.
+     *
+     * @param existingAlerts The previous stored agency route alerts.
+     * @param freshAlerts    The current fresh agency route alerts.
+     * @return The list of stale route alerts.
+     */
+    @Nonnull
+    private List<Alert> getStaleAlerts(@Nonnull Route route, List<Alert> existingAlerts, List<Alert> freshAlerts) {
+
+        // Mark all existing alerts as stale if fresh alerts are empty.
+        if (freshAlerts == null || freshAlerts.isEmpty()) {
+            return existingAlerts;
+        }
+
+        List<Alert> staleAlerts = new ArrayList<>();
+        if (existingAlerts != null) {
+            Set<AlertType> existingTypes = new HashSet<>();
+            for (Alert existingAlert : existingAlerts) {
+                existingTypes.add(existingAlert.type);
+            }
+
+            for (Alert freshAlert : freshAlerts) {
+                if (!existingTypes.contains(freshAlert.type) || AlertHelper.isAlertEmpty(freshAlert)) {
+                    Logger.info(String.format("Alert in route %s became stale.", route.routeId));
+                    freshAlert.route = route;
+                    staleAlerts.add(freshAlert);
+                }
+            }
+        }
+        return staleAlerts;
     }
 }

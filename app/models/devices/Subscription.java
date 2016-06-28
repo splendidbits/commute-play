@@ -4,8 +4,6 @@ import com.avaje.ebean.Model;
 import models.alerts.Route;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.Date;
 
 @Entity
@@ -35,8 +33,6 @@ public class Subscription extends Model {
             name = "route_id",
             table = "agency_alerts.routes",
             referencedColumnName = "id",
-            nullable = true,
-            unique = false,
             updatable = false)
     public Route route;
 

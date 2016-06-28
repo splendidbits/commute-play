@@ -35,8 +35,8 @@ import java.util.function.Function;
  */
 public class SeptaAgencyUpdate implements AgencyUpdate {
 
-    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
-//    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+    //private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
+    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     private WSClient mWsClient;
     private AlertsUpdateManager mAlertsUpdateManager;
@@ -117,7 +117,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
                 agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
 
                 // TODO: Comment to disable load test.
-//                createLoadTestUpdates(agencyAlerts);
+                // createLoadTestUpdates(agencyAlerts);
 
                 mAlertsUpdateManager.processAgencyDownload(agencyAlerts);
             }

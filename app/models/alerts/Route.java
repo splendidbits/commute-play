@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
@@ -29,9 +28,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     @JoinColumn(
             name = "agency_id",
             table = "agency_alerts.agencies",
-            referencedColumnName = "id",
-            unique = false,
-            updatable = true)
+            referencedColumnName = "id")
     public Agency agency;
 
     @Nullable
@@ -74,11 +71,6 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
             boolean sameRouteId = routeId == null && other.routeId == null ||
                     routeId != null && routeId.equals(other.routeId);
 
-            // Always return false immediately if the routes do not match.
-            if (sameRouteId) {
-                return false;
-            }
-
             boolean sameRouteName = routeName == null && other.routeName == null ||
                     routeName != null && routeName.equals(other.routeName);
 
@@ -101,9 +93,42 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
                     alerts != null && alerts != null && other.alerts != null &&
                             (alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
 
-            return sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
+            return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
         }
         return obj.equals(this);
+    }
+
+    @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += routeId != null
+                ? routeId.hashCode()
+                : hashCode;
+
+        hashCode += routeName != null
+                ? routeName.hashCode()
+                : hashCode;
+
+        hashCode += routeFlag != null
+                ? routeFlag.hashCode()
+                : hashCode;
+
+        hashCode += transitType != null
+                ? transitType.hashCode()
+                : hashCode;
+
+        hashCode += isDefault ? 1 : 0;
+
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += alerts != null
+                ? alerts.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
     }
 
     @Override
@@ -129,8 +154,20 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        id = null;
-        markPropertyUnset("id");
-        return super.clone();
+        markAsDirty();
+
+        Route route = new Route();
+        route.id = id;
+        route.routeId = routeId;
+        route.routeName = routeName;
+        route.transitType = transitType;
+        route.isDefault = isDefault;
+        route.isSticky = isSticky;
+        route.externalUri = externalUri;
+        route.agency = agency;
+        route.alerts = alerts;
+        route.subscriptions = subscriptions;
+
+        return route;
     }
 }

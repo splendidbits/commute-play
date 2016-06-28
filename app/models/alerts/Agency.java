@@ -3,7 +3,6 @@ package models.alerts;
 import com.avaje.ebean.Model;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
@@ -74,9 +73,48 @@ public class Agency extends Model implements Cloneable {
     }
 
     @Override
+    public int hashCode() {
+        Long hashCode = 0L;
+
+        hashCode += id != null
+                ? id.hashCode()
+                : hashCode;
+
+        hashCode += name != null
+                ? name.hashCode()
+                : hashCode;
+
+        hashCode += phone != null
+                ? phone.hashCode()
+                : hashCode;
+
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += utcOffset != null
+                ? utcOffset.hashCode()
+                : hashCode;
+
+        hashCode += routes != null
+                ? routes.hashCode()
+                : hashCode;
+
+        return hashCode.hashCode();
+    }
+
+    @Override
     public Object clone() throws CloneNotSupportedException {
-        id = null;
-        markPropertyUnset("id");
-        return super.clone();
+        markAsDirty();
+
+        Agency agency = new Agency();
+        agency.id = id;
+        agency.name = name;
+        agency.phone = phone;
+        agency.externalUri = externalUri;
+        agency.utcOffset = utcOffset;
+        agency.routes = routes;
+
+        return agency;
     }
 }
