@@ -51,8 +51,6 @@ public class Alert extends Model implements Comparable {
     @Temporal(TemporalType.TIMESTAMP)
     public Calendar lastUpdated;
 
-
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Alert) {
@@ -72,10 +70,6 @@ public class Alert extends Model implements Comparable {
             boolean sameUri = (externalUri == null && other.externalUri == null) ||
                     (externalUri != null && other.externalUri != null && externalUri.equals(other.externalUri));
 
-            boolean sameUpdateTime = lastUpdated == null && other.lastUpdated == null ||
-                    (lastUpdated != null && other.lastUpdated != null &&
-                            lastUpdated.getTimeInMillis() == other.lastUpdated.getTimeInMillis());
-
             boolean bothLocationsEmpty = locations == null && other.locations == null ||
                     (locations != null && locations.isEmpty() && other.locations != null && other.locations.isEmpty());
 
@@ -83,7 +77,7 @@ public class Alert extends Model implements Comparable {
                             (locations.containsAll(other.locations) && other.locations.containsAll(locations));
 
             // Match everything.
-            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameUpdateTime && sameLocations);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameLocations);
         }
 
         return obj.equals(this);
@@ -111,10 +105,6 @@ public class Alert extends Model implements Comparable {
 
         hashCode += externalUri != null
                 ? externalUri.hashCode()
-                : hashCode;
-
-        hashCode += lastUpdated != null
-                ? lastUpdated.hashCode()
                 : hashCode;
 
         hashCode += locations != null

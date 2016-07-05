@@ -58,12 +58,14 @@ public class PushMessageManager {
 
         // Iterate through the updated (fresh) Alert Routes to send messages for.
         for (Route updatedRoute : updatedAlertRoutes) {
-            Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s",
-                    updatedRoute.agency != null ? updatedRoute.agency.id : -1, updatedRoute.routeId));
+            Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
+                    ? updatedRoute.agency.id : -1, updatedRoute.routeId));
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-
             updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute);
-            taskList.add(updatedRoutesTask);
+
+            if (!updatedRoutesTask.messages.isEmpty()) {
+                taskList.add(updatedRoutesTask);
+            }
         }
 
         // Iterate through the stale (canceled) Alert Routes to send messages for.
@@ -71,8 +73,8 @@ public class PushMessageManager {
             Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s",
                     staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
             staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
-
             List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute);
+
             if (!messages.isEmpty()) {
                 staleRoutesTask.messages = new ArrayList<>();
                 staleRoutesTask.messages.addAll(messages);
@@ -87,6 +89,8 @@ public class PushMessageManager {
             }
 
         } catch (TaskValidationException e) {
+
+
             Logger.error("Commute Task threw an exception.");
             CompletableFuture.completedFuture(false);
         }

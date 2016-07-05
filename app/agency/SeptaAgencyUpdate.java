@@ -2,6 +2,7 @@ package agency;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dao.AgencyDao;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -9,6 +10,7 @@ import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
 import services.AlertsUpdateManager;
+import services.PushMessageManager;
 import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
@@ -33,27 +35,22 @@ import java.util.function.Function;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-public class SeptaAgencyUpdate implements AgencyUpdate {
+public class SeptaAgencyUpdate extends AgencyUpdate {
 
-    //private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
-    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
-
-    private WSClient mWsClient;
-    private AlertsUpdateManager mAlertsUpdateManager;
+    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
+    //private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     @Inject
-    public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager) {
-        mWsClient = wsClient;
-        mAlertsUpdateManager = alertsUpdateManager;
+    public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager, AgencyDao agencyDao,
+                             PushMessageManager pushMessageManager) {
+        super(wsClient, alertsUpdateManager, agencyDao, pushMessageManager);
     }
 
-    @SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef"})
     @Override
-    public void updateAgency() {
+    public void startAgencyUpdate() {
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
-            CompletionStage<WSResponse> downloadStage = mWsClient
-                    .url(SEPTA_ALERTS_JSON_URL)
+            CompletionStage<WSResponse> downloadStage = mWsClient.url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();
@@ -119,7 +116,7 @@ public class SeptaAgencyUpdate implements AgencyUpdate {
                 // TODO: Comment to disable load test.
                 // createLoadTestUpdates(agencyAlerts);
 
-                mAlertsUpdateManager.processAgencyDownload(agencyAlerts);
+                processAgencyUpdate(agencyAlerts);
             }
             return agencyAlerts;
         }
