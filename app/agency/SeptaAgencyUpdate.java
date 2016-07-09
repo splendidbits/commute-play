@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dao.AgencyDao;
 import models.alerts.Agency;
-import models.alerts.Alert;
-import models.alerts.Route;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
@@ -13,9 +11,7 @@ import services.AlertsUpdateManager;
 import services.PushMessageManager;
 import services.splendidlog.Logger;
 
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.util.Collections;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -36,9 +32,8 @@ import java.util.function.Function;
  * 6: send data in batches of 1000 to google.
  */
 public class SeptaAgencyUpdate extends AgencyUpdate {
-
-    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
-    //private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+//    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
+    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
 
     @Inject
     public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager, AgencyDao agencyDao,
@@ -66,39 +61,6 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
      * Parses and updates all downloaded Json Data
      */
     private class ParseAgencyFunction implements Function<WSResponse, Agency> {
-
-        /**
-         * Modify the data in a series of route alerts to test things.
-         *
-         * @param agency agency bundle.
-         */
-        private void createLoadTestUpdates(@Nonnull Agency agency) {
-            if (agency.routes != null) {
-                Alert previousAlert = null;
-
-                Collections.shuffle(agency.routes);
-                for (Route route : agency.routes) {
-
-                    Collections.shuffle(route.alerts);
-                    for (Alert alert : route.alerts) {
-                        alert.messageTitle = previousAlert != null
-                                ? previousAlert.messageTitle
-                                : alert.messageTitle;
-
-                        alert.messageSubtitle = previousAlert != null
-                                ? previousAlert.messageSubtitle
-                                : alert.messageSubtitle;
-
-                        alert.messageBody = previousAlert != null
-                                ? previousAlert.messageBody
-                                : alert.messageBody;
-
-                        previousAlert = alert;
-                    }
-                }
-            }
-        }
-
         @Override
         public Agency apply(WSResponse response) {
             Agency agencyAlerts = null;
@@ -111,11 +73,8 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
                         .create();
 
                 Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+
                 agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
-
-                // TODO: Comment to disable load test.
-                // createLoadTestUpdates(agencyAlerts);
-
                 processAgencyUpdate(agencyAlerts);
             }
             return agencyAlerts;

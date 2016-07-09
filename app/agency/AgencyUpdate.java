@@ -10,6 +10,7 @@ import services.PushMessageManager;
 import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
+import java.util.Collections;
 
 abstract class AgencyUpdate {
     int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
@@ -48,6 +49,8 @@ abstract class AgencyUpdate {
      * @param updatedAgency The agency which has been updated.
      */
     public void processAgencyUpdate(@Nonnull Agency updatedAgency) {
+//        createLoadTestUpdates(updatedAgency); // TODO: Comment to disable load test.
+
         // Add the parent route back into each alert model.
         fillAlertsWithRoutes(updatedAgency);
 
@@ -68,6 +71,40 @@ abstract class AgencyUpdate {
 
         } else {
             Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
+        }
+    }
+
+    /**
+     * Modify the data in a series of route alerts to test things.
+     *
+     * @param agency agency bundle.
+     */
+    private void createLoadTestUpdates(@Nonnull Agency agency) {
+        if (agency.routes != null) {
+            Alert previousAlert = null;
+
+            Collections.shuffle(agency.routes);
+            for (Route route : agency.routes) {
+
+                if (route.alerts != null) {
+                    Collections.shuffle(route.alerts);
+                    for (Alert alert : route.alerts) {
+                        alert.messageTitle = previousAlert != null
+                                ? previousAlert.messageTitle
+                                : alert.messageTitle;
+
+                        alert.messageSubtitle = previousAlert != null
+                                ? previousAlert.messageSubtitle
+                                : alert.messageSubtitle;
+
+                        alert.messageBody = previousAlert != null
+                                ? previousAlert.messageBody
+                                : alert.messageBody;
+
+                        previousAlert = alert;
+                    }
+                }
+            }
         }
     }
 

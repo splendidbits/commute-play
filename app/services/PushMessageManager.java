@@ -24,7 +24,6 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -187,7 +186,7 @@ public class PushMessageManager {
         }
 
         @Override
-        public void invalidRecipients(@Nonnull Set<Recipient> recipients) {
+        public void invalidRecipients(@Nonnull List<Recipient> recipients) {
             Logger.warn(String.format("%d recipients need to be deleted.", recipients.size()));
             for (Recipient recipientToRemove : recipients) {
                 mDeviceDao.removeDevice(recipientToRemove.token);

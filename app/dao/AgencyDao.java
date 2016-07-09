@@ -69,26 +69,24 @@ public class AgencyDao extends BaseDao {
                         }
                     }
 
+                    // Existing route_id does not exist:
                     if (existingRouteMatch == null) {
-
-                        // Existing route_id does not exist:
-                        Logger.debug(String.format("Didn't find existing route: %s.", freshRoute.routeName));
-                        transaction = mEbeanServer.createTransaction();
-
+                        Logger.debug(String.format("Saving new route: %s.", freshRoute.routeName));
                         freshRoute.agency = existingAgency;
+
+                        transaction = mEbeanServer.createTransaction();
                         mEbeanServer.insert(freshRoute, transaction);
                         transaction.commit();
                         transaction.end();
 
                         modifiedData = true;
 
+                    // Existing route_id exists and all children are stale:
                     } else if ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
                             (existingRouteMatch.alerts != null && !existingRouteMatch.alerts.isEmpty())) {
+                        Logger.debug(String.format("Deleting all alerts for route: %s.", freshRoute.routeName));
 
-                        // Existing route_id exists and all children are stale:
-                        Logger.debug(String.format("Deleting all stale alerts for route: %s.", freshRoute.routeName));
                         transaction = mEbeanServer.createTransaction();
-
                         List<Alert> previousAlerts = mEbeanServer.find(Alert.class)
                                 .where()
                                 .conjunction()
@@ -102,28 +100,27 @@ public class AgencyDao extends BaseDao {
 
                         modifiedData = true;
 
+                    // Existing route_id exists and existing alert children are empty and different from Fresh alerts.
                     } else if (!existingRouteMatch.equals(freshRoute) &&
                             (existingRouteMatch.alerts == null || existingRouteMatch.alerts.isEmpty())){
+                        Logger.debug(String.format("Saving alert-less route: %s.", freshRoute.routeName));
 
-                        // route_id exists and existing alert children are empty and different from Fresh alerts.
-                        Logger.debug(String.format("Saving childless route: %s.", freshRoute.routeName));
                         freshRoute.id = existingRouteMatch.id;
-                        transaction = mEbeanServer.createTransaction();
 
+                        transaction = mEbeanServer.createTransaction();
                         mEbeanServer.saveAll(freshRoute.alerts, transaction);
                         transaction.commit();
                         transaction.end();
 
                         modifiedData = true;
 
+                    // Existing route_id exists existing children have been updated:
                     } else if (!existingRouteMatch.equals(freshRoute) && !existingRouteMatch.alerts.isEmpty()) {
+                        Logger.debug(String.format("Updating existing alerts for route: %s.", freshRoute.routeName));
 
-                        // Existing route_id exists existing children have been updated:
-                        Logger.debug(String.format("Updating route: %s.", freshRoute.routeName));
                         freshRoute.id = existingRouteMatch.id;
 
                         transaction = mEbeanServer.createTransaction();
-
                         List<Alert> previousAlerts = mEbeanServer.find(Alert.class)
                                 .where()
                                 .conjunction()

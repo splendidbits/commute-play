@@ -4,6 +4,7 @@ import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.config.ServerConfig;
 import com.avaje.ebean.dbmigration.DdlGenerator;
 import com.avaje.ebeaninternal.api.SpiEbeanServer;
+import main.Constants;
 import services.splendidlog.Logger;
 
 /**
@@ -22,13 +23,15 @@ class BaseDao {
      * Attempt to create the database using the ebean ddl generated schemas.
      */
     void createDatabase() {
-        Logger.warn("Error performing action on EbeanServer. Creating database with generated schemas.");
+        if (Constants.GENERATE_RUN_DLL_DATABASE) {
+            Logger.warn("Error performing action on EbeanServer. Creating database with generated schemas.");
 
-        ServerConfig serverConfig = ((SpiEbeanServer) mEbeanServer).getServerConfig();
-        serverConfig.setDdlGenerate(true);
-        serverConfig.setDdlRun(true);
+            ServerConfig serverConfig = ((SpiEbeanServer) mEbeanServer).getServerConfig();
+            serverConfig.setDdlGenerate(true);
+            serverConfig.setDdlRun(true);
 
-        DdlGenerator ddlGenerator = new DdlGenerator((SpiEbeanServer) mEbeanServer, serverConfig);
-        ddlGenerator.execute(true);
+            DdlGenerator ddlGenerator = new DdlGenerator((SpiEbeanServer) mEbeanServer, serverConfig);
+            ddlGenerator.execute(true);
+        }
     }
 }

@@ -56,7 +56,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
-        dataSourceConfig.setIsolationLevel(Transaction.REPEATABLE_READ);
+        dataSourceConfig.setIsolationLevel(Transaction.READ_COMMITTED);
 
         ArrayList<Class<?>> models = new ArrayList<>();
         models.add(Account.class);

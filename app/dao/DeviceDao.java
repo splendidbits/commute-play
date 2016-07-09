@@ -5,6 +5,7 @@ import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.Query;
 import com.avaje.ebean.Transaction;
 import models.devices.Device;
+import models.devices.Subscription;
 import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
@@ -63,11 +64,11 @@ public class DeviceDao {
     /**
      * Update a device token.
      * @param staleToken stale token for device.
-     * @param updatedToken updated token for device.
+     * @param newToken updated token for device.
      *
      * @return true if the stale device was found by token and updated
      */
-    public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String updatedToken) {
+    public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
         Transaction transaction = mEbeanServer.createTransaction();
 
         try {
@@ -75,20 +76,17 @@ public class DeviceDao {
                     .where()
                     .eq("token", staleToken)
                     .query();
-
             Device device = mEbeanServer.findUnique(deviceQuery, transaction);
 
             Logger.debug(device != null
-                    ? String.format("Found and updated device with new token %s", updatedToken)
+                    ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
                     : String.format("No device found for token %s", staleToken));
 
             if(device != null) {
-                device.markAsDirty();
-                device.token = updatedToken;
-                mEbeanServer.update(device, transaction);
+                device.token = newToken;
+                mEbeanServer.save(device, transaction);
                 transaction.commit();
                 transaction.end();
-
                 return true;
             }
 
@@ -117,11 +115,17 @@ public class DeviceDao {
         Transaction transaction = mEbeanServer.createTransaction();
 
         try {
+            Query<Subscription> subscriptionQuery = mEbeanServer.createQuery(Subscription.class)
+                    .where()
+                    .eq("device.token", deviceToken)
+                    .query();
+
             Query<Device> deviceQuery = mEbeanServer.createQuery(Device.class)
                     .where()
                     .eq("token", deviceToken)
                     .query();
 
+            mEbeanServer.delete(subscriptionQuery, transaction);
             mEbeanServer.delete(deviceQuery, transaction);
             transaction.commit();
             transaction.end();

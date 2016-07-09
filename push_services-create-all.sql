@@ -41,7 +41,7 @@ create table push_services.recipient_failures (
   type                          varchar(30),
   message                       varchar(255),
   fail_time                     timestamp without time zone,
-  constraint ck_recipient_failures_type check ( type in ('PLATFORM_LIMIT_EXCEEDED','MESSAGE_PAYLOAD_INVALID','MESSAGE_TTL_INVALID','MESSAGE_PACKAGE_INVALID','RECIPIENT_RATE_EXCEEDED','PLATFORM_AUTH_MISMATCHED','RECIPIENT_REGISTRATION_INVALID','MESSAGE_TOO_LARGE','PLATFORM_UNAVAILABLE','RECIPIENT_NOT_REGISTERED','PLATFORM_AUTH_INVALID','MESSAGE_REGISTRATIONS_MISSING','ERROR_UNKNOWN')),
+  constraint ck_recipient_failures_type check ( type in ('TEMPORARILY_UNAVAILABLE','PLATFORM_LIMIT_EXCEEDED','MESSAGE_PAYLOAD_INVALID','MESSAGE_TTL_INVALID','MESSAGE_PACKAGE_INVALID','RECIPIENT_RATE_EXCEEDED','PLATFORM_AUTH_MISMATCHED','RECIPIENT_REGISTRATION_INVALID','MESSAGE_TOO_LARGE','RECIPIENT_NOT_REGISTERED','PLATFORM_AUTH_INVALID','MESSAGE_REGISTRATIONS_MISSING','ERROR_UNKNOWN')),
   constraint uq_recipient_failures_recipient_id unique (recipient_id),
   constraint pk_recipient_failures primary key (id)
 );

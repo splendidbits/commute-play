@@ -28,6 +28,8 @@
 	- Correct re-try behaviour
 	- Correct fetch unprocessed tasks behaviour.
 
+* Check active TaskQueue listeners and message collections are cleaned.
+
 * Add expiresAt and startsAt attributes on Task
 * Refresh device tokens on response from GCM.
 * stats return for push-services?
