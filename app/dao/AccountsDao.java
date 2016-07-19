@@ -98,17 +98,20 @@ public class AccountsDao extends BaseDao {
      * @return an Account object, null if not found.
      */
     @Nullable
-    public Account getAccountForKey(@Nonnull String apiKey) {
-        Account account = mEbeanServer.createQuery(Account.class)
-                .where()
-                .eq("apiKey", apiKey)
-                .findUnique();
+    public Account getAccountForKey(String apiKey) {
+        if( apiKey != null) {
+            Account account = mEbeanServer.createQuery(Account.class)
+                    .where()
+                    .eq("apiKey", apiKey)
+                    .findUnique();
 
-        String logString = account != null
-                ? String.format("Found an API account found for key %s", apiKey)
-                : String.format("No API account found for key %s", apiKey);
+            String logString = account != null
+                    ? String.format("Found an API account found for key %s", apiKey)
+                    : String.format("No API account found for key %s", apiKey);
 
-        Logger.debug(logString);
-        return account;
+            Logger.debug(logString);
+            return account;
+        }
+        return null;
     }
 }

@@ -1,9 +1,6 @@
 package dao;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.OrderBy;
-import com.avaje.ebean.Query;
-import com.avaje.ebean.Transaction;
+import com.avaje.ebean.*;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -13,6 +10,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.persistence.PersistenceException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -167,78 +165,74 @@ public class AgencyDao extends BaseDao {
     }
 
     /**
+     * Get a list of all agencies.
+     * @return list of agencies.
+     */
+    @Nullable
+    public List<Agency> getAgencies() {
+        return mEbeanServer.find(Agency.class)
+                .fetch("routes", new FetchConfig().lazy())
+                .findList();
+    }
+
+    /**
      * Get all routes for a set of routeIds and an agency name.
      *
      * @param agencyId Id of agency.
-     * @param routeIds list of routeIds to retrieve.
+     * @param routeIds list of routesIds to retrieve routes for.
      * @return List of Routes.
      */
-    @Nullable
-    public List<Route> getAgencyRoutes(int agencyId, String... routeIds) {
+    @Nonnull
+    public List<Route> getRoutes(int agencyId, @Nonnull List<String> routeIds) {
         Transaction transaction = mEbeanServer.createTransaction();
         transaction.setReadOnly(true);
+        List<Route> returnRouteList = new ArrayList<>();
 
-        if (routeIds != null) {
+        List<Route> routes = getRoutes(agencyId);
+        if (routes != null && !routes.isEmpty()) {
 
-            // Loop through the string varargs and find each valid route.
-            for (String routeId : routeIds) {
-                routeId = routeId.trim().toLowerCase();
+            // Loop through the string varargs..
+            for (String requestRoute : routeIds) {
+                requestRoute = requestRoute.trim().toLowerCase();
 
-                try {
-                    Query<Route> query = mEbeanServer.createQuery(Route.class)
-                            .setOrder(new OrderBy<>("routeId"))
-                            .fetch("agency")
-                            .where()
-                            .eq("agency.id", agencyId)
-                            .eq("routeId", routeId.toLowerCase())
-                            .query();
-
-                    return mEbeanServer.findList(query, transaction);
-
-                } catch (PersistenceException e) {
-                    Logger.error(String.format("Error fetching routes models from database: %s.", e.getMessage()));
-
-                    if (e.getMessage() != null &&
-                            e.getMessage().contains("does not exist") &&
-                            e.getMessage().contains("Query threw SQLException:ERROR:")) {
-                        createDatabase();
+                // ..and find a valid route match.
+                for (Route route : routes) {
+                    if (route.routeId != null && route.routeId.equals(requestRoute)) {
+                        returnRouteList.add(route);
+                        break;
                     }
-
-                } catch (Exception e) {
-                    Logger.error("Error getting route for routeIds.", e);
-
-                } finally {
-                    transaction.end();
                 }
             }
         }
-        return null;
+        return returnRouteList;
     }
 
     /**
      * Get a list of saved alerts for a given agency.
      *
-     * @param agencyId id of the agency.
+     * @param agencyId id of the agency or null for all agencies.
      * @return list of alerts for agency. Can be null.
      */
     @Nullable
-    public List<Route> getAgencyRoutes(int agencyId) {
+    public List<Route> getRoutes(@Nullable Integer agencyId) {
         Transaction transaction = mEbeanServer.createTransaction();
         transaction.setReadOnly(true);
 
         try {
-            Query<Route> query = mEbeanServer.createQuery(Route.class)
+            ExpressionList<Route> routesQuery = mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency")
                     .fetch("alerts")
-                    .where()
-                    .eq("agency.id", agencyId)
-                    .query();
+                    .fetch("alerts.locations").where();
 
-            return mEbeanServer.findList(query, transaction);
+            if (agencyId != null) {
+                routesQuery.eq("agency.id", agencyId);
+            }
+
+            return mEbeanServer.findList(routesQuery.query(), transaction);
 
         } catch (PersistenceException e) {
-            Logger.error(String.format("Error saving agency model to database: %s.", e.getMessage()));
+            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
 
             if (e.getMessage() != null &&
                     e.getMessage().contains("does not exist") &&
@@ -268,6 +262,9 @@ public class AgencyDao extends BaseDao {
 
         try {
             Query<Agency> query = mEbeanServer.createQuery(Agency.class)
+                    .fetch("routes")
+                    .fetch("routes.alerts")
+                    .fetch("routes.alerts.locations")
                     .where()
                     .idEq(agencyId)
                     .query();

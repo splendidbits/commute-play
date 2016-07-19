@@ -25,7 +25,6 @@ import java.util.Map;
 /**
  * Adds an API user to the system to have access to push services.
  */
-@SuppressWarnings("unused")
 public class SignupController extends Controller {
     private static final String COMMUTE_IO_API_KEY = "UfhV6Lt";
 

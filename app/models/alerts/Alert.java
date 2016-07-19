@@ -14,6 +14,7 @@ public class Alert extends Model implements Comparable {
     public static Finder<Long, Alert> find = new Finder<>(Alert.class);
 
     @Id
+    @JsonIgnore
     @Column(name = "id")
     @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")

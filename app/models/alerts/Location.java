@@ -12,6 +12,7 @@ public class Location extends Model implements Comparable {
     public static Finder<Long, Location> find = new Finder<>(Location.class);
 
     @Id
+    @JsonIgnore
     @Column(name = "id")
     @SequenceGenerator(name = "location_id_seq_gen", sequenceName = "location_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq_gen")

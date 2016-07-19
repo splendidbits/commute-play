@@ -24,12 +24,10 @@ import java.util.*;
  */
 public class AlertsUpdateManager {
     private AgencyDao mAgencyService;
-    private PushMessageManager mPushMessageManager;
 
     @Inject
-    public AlertsUpdateManager(AgencyDao agencyService, PushMessageManager pushMessageManager) {
+    public AlertsUpdateManager(AgencyDao agencyService) {
         mAgencyService = agencyService;
-        mPushMessageManager = pushMessageManager;
     }
 
     /**
@@ -44,7 +42,7 @@ public class AlertsUpdateManager {
 
         // Get all new routes, and the current routes that exist for the agency.
         List<Route> freshRoutes = AlertHelper.copyRoute(agency.routes);
-        List<Route> existingRoutes = AlertHelper.copyRoute(mAgencyService.getAgencyRoutes(agency.id));
+        List<Route> existingRoutes = AlertHelper.copyRoute(mAgencyService.getRoutes(agency.id));
 
         // If there are no existing alerts saved, mark all fetched alerts as new.
         if (freshRoutes != null && existingRoutes.isEmpty()) {

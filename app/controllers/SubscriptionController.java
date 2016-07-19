@@ -11,6 +11,7 @@ import dao.DeviceDao;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -98,10 +99,10 @@ public class SubscriptionController extends Controller {
                 }
 
                 // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-                List<Route> validRoutes = mAgencyService.getAgencyRoutes(agencyId, routes);
+                List<Route> validRoutes = mAgencyService.getRoutes(agencyId, Arrays.asList(routes));
                 List<Subscription> subscriptions = new ArrayList<>();
-                if (validRoutes != null) {
 
+                if (!validRoutes.isEmpty()) {
                     for (Route route : validRoutes) {
                         Subscription subscription = new Subscription();
                         subscription.device = device;

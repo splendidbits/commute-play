@@ -1,9 +1,6 @@
 package dao;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.ExpressionList;
-import com.avaje.ebean.Query;
-import com.avaje.ebean.Transaction;
+import com.avaje.ebean.*;
 import models.devices.Device;
 import models.devices.Subscription;
 import services.splendidlog.Logger;
@@ -11,6 +8,9 @@ import services.splendidlog.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.persistence.PersistenceException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A DAO class for both device device / subscription data.
@@ -21,6 +21,49 @@ public class DeviceDao {
     @Inject
     public DeviceDao(EbeanServer ebeanServer) {
         mEbeanServer = ebeanServer;
+    }
+
+    @Nonnull
+    public List<Device> getAccountDevices(@Nonnull String apiKey, int page, Integer agencyId) {
+        final int MAX_ROWS = 150;
+        List<Device> foundDevices = new ArrayList<>();
+
+        Transaction transaction = mEbeanServer.createTransaction();
+        transaction.setReadOnly(true);
+
+        try {
+            ExpressionList<Device> devicesQuery = mEbeanServer.createQuery(Device.class)
+                    .setOrder(new OrderBy<>("timeRegistered"))
+                    .fetch("account")
+                    .fetch("subscriptions")
+                    .fetch("subscriptions.route")
+                    .fetch("subscriptions.route.agency")
+                    .setFirstRow(page * MAX_ROWS)
+                    .setMaxRows(MAX_ROWS)
+                    .where()
+                    .eq("account.apiKey", apiKey)
+                    .eq("subscriptions.route.agency.id", agencyId != null ? agencyId : 999);
+
+            List<Device> devices = mEbeanServer.findList(devicesQuery.query(), transaction);
+            if (devices != null) {
+                foundDevices.addAll(devices);
+            }
+
+        } catch (PersistenceException e) {
+            Logger.error(String.format("Error saving agency model to database: %s.", e.getMessage()));
+            if (e.getMessage() != null &&
+                    e.getMessage().contains("does not exist") &&
+                    e.getMessage().contains("Query threw SQLException ERROR:")) {
+            }
+
+        } catch (Exception e) {
+            Logger.error("Error getting routes for agency.", e);
+
+        } finally {
+            transaction.end();
+        }
+
+        return foundDevices;
     }
 
     /**

@@ -16,6 +16,7 @@ public class Device extends Model {
     public static Finder<Long, Device> find = new Model.Finder<>(Device.class);
 
     @Id
+    @JsonIgnore
     @Column(name = "id")
     @SequenceGenerator(name = "device_id_seq_gen", sequenceName = "device_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "device_id_seq_gen")
@@ -33,6 +34,7 @@ public class Device extends Model {
     @Column(name = "user_key")
     public String userKey;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "account_id",
@@ -40,9 +42,8 @@ public class Device extends Model {
             referencedColumnName = "id")
     public Account account;
 
-    @JsonIgnore
     @Nullable
-    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Subscription> subscriptions;
 
     @Basic

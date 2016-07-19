@@ -18,6 +18,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     public static Finder<String, Route> find = new Model.Finder<>(Route.class);
 
     @Id
+    @JsonIgnore
     @Column(name = "id")
     @SequenceGenerator(name = "route_id_seq_gen", sequenceName = "route_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_id_seq_gen")
@@ -32,7 +33,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     public Agency agency;
 
     @Nullable
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Alert> alerts;
 
     @JsonIgnore

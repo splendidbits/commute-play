@@ -1,6 +1,7 @@
 package models.alerts;
 
 import com.avaje.ebean.Model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.util.List;
@@ -11,6 +12,7 @@ public class Agency extends Model implements Cloneable {
     public static Finder<Integer, Agency> find = new Model.Finder<>(Agency.class);
 
     @Id
+    @JsonIgnore
     @Column(name = "id")
     public Integer id;
 
@@ -26,7 +28,7 @@ public class Agency extends Model implements Cloneable {
     @Column(name = "utc_offset")
     public Float utcOffset;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.LAZY)
     public List<Route> routes;
 
     @SuppressWarnings("unused")

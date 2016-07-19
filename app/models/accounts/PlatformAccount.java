@@ -1,6 +1,7 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.pushservices.PlatformType;
 
 import javax.persistence.*;
@@ -10,10 +11,8 @@ import javax.persistence.*;
 public class PlatformAccount extends Model {
     public static Finder<String, PlatformAccount> find = new Finder<>(PlatformAccount.class);
 
-    public PlatformAccount() {
-    }
-
     @Id
+    @JsonIgnore
     @SequenceGenerator(name = "platform_account_id_seq_gen", sequenceName = "platform_account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "platform_account_id_seq_gen")
     @Column(name = "id")
@@ -39,4 +38,6 @@ public class PlatformAccount extends Model {
     @Column(name = "platform")
     public PlatformType platformType;
 
+    public PlatformAccount() {
+    }
 }

@@ -45,7 +45,8 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
     public void startAgencyUpdate() {
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
-            CompletionStage<WSResponse> downloadStage = mWsClient.url(SEPTA_ALERTS_JSON_URL)
+            CompletionStage<WSResponse> downloadStage = mWsClient
+                    .url(SEPTA_ALERTS_JSON_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();

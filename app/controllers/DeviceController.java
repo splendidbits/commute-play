@@ -1,28 +1,35 @@
 package controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import dao.AccountsDao;
+import dao.DeviceDao;
 import enums.pushservices.PlatformType;
+import helpers.RequestHelper;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.devices.Device;
+import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
-import dao.AccountsDao;
-import dao.DeviceDao;
 import services.PushMessageManager;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+
 
 /**
  * The public API endpoint controller that handles devices registering
  * with the commute server.
  */
 @SuppressWarnings("unused")
-public class RegistrationController extends Controller {
+public class DeviceController extends Controller {
 
     @Inject
     private AccountsDao mAccountsDao;
@@ -37,8 +44,8 @@ public class RegistrationController extends Controller {
     private enum RegistrationResult {
         OK(ok("Success")),
         MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request")),
-        BAD_ACCOUNT(badRequest("No platform account registered for api_key")),
-        OVERDRAWN_ACCOUNT(badRequest("Over quota for account. Email help@splendidbits.co")),
+        BAD_ACCOUNT(unauthorized("No platform account registered for api_key")),
+        OVERDRAWN_ACCOUNT(paymentRequired("Over quota for account. Email help@splendidbits.co")),
         BAD_REGISTRATION_REQUEST(badRequest("Error adding device registration")),
         UNKNOWN_ERROR(badRequest("Unknown error saving the device registration."));
 
@@ -55,16 +62,65 @@ public class RegistrationController extends Controller {
      *
      * @return A Result.
      */
-    @SuppressWarnings("Convert2Lambda,unused")
     public CompletionStage<Result> register() {
         CompletionStage<RegistrationResult> promiseOfRegistration = initiateRegistration();
+        return promiseOfRegistration.thenApplyAsync(registrationResult -> registrationResult.mResultValue);
+    }
 
-        return promiseOfRegistration.thenApplyAsync(new Function<RegistrationResult, Result>() {
-            @Override
-            public Result apply(RegistrationResult registrationResult) {
-                return registrationResult.mResultValue;
+    /**
+     * Get the API account for the web request.
+     * @return Account for apiKey if found.
+     */
+    @Nullable
+    private Account getRequestApiAccount() {
+        final Set<Map.Entry<String, String[]>> entries = request().queryString().entrySet();
+        String foundApiKey = null;
+
+        for (Map.Entry<String,String[]> entry : entries) {
+            final String key = entry.getKey();
+            final String value = Arrays.deepToString(entry.getValue());
+
+            if (key.toLowerCase().equals("apikey") && !value.isEmpty()) {
+                foundApiKey = value.substring(1, value.length() - 1);
             }
-        });
+        }
+        return mAccountsDao.getAccountForKey(foundApiKey);
+    }
+
+    public CompletionStage<Result> getDevices() {
+        Account requestAccount = getRequestApiAccount();
+        if (requestAccount == null) {
+            return CompletableFuture.completedFuture(unauthorized());
+        }
+
+        List<Device> devicesList = mDeviceDao.getAccountDevices(requestAccount.apiKey, 0, null);
+        JsonNode deviceJsonArray = RequestHelper.removeSubscriptionRouteAlerts(Json.toJson(devicesList));
+
+        return CompletableFuture.completedFuture(ok(deviceJsonArray));
+    }
+
+    public CompletionStage<Result> getDevicesPage(int page) {
+        Account requestAccount = getRequestApiAccount();
+        if (requestAccount == null) {
+            return CompletableFuture.completedFuture(unauthorized());
+        }
+
+        List<Device> devicesList = mDeviceDao.getAccountDevices(requestAccount.apiKey, page, null);
+        JsonNode deviceJsonArray = RequestHelper.removeSubscriptionRouteAlerts(Json.toJson(devicesList));
+
+        return CompletableFuture.completedFuture(ok(deviceJsonArray));
+    }
+
+    public CompletionStage<Result> getDevicesPageAgency(int page, Integer agencyId) {
+        Account requestAccount = getRequestApiAccount();
+        if (requestAccount == null) {
+            return CompletableFuture.completedFuture(unauthorized());
+        }
+
+        List<Device> devicesList = mDeviceDao.getAccountDevices(requestAccount.apiKey, page, agencyId);
+        JsonNode deviceJsonArray = RequestHelper.removeSubscriptionRouteAlerts(Json.toJson(devicesList));
+
+        return CompletableFuture.completedFuture(ok(deviceJsonArray));
     }
 
     /**

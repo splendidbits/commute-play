@@ -65,6 +65,7 @@ create table push_services.tasks (
   id                            bigint not null,
   name                          varchar(255),
   priority                      integer,
+  added_time                    timestamp without time zone,
   constraint pk_tasks primary key (id)
 );
 create sequence task_id_seq increment by 1;

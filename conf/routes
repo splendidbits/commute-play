@@ -3,19 +3,31 @@
 # ~~~~
 
 # Home page
-GET         /                             controllers.Application.index()
-GET         /robots.txt                   controllers.Application.robots()
+GET         /                                                           controllers.Application.index()
+GET         /robots.txt                                                 controllers.Application.robots()
+
+# App API endpoints
+POST        /gcm/v1/register                                            controllers.DeviceController.register()
+POST        /gcm/v1/subscribe                                           controllers.SubscriptionController.subscribe()
 
 # Public API endpoints
-POST        /gcm/v1/register              controllers.RegistrationController.register()
-POST        /gcm/v1/subscribe             controllers.SubscriptionController.subscribe()
+GET         /agencies/v1                                                controllers.AgencyAlertsController.getAgencies
+GET         /routes/v1/agency/:aId                                      controllers.AgencyAlertsController.getRoutesForAgency(aId: Int)
+GET         /routes/v1/agency/:aId/route/:rId                           controllers.AgencyAlertsController.getRoutesForAgencyRoute(aId: Int, rId: String)
+GET         /alerts/v1/agency/:aId                                      controllers.AgencyAlertsController.getAlertsForAgency(aId: Int)
+GET         /alerts/v1/agency/:aId/route/:rId                           controllers.AgencyAlertsController.getAlertsForAgencyRoute(aId: Int, rId: String)
+
+# Device information for accounts
+GET         /account/v1/devices                                         controllers.DeviceController.getDevices
+GET         /account/v1/devices/page/:page                              controllers.DeviceController.getDevicesPage(page: Int)
+GET         /account/v1/devices/page/:page/agency/:aId                  controllers.DeviceController.getDevicesPageAgency(page: Int, aId: Int)
 
 # Signup
-GET         /signup                controllers.SignupController.signup()
-POST        /signup/adduser        controllers.SignupController.addUser()
+GET         /signup                                                     controllers.SignupController.signup()
+POST        /signup/adduser                                             controllers.SignupController.addUser()
 
 # SplendidLog
-->          /logs                         splendidlog.Routes
+->          /logs                                                       splendidlog.Routes
 
 # Map static resources from the /public folder to the /assets URL path
-GET         /assets/*file                 controllers.Assets.at(path="/public", file)
+GET         /assets/*file                                               controllers.Assets.at(path="/public", file)

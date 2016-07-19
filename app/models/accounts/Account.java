@@ -1,6 +1,7 @@
 package models.accounts;
 
 import com.avaje.ebean.Model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import models.devices.Device;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ public class Account extends Model {
     public static Finder<Long, Account> find = new Finder<>(Account.class);
 
     @Id
+    @JsonIgnore
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
     @Column(name = "id")

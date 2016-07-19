@@ -15,11 +15,11 @@ import java.util.concurrent.CompletionStage;
  * Copyright 6/14/16 Splendid Bits.
  */
 @Singleton
-public class ApplicationLifecycleListener {
+public class ApplicationLifecycleHook {
     private EbeanServer mEbeanServer;
 
     @Inject
-    public ApplicationLifecycleListener(EbeanServer ebeanServer, ApplicationLifecycle applicationLifecycle) {
+    public ApplicationLifecycleHook(EbeanServer ebeanServer, ApplicationLifecycle applicationLifecycle) {
         mEbeanServer = ebeanServer;
         applicationLifecycle.addStopHook(new CleanupDatabase());
     }
