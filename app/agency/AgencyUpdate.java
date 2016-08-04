@@ -48,7 +48,7 @@ abstract class AgencyUpdate {
      *
      * @param updatedAgency The agency which has been updated.
      */
-    public void processAgencyUpdate(@Nonnull Agency updatedAgency) {
+    protected void processAgencyUpdate(@Nonnull Agency updatedAgency) {
 //        createLoadTestUpdates(updatedAgency); // TODO: Comment to disable load test.
 
         // Add the parent route back into each alert model.

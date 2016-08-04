@@ -3,6 +3,23 @@
 
 # Project TODO:
 
+## TODO:
+* Commit module dependencies under correct private / public branches
+* change push_services internal branch to use splendid_log
+
+* verify unexpected results from GCM.
+	- 1100 Recipients in a message.
+	- Correct Recipients to update behaviour.
+	- Correct Recipients to fail behaviour.
+	- Correct re-try behaviour
+	- Correct fetch unprocessed tasks behaviour.
+
+* Fix and verify active TaskQueue "active message" collections are cleaned.
+* add caching to above endpoints
+* Add expiresAt and startsAt attributes on Task
+* alerts / routes / agencies public json feeds
+* Remove code TODO:s
+
 ##ASAP
 * ~~Finish automatic scheduling.~~
 * ~~Make entire logging system dependency injectable~~
@@ -17,25 +34,8 @@
 * ~~Remove automatic evolutions~~
 * ~~add @Version to all models~~
 * ~~rename agency_updates schema to agency_alerts~~
-
-* Commit module dependencies under correct private / public branches
-* change push_services internal branch to use splendid_log
-
-* verify unexpected results from GCM.
-	- 1100 Recipients in a message.
-	- Correct Recipients to update behaviour.
-	- Correct Recipients to fail behaviour.
-	- Correct re-try behaviour
-	- Correct fetch unprocessed tasks behaviour.
-
-* Check active TaskQueue listeners and message collections are cleaned.
-
-* Add expiresAt and startsAt attributes on Task
-* Refresh device tokens on response from GCM.
-* stats return for push-services?
-* alerts / routes / agencies public json feeds
-* add caching to above endpoints
-* Remove code TODO:s
+* ~~Refresh device tokens on response from GCM.~~
+* ~~Finish Akka broadcast support~~
 
 ## model updates
 ### subscriptions_registrations
@@ -52,7 +52,6 @@
 * ~~isSticky~~
 * ~~isDefaultSubscription~~
 
-
 #### RouteFeature
 * ~~regular~~
 * ~~istemporary~~
@@ -60,12 +59,11 @@
 * ~~privateService~~
 
 
-## TODO:
+##Someday
+* stats return for push-services?
 * Fix quotas / accounts?
 * Improve log display page css.
 
-##Someday
-* ~~Finish Akka broadcast support~~
 * [Deploy to WAR?](https://github.com/play2war/play2-war-plugin)
 
 #commuteIO#todo#gcm-server

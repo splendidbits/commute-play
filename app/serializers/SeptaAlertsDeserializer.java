@@ -8,7 +8,6 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import org.jsoup.Jsoup;
 import services.splendidlog.Logger;
 
 import javax.annotation.Nullable;
@@ -169,7 +168,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                                 detourLocation.name = detourStartLocation;
                                 detourLocation.date = detourStartCalendar;
                                 detourLocation.sequence = 0;
-                                detourLocation.message = Jsoup.parse(detourReason).text();
+                                detourLocation.message = detourReason;
                                 detourLocations.add(detourLocation);
                             }
 
@@ -179,7 +178,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                                 Location detourLocation = new Location();
                                 detourLocation.date = detourEndCalendar;
                                 detourLocation.sequence = -1;
-                                detourLocation.message = Jsoup.parse(detourReason).text();
+                                detourLocation.message = detourReason;
                                 detourLocations.add(detourLocation);
                             }
 
@@ -188,8 +187,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = type;
                             alert.messageTitle = type.title;
-                            alert.messageSubtitle = Jsoup.parse(detourReason).text();
-                            alert.messageBody = Jsoup.parse(detourMessage).text();
+                            alert.messageSubtitle = detourReason;
+                            alert.messageBody = detourMessage;
                             alert.locations = detourLocations;
                             rowAlerts.add(alert);
                         }
@@ -201,7 +200,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeWeather;
                             alert.messageTitle = typeWeather.title;
-                            alert.messageBody = Jsoup.parse(currentMessage).text();
+                            alert.messageBody = currentMessage;
                             rowAlerts.add(alert);
                         }
 
@@ -212,7 +211,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeInformation;
                             alert.messageTitle = typeInformation.title;
-                            alert.messageBody = Jsoup.parse(advisoryMessage).text();
+                            alert.messageBody = advisoryMessage;
                             rowAlerts.add(alert);
                         }
 
@@ -223,7 +222,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeCurrent;
                             alert.messageTitle = typeCurrent.title;
-                            alert.messageBody = Jsoup.parse(currentMessage).text();
+                            alert.messageBody = currentMessage;
                             rowAlerts.add(alert);
                         }
 
