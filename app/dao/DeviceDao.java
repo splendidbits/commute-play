@@ -219,14 +219,10 @@ public class DeviceDao {
             if (matchingDevice != null) {
 
                 // Delete existing subscriptions
-                List<Subscription> subscriptionQuery = mEbeanServer.find(Subscription.class)
+                mEbeanServer.find(Subscription.class)
                         .where()
                         .eq("device.id", matchingDevice.id)
-                        .findList();
-
-                mEbeanServer.deleteAllPermanent(subscriptionQuery, transaction);
-                transaction.commit();
-                transaction = mEbeanServer.createTransaction();
+                        .delete();
 
                 matchingDevice.deviceId = device.deviceId;
                 matchingDevice.token = device.token;
