@@ -90,7 +90,7 @@ create sequence route_id_seq increment by 1;
 
 create table device_information.subscriptions (
   id                            bigint not null,
-  device_id                     bigint not null,
+  device_id                     bigint,
   route_id                      varchar(255),
   time_subscribed               timestamp without time zone,
   constraint pk_subscriptions primary key (id)

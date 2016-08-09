@@ -106,9 +106,9 @@ public class DeviceDao {
 
     /**
      * Update a device token.
-     * @param staleToken stale token for device.
-     * @param newToken updated token for device.
      *
+     * @param staleToken stale token for device.
+     * @param newToken   updated token for device.
      * @return true if the stale device was found by token and updated
      */
     public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
@@ -125,7 +125,7 @@ public class DeviceDao {
                     ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
                     : String.format("No device found for token %s", staleToken));
 
-            if(device != null) {
+            if (device != null) {
                 device.token = newToken;
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
@@ -198,48 +198,61 @@ public class DeviceDao {
     public boolean saveDevice(@Nonnull Device device) {
         Transaction transaction = mEbeanServer.createTransaction();
 
-        if (device.token != null || device.deviceId != null) {
-            try {
-                // Build a query depending on if we have a token, and or device identifier.
-                ExpressionList<Device> existingDeviceExpression = mEbeanServer
-                        .createQuery(Device.class)
+        try {
+            Device matchingDevice = null;
+
+            // Build a query depending on if we have a token, and or device identifier.
+            if (device.token != null) {
+                matchingDevice = mEbeanServer.createQuery(Device.class)
                         .where()
-                        .disjunction();
+                        .eq("token", device.token)
+                        .findUnique();
 
-                if (device.deviceId != null && !device.deviceId.isEmpty()) {
-                    existingDeviceExpression.eq("deviceId", device.deviceId);
-                }
+            } else if (device.deviceId != null) {
+                matchingDevice = mEbeanServer.createQuery(Device.class)
+                        .where()
+                        .eq("deviceId", device.id)
+                        .findUnique();
+            }
 
-                if (device.token != null && !device.token.isEmpty()) {
-                    existingDeviceExpression.eq("token", device.token);
-                }
+            // Update an existing device if it exists.
+            if (matchingDevice != null) {
 
-                existingDeviceExpression.endJunction();
-                Device foundDevice = existingDeviceExpression.findUnique();
+                // Delete existing subscriptions
+                List<Subscription> subscriptionQuery = mEbeanServer.find(Subscription.class)
+                        .where()
+                        .eq("device.id", matchingDevice.id)
+                        .findList();
 
-                // Update an existing device if it exists.
-                if (foundDevice != null) {
-                    device.id = foundDevice.id;
-                    mEbeanServer.update(device, transaction);
-
-                } else {
-                    mEbeanServer.save(device, transaction);
-                }
-
+                mEbeanServer.deleteAllPermanent(subscriptionQuery, transaction);
                 transaction.commit();
+                transaction = mEbeanServer.createTransaction();
+
+                matchingDevice.deviceId = device.deviceId;
+                matchingDevice.token = device.token;
+                matchingDevice.account = device.account;
+                matchingDevice.appKey = device.appKey;
+                matchingDevice.userKey = device.userKey;
+                matchingDevice.subscriptions = device.subscriptions;
+                mEbeanServer.save(matchingDevice, transaction);
+
+            } else {
+                mEbeanServer.insert(device, transaction);
+            }
+
+            transaction.commit();
+            return true;
+
+        } catch (Exception e) {
+            Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
+            transaction.rollback();
+
+        } finally {
+            if (transaction.isActive()) {
                 transaction.end();
-                return true;
-
-            } catch (Exception e) {
-                Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
-                transaction.rollback();
-
-            } finally {
-                if (transaction.isActive()) {
-                    transaction.end();
-                }
             }
         }
+
         return false;
     }
 

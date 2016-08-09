@@ -28,8 +28,8 @@
         <appender-ref ref="FILE"/>
     </root>
 
-    <logger name="org.avaje.ebean.SQL" level="ERROR"/>
-    <logger name="org.avaje.ebean.TXN" level="ERROR"/>
-    <logger name="org.avaje.ebean.SUM" level="ERROR"/>
+    <!--<logger name="org.avaje.ebean.SQL" level="ERROR"/>-->
+    <!--<logger name="org.avaje.ebean.TXN" level="ERROR"/>-->
+    <!--<logger name="org.avaje.ebean.SUM" level="ERROR"/>-->
 
 </configuration>

@@ -47,7 +47,10 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setAutoCommit(false);
         dataSourceConfig.setHeartbeatFreqSecs(DATABASE_HEARTBEAT_SECS);
         dataSourceConfig.setHeartbeatTimeoutSeconds(120);
-        dataSourceConfig.setMaxConnections(100);
+        dataSourceConfig.setMaxConnections(1000);
+        dataSourceConfig.setLeakTimeMinutes(1);
+        dataSourceConfig.setMaxInactiveTimeSecs(20);
+        dataSourceConfig.setWaitTimeoutMillis(1000 * 20);
         dataSourceConfig.setUrl(datasourceUrl);
         dataSourceConfig.setDriver(datasourceDriver);
         dataSourceConfig.setUsername(datasourceUsername);
@@ -56,7 +59,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
-        dataSourceConfig.setIsolationLevel(Transaction.READ_COMMITTED);
+        dataSourceConfig.setIsolationLevel(Transaction.READ_UNCOMMITTED);
 
         ArrayList<Class<?>> models = new ArrayList<>();
         models.add(Account.class);
