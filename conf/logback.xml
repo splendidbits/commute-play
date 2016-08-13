@@ -28,8 +28,24 @@
         <appender-ref ref="FILE"/>
     </root>
 
-    <!--<logger name="org.avaje.ebean.SQL" level="ERROR"/>-->
-    <!--<logger name="org.avaje.ebean.TXN" level="ERROR"/>-->
-    <!--<logger name="org.avaje.ebean.SUM" level="ERROR"/>-->
+    <logger name="org.avaje.ebean.ReadAuditQuery" level="TRACE" additivity="false">
+        <appender-ref ref="READAUDIT_QUERY_LOG"/>
+    </logger>
+
+    <logger name="org.avaje.ebean.ReadAudit" level="TRACE" additivity="false">
+        <appender-ref ref="READAUDIT_LOG"/>
+    </logger>
+
+    <logger name="org.avaje.ebean.ChangeLog" level="TRACE" additivity="false">
+        <appender-ref ref="CHANGE_LOG"/>
+    </logger>
+
+    <logger name="com.avaje.ebean" level="INFO"/>
+    <logger name="org.avaje.ebean" level="INFO"/>
+
+    <logger name="org.avaje.ebean.SQL" level="TRACE"/>
+    <logger name="org.avaje.ebean.TXN" level="TRACE"/>
+    <logger name="org.avaje.ebean.SUM" level="TRACE"/>
+    <logger name="org.avaje.ebean.ELA" level="TRACE"/>
 
 </configuration>
