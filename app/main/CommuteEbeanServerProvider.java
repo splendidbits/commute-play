@@ -27,7 +27,7 @@ import java.util.ArrayList;
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
     private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
-    private final static int DATABASE_HEARTBEAT_SECS = 30;
+    private final static int DATABASE_HEARTBEAT_SECS = 15;
 
     private Configuration mConfiguration;
 
@@ -49,7 +49,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setHeartbeatTimeoutSeconds(120);
         dataSourceConfig.setMaxConnections(1000);
         dataSourceConfig.setLeakTimeMinutes(1);
-        dataSourceConfig.setMaxInactiveTimeSecs(20);
+        dataSourceConfig.setMaxInactiveTimeSecs(60);
         dataSourceConfig.setWaitTimeoutMillis(1000 * 20);
         dataSourceConfig.setUrl(datasourceUrl);
         dataSourceConfig.setDriver(datasourceDriver);

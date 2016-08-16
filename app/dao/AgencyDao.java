@@ -152,7 +152,7 @@ public class AgencyDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
-            if (transaction != null && transaction.isActive()) {
+            if (transaction != null) {
                 transaction.rollback();
             }
             return false;
@@ -244,7 +244,9 @@ public class AgencyDao extends BaseDao {
             Logger.error("Error getting routes for agency.", e);
 
         } finally {
-            transaction.end();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
         return null;
     }
@@ -285,7 +287,9 @@ public class AgencyDao extends BaseDao {
             return null;
 
         } finally {
-            transaction.end();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
     }
 }

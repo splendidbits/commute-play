@@ -60,7 +60,9 @@ public class DeviceDao {
             Logger.error("Error getting routes for agency.", e);
 
         } finally {
-            transaction.end();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
 
         return foundDevices;
