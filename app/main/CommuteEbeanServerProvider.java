@@ -47,9 +47,10 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setAutoCommit(false);
         dataSourceConfig.setHeartbeatFreqSecs(DATABASE_HEARTBEAT_SECS);
         dataSourceConfig.setHeartbeatTimeoutSeconds(120);
-        dataSourceConfig.setMaxConnections(1000);
+        dataSourceConfig.setMaxConnections(20);
         dataSourceConfig.setLeakTimeMinutes(1);
-        dataSourceConfig.setMaxInactiveTimeSecs(60);
+        dataSourceConfig.setMaxInactiveTimeSecs(10);
+        dataSourceConfig.setMaxAgeMinutes(30);
         dataSourceConfig.setWaitTimeoutMillis(1000 * 20);
         dataSourceConfig.setUrl(datasourceUrl);
         dataSourceConfig.setDriver(datasourceDriver);
