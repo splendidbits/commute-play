@@ -27,7 +27,7 @@ import java.util.ArrayList;
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
     private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
-    private final static int DATABASE_HEARTBEAT_SECS = 30;
+    private final static int DATABASE_HEARTBEAT_SECS = 60 * 60;
 
     private Configuration mConfiguration;
 
@@ -45,16 +45,18 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
         dataSourceConfig.setHeartbeatFreqSecs(DATABASE_HEARTBEAT_SECS);
-        dataSourceConfig.setHeartbeatTimeoutSeconds(180);
-        dataSourceConfig.setMaxConnections(200);
-        dataSourceConfig.setLeakTimeMinutes(2);
-        dataSourceConfig.setMaxInactiveTimeSecs(10);
-        dataSourceConfig.setWaitTimeoutMillis(1000 * 60);
+        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
+        dataSourceConfig.setMaxConnections(400);
+        dataSourceConfig.setLeakTimeMinutes(1);
+        dataSourceConfig.setMaxInactiveTimeSecs(5);
+        dataSourceConfig.setMaxAgeMinutes(1);
+        dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
+        dataSourceConfig.setTrimPoolFreqSecs(30 * 1000);
         dataSourceConfig.setUrl(datasourceUrl);
         dataSourceConfig.setDriver(datasourceDriver);
         dataSourceConfig.setUsername(datasourceUsername);
         dataSourceConfig.setPassword(datasourcePassword);
-        dataSourceConfig.setCaptureStackTrace(false);
+        dataSourceConfig.setCaptureStackTrace(true);
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
