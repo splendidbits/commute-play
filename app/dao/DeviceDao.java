@@ -60,9 +60,7 @@ public class DeviceDao {
             Logger.error("Error getting routes for agency.", e);
 
         } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
+            transaction.end();
         }
 
         return foundDevices;
@@ -100,9 +98,7 @@ public class DeviceDao {
             return null;
 
         } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
+            transaction.end();
         }
     }
 
@@ -131,7 +127,6 @@ public class DeviceDao {
                 device.token = newToken;
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
-                transaction.end();
                 return true;
             }
 
@@ -142,9 +137,7 @@ public class DeviceDao {
             return false;
 
         } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
+            transaction.end();
         }
     }
 
@@ -173,7 +166,6 @@ public class DeviceDao {
             mEbeanServer.delete(subscriptionQuery, transaction);
             mEbeanServer.delete(deviceQuery, transaction);
             transaction.commit();
-            transaction.end();
 
             Logger.debug(String.format("Removed device %s,", deviceToken));
             return true;
@@ -184,9 +176,7 @@ public class DeviceDao {
             return false;
 
         } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
+            transaction.end();
         }
     }
 
@@ -246,9 +236,7 @@ public class DeviceDao {
             transaction.rollback();
 
         } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
+            transaction.end();
         }
 
         return false;

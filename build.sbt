@@ -30,7 +30,7 @@ libraryDependencies ++= Seq(
   javaWs,
   javaJpa,
   "org.avaje" % "avaje-agentloader" % "2.1.2",
-  "org.postgresql" % "postgresql" % "9.4.1208",
+  "org.postgresql" % "postgresql" % "9.4.1209",
   "org.jsoup" % "jsoup" % "1.7.2",
   "junit" % "junit" % "4.11" % Test,
   "com.google.code.gson" % "gson" % "2.2"

@@ -2,10 +2,10 @@ package main;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.Transaction;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -24,10 +24,10 @@ import java.util.ArrayList;
  * (This means you can use it as you wish, host and share modifications.)
  * Copyright 4/2/16 Splendid Bits.
  */
+@Singleton
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
     private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
-    private final static int DATABASE_HEARTBEAT_SECS = 60 * 60;
 
     private Configuration mConfiguration;
 
@@ -38,29 +38,32 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
     @Override
     public EbeanServer get() {
+
         String datasourceUrl = mConfiguration.getString(SERVER_CONFIG_PREFIX + "url");
         String datasourceUsername = mConfiguration.getString(SERVER_CONFIG_PREFIX + "username");
         String datasourcePassword = mConfiguration.getString(SERVER_CONFIG_PREFIX + "password");
         String datasourceDriver = mConfiguration.getString(SERVER_CONFIG_PREFIX + "driver");
 
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
-        dataSourceConfig.setHeartbeatFreqSecs(DATABASE_HEARTBEAT_SECS);
-        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
-        dataSourceConfig.setMaxConnections(400);
-        dataSourceConfig.setLeakTimeMinutes(1);
-        dataSourceConfig.setMaxInactiveTimeSecs(5);
-        dataSourceConfig.setMaxAgeMinutes(1);
-        dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
-        dataSourceConfig.setTrimPoolFreqSecs(30 * 1000);
         dataSourceConfig.setUrl(datasourceUrl);
         dataSourceConfig.setDriver(datasourceDriver);
         dataSourceConfig.setUsername(datasourceUsername);
         dataSourceConfig.setPassword(datasourcePassword);
+
+        dataSourceConfig.setHeartbeatFreqSecs(60 * 60);
+        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
+        dataSourceConfig.setMinConnections(1);
+        dataSourceConfig.setMaxConnections(20);
+        dataSourceConfig.setLeakTimeMinutes(3);
+        dataSourceConfig.setMaxInactiveTimeSecs(30);
+        dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
+        dataSourceConfig.setTrimPoolFreqSecs(60 * 1000);
         dataSourceConfig.setCaptureStackTrace(true);
+
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
-        dataSourceConfig.setIsolationLevel(Transaction.READ_UNCOMMITTED);
+//        dataSourceConfig.setIsolationLevel(Transaction.READ_UNCOMMITTED);
 
         ArrayList<Class<?>> models = new ArrayList<>();
         models.add(Account.class);
@@ -77,6 +80,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setName(Constants.DATABASE_SERVER_NAME);
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
         serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
+
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setUpdateAllPropertiesInBatch(true);

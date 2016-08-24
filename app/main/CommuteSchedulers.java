@@ -40,8 +40,9 @@ public class CommuteSchedulers {
                             Duration.create(Constants.AGENCY_UPDATE_INTERVAL_SECONDS, TimeUnit.SECONDS),
                             agencyActor,
                             new AgencyUpdateMessage(),
-                            actorSystem.dispatcher(),
-                            ActorRef.noSender());
+                            actorSystem.dispatchers().defaultGlobalDispatcher(),
+                            ActorRef.noSender()
+                    );
         }
     }
 }

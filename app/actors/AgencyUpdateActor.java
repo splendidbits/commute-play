@@ -24,7 +24,6 @@ public class AgencyUpdateActor extends UntypedActor {
         if (msg != null && msg instanceof AgencyUpdateProtocol) {
             AgencyUpdateProtocol agencyUpdateMessage = (AgencyUpdateProtocol) msg;
             sender().tell("Actor fired for Agency type: " + agencyUpdateMessage.getAgencyType(), self());
-
             mSeptaAgencyUpdate.startAgencyUpdate();
         }
     }

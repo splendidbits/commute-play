@@ -99,7 +99,7 @@ public class AccountsDao extends BaseDao {
      */
     @Nullable
     public Account getAccountForKey(String apiKey) {
-        if( apiKey != null) {
+        if (apiKey != null) {
             Account account = mEbeanServer.createQuery(Account.class)
                     .where()
                     .eq("apiKey", apiKey)
