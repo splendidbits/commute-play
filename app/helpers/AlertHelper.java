@@ -132,17 +132,16 @@ public class AlertHelper {
     @Nonnull
     private static List<Message> buildAlertUpdateMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
-
         List<Message> messages = new ArrayList<>();
-        if (route.alerts != null && route.routeId != null) {
 
+        if (route.alerts != null && route.routeId != null) {
             for (Alert alert : route.alerts) {
+
                 Credentials credentials = getMessageCredentials(platformAccount);
 
                 if (credentials != null) {
                     PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                             .setCollapseKey(route.routeId)
-                            .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                             .setPlatformCredentials(credentials)
                             .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                             .putData(AlertMessageKey.KEY_ROUTE_NAME.key, route.routeName)
@@ -151,19 +150,22 @@ public class AlertHelper {
                     switch (alert.type) {
                         case TYPE_DETOUR:
                             messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             break;
 
                         case TYPE_INFORMATION:
                             messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             break;
 
                         case TYPE_DISRUPTION:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
                         case TYPE_WEATHER:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             break;
 
                         case TYPE_APP:
@@ -173,6 +175,7 @@ public class AlertHelper {
 
                         case TYPE_MAINTENANCE:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             break;
                     }
 
@@ -210,7 +213,7 @@ public class AlertHelper {
             if (credentials != null) {
                 PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
-                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
+                        .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                         .setPlatformCredentials(credentials)
                         .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                         .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
@@ -402,7 +405,7 @@ public class AlertHelper {
      * @return copied {@link Route}.
      */
     @SuppressWarnings("WeakerAccess")
-    public static Route copyRoute(@Nonnull Route route){
+    public static Route copyRoute(@Nonnull Route route) {
         try {
             return (Route) route.clone();
 
