@@ -52,5 +52,6 @@ playEbeanModels in Compile := Seq(
   "models.devices.*"
 )
 
+// If set to True, Play will run in a different JVM than SBT
 // Turning this to "true" stops debugging. Aways set it to "false" in debug
 fork in run := false
