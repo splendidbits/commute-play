@@ -125,6 +125,7 @@ public class DeviceDao {
 
             if (device != null) {
                 device.token = newToken;
+                mEbeanServer.markAsDirty(device);
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
                 return true;
@@ -189,6 +190,7 @@ public class DeviceDao {
      */
     public boolean saveDevice(@Nonnull Device device) {
         Transaction transaction = mEbeanServer.createTransaction();
+        mEbeanServer.markAsDirty(device);
 
         try {
             Device matchingDevice = null;

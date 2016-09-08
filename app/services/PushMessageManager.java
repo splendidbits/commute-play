@@ -204,8 +204,9 @@ public class PushMessageManager {
 
             // Sanity check that all recipients are completed or failed.
             for (Recipient recipient : originalMessage.recipients) {
-                if (!(recipient.state == RecipientState.STATE_COMPLETE ||
-                        recipient.state == RecipientState.STATE_FAILED)) {
+
+                // If the recipient wasn't a fail or success there's a problem.
+                if (!(recipient.state == RecipientState.STATE_COMPLETE || recipient.state == RecipientState.STATE_FAILED)) {
                     throw new RuntimeException("messageCompleted() response did not match recipient states.");
                 }
             }

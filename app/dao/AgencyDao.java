@@ -32,9 +32,10 @@ public class AgencyDao extends BaseDao {
      */
     public boolean saveAgency(@Nonnull Agency newAgency) {
         Logger.debug("Persisting agency routes in database.");
+
         Agency existingAgency = getAgency(newAgency.id);
         Transaction transaction = mEbeanServer.createTransaction();
-
+        mEbeanServer.markAsDirty(newAgency);
         boolean modifiedData = false;
 
         try {
@@ -71,7 +72,7 @@ public class AgencyDao extends BaseDao {
                         mEbeanServer.insert(freshRoute, transaction);
                         modifiedData = true;
 
-                    // Existing route_id exists and all children are stale:
+                        // Existing route_id exists and all children are stale:
                     } else if ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
                             (existingRouteMatch.alerts != null && !existingRouteMatch.alerts.isEmpty())) {
 
@@ -86,9 +87,9 @@ public class AgencyDao extends BaseDao {
                         mEbeanServer.deleteAll(previousAlerts, transaction);
                         modifiedData = true;
 
-                    // Existing route_id exists and existing alert children are empty and different from Fresh alerts.
+                        // Existing route_id exists and existing alert children are empty and different from Fresh alerts.
                     } else if (!existingRouteMatch.equals(freshRoute) &&
-                            (existingRouteMatch.alerts == null || existingRouteMatch.alerts.isEmpty())){
+                            (existingRouteMatch.alerts == null || existingRouteMatch.alerts.isEmpty())) {
 
                         Logger.debug(String.format("Saving alert-less route: %s.", freshRoute.routeName));
                         freshRoute.id = existingRouteMatch.id;
@@ -96,7 +97,7 @@ public class AgencyDao extends BaseDao {
                         mEbeanServer.saveAll(freshRoute.alerts, transaction);
                         modifiedData = true;
 
-                    // Existing route_id exists existing children have been updated:
+                        // Existing route_id exists existing children have been updated:
                     } else if (!existingRouteMatch.equals(freshRoute) && !existingRouteMatch.alerts.isEmpty()) {
 
                         Logger.debug(String.format("Updating existing alerts for route: %s.", freshRoute.routeName));
@@ -150,6 +151,7 @@ public class AgencyDao extends BaseDao {
 
     /**
      * Get a list of all agencies.
+     *
      * @return list of agencies.
      */
     @Nullable
