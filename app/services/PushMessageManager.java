@@ -51,7 +51,7 @@ public class PushMessageManager {
     public CompletableFuture<Boolean> dispatchAlerts(@Nonnull AgencyAlertModifications agencyUpdates) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
         List<Task> taskList = new ArrayList<>();
-        
+
         List<Route> updatedAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getUpdatedAlerts());
         List<Route> staleAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getStaleAlerts());
 
@@ -60,7 +60,7 @@ public class PushMessageManager {
             Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
                     ? updatedRoute.agency.id : -1, updatedRoute.routeId));
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute);
+            updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute, false);
 
             if (!updatedRoutesTask.messages.isEmpty()) {
                 taskList.add(updatedRoutesTask);
@@ -71,8 +71,8 @@ public class PushMessageManager {
         for (Route staleRoute : staleAlertRoutes) {
             Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s",
                     staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
-            staleRoutesTask.priority = Task.TASK_PRIORITY_LOW;
-            List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute);
+            staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
+            List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute, true);
 
             if (!messages.isEmpty()) {
                 staleRoutesTask.messages = new ArrayList<>();
@@ -103,12 +103,13 @@ public class PushMessageManager {
      * <p>
      * Creates a list of separate messages for every {@link PlatformAccount} in every {@link Account}.
      *
-     * @param agencyId The agencyId for the route.
-     * @param route    Route with messages to send.
+     * @param agencyId       The agencyId for the route.
+     * @param route          Route with messages to send.
+     * @param isCancellation set whether the alert message is an update or cancellation (clear).
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertMessages(int agencyId, @Nonnull Route route) {
+    private List<Message> createAlertMessages(int agencyId, @Nonnull Route route, boolean isCancellation) {
         if (route.alerts == null) {
             throw new RuntimeException("Route does not contain any alerts.");
         }
@@ -118,12 +119,18 @@ public class PushMessageManager {
         for (Account account : accounts) {
 
             // Build a new message for the platform task per API and then Platform account.
-            if (account.devices != null && account.platformAccounts != null && !account.devices.isEmpty() &&
-                    !account.platformAccounts.isEmpty()) {
+            if (account.devices != null
+                    && account.platformAccounts != null
+                    && !account.devices.isEmpty()
+                    && !account.platformAccounts.isEmpty()) {
 
                 // Create a message for each new alert in the route.
                 for (PlatformAccount platformAccount : account.platformAccounts) {
-                    List<Message> alertMessages = AlertHelper.getAlertMessages(route, account.devices, platformAccount);
+                    List<Message> alertMessages = AlertHelper.getAlertMessages(
+                            route,
+                            account.devices,
+                            platformAccount,
+                            isCancellation);
                     messages.addAll(alertMessages);
                 }
             }

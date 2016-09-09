@@ -70,13 +70,16 @@ public class AlertHelper {
      *
      * @param route           route which has been updated.
      * @param platformAccount platform account for the alert message.
+     * @param isCancellation set whether the alert message is an update or cancellation (clear).
      * @return List of platform messages for route.
      */
-    public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
-                                                 @Nonnull PlatformAccount platformAccount) {
+    public static List<Message> getAlertMessages(@Nonnull Route route,
+                                                 @Nonnull List<Device> devices,
+                                                 @Nonnull PlatformAccount platformAccount,
+                                                 boolean isCancellation) {
 
         // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
-        if (route.alerts != null && !route.alerts.isEmpty()) {
+        if (!isCancellation) {
             List<Message> messages = buildAlertUpdateMessage(route, devices, platformAccount);
 
             for (Message message : messages) {
@@ -150,7 +153,7 @@ public class AlertHelper {
                     switch (alert.type) {
                         case TYPE_DETOUR:
                             messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
                         case TYPE_INFORMATION:
@@ -165,17 +168,17 @@ public class AlertHelper {
 
                         case TYPE_WEATHER:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
                         case TYPE_APP:
                             messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             break;
 
                         case TYPE_MAINTENANCE:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
                     }
 
@@ -213,7 +216,7 @@ public class AlertHelper {
             if (credentials != null) {
                 PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
-                        .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setPlatformCredentials(credentials)
                         .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                         .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
