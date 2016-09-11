@@ -140,8 +140,18 @@ public class AlertsUpdateManager {
     private List<Alert> getStaleAlerts(@Nonnull Route route, List<Alert> existingAlerts, List<Alert> freshAlerts) {
         List<Alert> staleAlerts = new ArrayList<>();
 
+        // Sanity check for both lists being empty.
+        if ((existingAlerts == null || existingAlerts.isEmpty()) && (freshAlerts == null || freshAlerts.isEmpty())) {
+            return staleAlerts;
+        }
+
         // Mark all existing alerts as stale if fresh alerts are empty.
         if (freshAlerts == null || freshAlerts.isEmpty() && existingAlerts != null && !existingAlerts.isEmpty()) {
+            return existingAlerts;
+        }
+
+        // Sanity check the fresh alert is empty, use this iteration to add to stale alerts.
+        if (AlertHelper.isAlertsEmpty(freshAlerts) && (existingAlerts != null && !existingAlerts.isEmpty())) {
             return existingAlerts;
         }
 
@@ -151,12 +161,6 @@ public class AlertsUpdateManager {
             // Add all fresh alert types to a set.
             for (Alert freshAlert : freshAlerts) {
                 freshAlertTypes.add(freshAlert.type);
-
-                // Just in case the fresh alert is empty, use this iteration to add to stale alerts.
-                if (AlertHelper.isAlertEmpty(freshAlert)) {
-                    freshAlert.route = route;
-                    staleAlerts.add(freshAlert);
-                }
             }
 
             // If an existing alert type does not exist in the updated fresh alerts, it is stale.

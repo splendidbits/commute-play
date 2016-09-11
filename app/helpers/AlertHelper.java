@@ -380,8 +380,25 @@ public class AlertHelper {
      * @return true if the message is empty.
      */
     public static boolean isAlertEmpty(@Nonnull Alert alert) {
-        return ((alert.messageBody == null || alert.messageBody.isEmpty()) ||
-                (alert.type == null || AlertType.TYPE_NONE.equals(alert.type)));
+        boolean messageBodyEmpty = alert.messageBody == null || alert.messageBody.isEmpty();
+        boolean messageTitleEmpty = alert.messageTitle == null || alert.messageTitle.isEmpty();
+        boolean messageTypeNone = alert.type == null || AlertType.TYPE_NONE.equals(alert.type);
+
+        return (messageBodyEmpty || messageTitleEmpty) || messageTypeNone;
+    }
+
+    /**
+     * Returns true if all alerts are empty.
+     * @param alerts list of alerts to check.
+     * @return true if all alerts in collection are empty.
+     */
+    public static boolean isAlertsEmpty(@Nonnull List<Alert> alerts) {
+        for (Alert alert : alerts) {
+            if (!isAlertEmpty(alert)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
