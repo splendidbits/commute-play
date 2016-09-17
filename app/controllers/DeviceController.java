@@ -3,25 +3,34 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import dao.AccountsDao;
 import dao.DeviceDao;
+import enums.pushservices.Failure;
+import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
+import exceptions.pushservices.TaskValidationException;
+import helpers.AlertHelper;
 import helpers.RequestHelper;
+import helpers.pushservices.PlatformMessageBuilder;
+import interfaces.pushservices.TaskQueueCallback;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.devices.Device;
+import models.pushservices.*;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.PushMessageManager;
+import services.pushservices.TaskQueue;
+import services.splendidlog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 
 /**
@@ -31,14 +40,18 @@ import java.util.concurrent.CompletionStage;
 @SuppressWarnings("unused")
 public class DeviceController extends Controller {
 
-    @Inject
     private AccountsDao mAccountsDao;
-
-    @Inject
     private DeviceDao mDeviceDao;
+    private TaskQueue mTaskQueue;
+    private PushMessageManager mPushMessageManager;
 
     @Inject
-    private PushMessageManager mPushMessageManager;
+    public DeviceController(AccountsDao accountsDao, DeviceDao deviceDao, TaskQueue taskQueue, PushMessageManager pushMessageManager) {
+        mAccountsDao = accountsDao;
+        mDeviceDao = deviceDao;
+        mTaskQueue = taskQueue;
+        mPushMessageManager = pushMessageManager;
+    }
 
     // Return results enum
     private enum RegistrationResult {
@@ -57,6 +70,111 @@ public class DeviceController extends Controller {
     }
 
     /**
+     * Endpoint for cleaning devices by sending a ping GCM and un-registering / un-subscribing if needed/
+     *
+     * @return A result for if the subscription request succeeded or failed.
+     */
+    @SuppressWarnings("Convert2Lambda")
+    public CompletionStage<Result> cleanDevices() {
+        CompletableFuture<Result> completableResult = null;
+
+        try {
+            String rawIp = request().remoteAddress();
+            InetAddress clientIp = InetAddress.getByName(rawIp);
+            completableResult = CompletableFuture.supplyAsync(new Supplier<Result>() {
+
+                @Override
+                public Result get() {
+                    if (!clientIp.getHostName().equals("localhost")) {
+                        return badRequest("This is a private API");
+                    }
+
+                    Set<String> deviceTokens = new HashSet<>();
+                    List<Device> foundDevices = mDeviceDao.getAllDevices();
+                    for (Device device : foundDevices) {
+                        deviceTokens.add(device.token);
+                    }
+
+                    Account accountDetails = mAccountsDao.getAccountForEmail("daniel@staticfish.com");
+                    if (accountDetails != null &&
+                            accountDetails.platformAccounts != null &&
+                            !accountDetails.platformAccounts.isEmpty()) {
+
+                        Credentials credentials = AlertHelper.getMessageCredentials(accountDetails.platformAccounts.get(0));
+                        Message pingAllMessage = new PlatformMessageBuilder.Builder()
+                                .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                                .putData("ping_message", "ping")
+                                .setCollapseKey("ping")
+                                .setShouldDelayWhileIdle(false)
+                                .setDeviceTokens(deviceTokens)
+                                .setPlatformCredentials(credentials)
+                                .build();
+
+                        Task pingAllTask = new Task("pingAll");
+                        pingAllTask.messages.add(pingAllMessage);
+
+                        try {
+                            mTaskQueue.queueTask(pingAllTask, new DevicePingCallback());
+
+                        } catch (TaskValidationException e) {
+                            Logger.error("Task Validation Exception", e);
+                        }
+                    }
+                    return ok("Success");
+                }
+            });
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return completableResult;
+    }
+
+    /**
+     * Callbacks for the pingAll function
+     */
+    private class DevicePingCallback implements TaskQueueCallback {
+
+        @Override
+        public void updatedRegistrations(@Nonnull Map<Recipient, Recipient> updatedRegistrations) {
+            Logger.debug("Registration update response from ping. Updating.");
+            for (Map.Entry<Recipient, Recipient> updatedRegistration : updatedRegistrations.entrySet()) {
+                Recipient staleRecipient = updatedRegistration.getKey();
+                Recipient newRecipient = updatedRegistration.getValue();
+
+                mDeviceDao.saveUpdatedToken(staleRecipient.token, newRecipient.token);
+            }
+        }
+
+        @Override
+        public void invalidRecipients(@Nonnull List<Recipient> recipients) {
+            Logger.debug("Invalid recipients response from ping. Deleting.");
+            for (Recipient recipient : recipients) {
+                mDeviceDao.removeDevice(recipient.token);
+            }
+        }
+
+        @Override
+        public void failedRecipient(@Nonnull Recipient recipient, @Nonnull PlatformFailure failure) {
+            if (failure.failure.equals(Failure.RECIPIENT_NOT_REGISTERED) ||
+                    failure.failure.equals(Failure.RECIPIENT_REGISTRATION_INVALID)) {
+                Logger.debug("Failed recipient response from ping. Deleting.");
+                mDeviceDao.removeDevice(recipient.token);
+            }
+        }
+
+        @Override
+        public void messageCompleted(@Nonnull Message originalMessage) {
+
+        }
+
+        @Override
+        public void messageFailed(@Nonnull Message originalMessage, PlatformFailure failure) {
+
+        }
+    }
+
+    /**
      * Register a client with the commute GCM server. Saves important
      * token information along with a timestamp.
      *
@@ -69,6 +187,7 @@ public class DeviceController extends Controller {
 
     /**
      * Get the API account for the web request.
+     *
      * @return Account for apiKey if found.
      */
     @Nullable
@@ -76,7 +195,7 @@ public class DeviceController extends Controller {
         final Set<Map.Entry<String, String[]>> entries = request().queryString().entrySet();
         String foundApiKey = null;
 
-        for (Map.Entry<String,String[]> entry : entries) {
+        for (Map.Entry<String, String[]> entry : entries) {
             final String key = entry.getKey();
             final String value = Arrays.deepToString(entry.getValue());
 

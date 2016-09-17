@@ -331,7 +331,7 @@ public class AlertHelper {
      * @param account platform  credentials for message.
      * @return push-service credentials model populated with platform specific keys, etc.
      */
-    private static Credentials getMessageCredentials(@Nonnull PlatformAccount account) {
+    public static Credentials getMessageCredentials(@Nonnull PlatformAccount account) {
         if (account.platformType != null) {
             Credentials credentials = new Credentials();
             credentials.platformType = PlatformType.SERVICE_GCM;

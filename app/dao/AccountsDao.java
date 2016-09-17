@@ -78,9 +78,8 @@ public class AccountsDao extends BaseDao {
     public Account getAccountForEmail(@Nonnull String email) {
         Account account = mEbeanServer.createQuery(Account.class)
                 .fetch("platformAccounts")
-                .fetch("platformAccounts.platform")
                 .where()
-                .eq("email", email)
+                .eq("account_email", email)
                 .findUnique();
 
         String logString = account != null

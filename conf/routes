@@ -10,6 +10,9 @@ GET         /robots.txt                                                 controll
 POST        /gcm/v1/register                                            controllers.DeviceController.register()
 POST        /gcm/v1/subscribe                                           controllers.SubscriptionController.subscribe()
 
+# Private APIs for loopback addreses only.
+GET         /gcm/v1/cleandevices                                        controllers.DeviceController.cleanDevices()
+
 # Public API endpoints
 GET         /agencies/v1                                                controllers.AgencyAlertsController.getAgencies
 GET         /routes/v1/agency/:aId                                      controllers.AgencyAlertsController.getRoutesForAgency(aId: Int)
