@@ -25,8 +25,6 @@ import services.splendidlog.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -75,57 +73,45 @@ public class DeviceController extends Controller {
      */
     @SuppressWarnings("Convert2Lambda")
     public CompletionStage<Result> cleanDevices() {
-        CompletableFuture<Result> completableResult = null;
+        CompletableFuture<Result> completableResult = CompletableFuture.supplyAsync(new Supplier<Result>() {
 
-        try {
-            String rawIp = request().remoteAddress();
-            InetAddress clientIp = InetAddress.getByName(rawIp);
-            completableResult = CompletableFuture.supplyAsync(new Supplier<Result>() {
-
-                @Override
-                public Result get() {
-                    if (!clientIp.getHostName().equals("localhost")) {
-                        return badRequest("This is a private API");
-                    }
-
-                    Set<String> deviceTokens = new HashSet<>();
-                    List<Device> foundDevices = mDeviceDao.getAllDevices();
-                    for (Device device : foundDevices) {
-                        deviceTokens.add(device.token);
-                    }
-
-                    Account accountDetails = mAccountsDao.getAccountForEmail("daniel@staticfish.com");
-                    if (accountDetails != null &&
-                            accountDetails.platformAccounts != null &&
-                            !accountDetails.platformAccounts.isEmpty()) {
-
-                        Credentials credentials = AlertHelper.getMessageCredentials(accountDetails.platformAccounts.get(0));
-                        Message pingAllMessage = new PlatformMessageBuilder.Builder()
-                                .setMessagePriority(MessagePriority.PRIORITY_HIGH)
-                                .putData("ping_message", "ping")
-                                .setCollapseKey("ping")
-                                .setShouldDelayWhileIdle(false)
-                                .setDeviceTokens(deviceTokens)
-                                .setPlatformCredentials(credentials)
-                                .build();
-
-                        Task pingAllTask = new Task("pingAll");
-                        pingAllTask.messages.add(pingAllMessage);
-
-                        try {
-                            mTaskQueue.queueTask(pingAllTask, new DevicePingCallback());
-
-                        } catch (TaskValidationException e) {
-                            Logger.error("Task Validation Exception", e);
-                        }
-                    }
-                    return ok("Success");
+            @Override
+            public Result get() {
+                Set<String> deviceTokens = new HashSet<>();
+                List<Device> foundDevices = mDeviceDao.getAllDevices();
+                for (Device device : foundDevices) {
+                    deviceTokens.add(device.token);
                 }
-            });
 
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+                Account accountDetails = mAccountsDao.getAccountForEmail("daniel@staticfish.com");
+                if (accountDetails != null &&
+                        accountDetails.platformAccounts != null &&
+                        !accountDetails.platformAccounts.isEmpty()) {
+
+                    Credentials credentials = AlertHelper.getMessageCredentials(accountDetails.platformAccounts.get(0));
+                    Message pingAllMessage = new PlatformMessageBuilder.Builder()
+                            .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                            .putData("ping_message", "ping")
+                            .setCollapseKey("ping")
+                            .setShouldDelayWhileIdle(false)
+                            .setDeviceTokens(deviceTokens)
+                            .setPlatformCredentials(credentials)
+                            .build();
+
+                    Task pingAllTask = new Task("pingAll");
+                    pingAllTask.messages.add(pingAllMessage);
+
+                    try {
+                        mTaskQueue.queueTask(pingAllTask, new DevicePingCallback());
+
+                    } catch (TaskValidationException e) {
+                        Logger.error("Task Validation Exception", e);
+                    }
+                }
+                return ok("Success");
+            }
+        });
+
         return completableResult;
     }
 
