@@ -142,6 +142,29 @@ public class DeviceDao {
         }
     }
 
+    /**
+     * Get all devices and the corresponding subscriptions.
+     *
+     * @return a list of devices.
+     */
+    public List<Device> getAllDevices() {
+        List<Device> devices = new ArrayList<>();
+
+        try {
+            devices = mEbeanServer.createQuery(Device.class)
+                    .fetch("subscriptions")
+                    .findList();
+
+            if (devices.isEmpty()) {
+                Logger.error("No devices were found to fetch. Maybe there is a problem?");
+            }
+
+        } catch (Exception e) {
+            Logger.error(String.format("Error fetching all devices (error %s)", e.getMessage()));
+        }
+
+        return devices;
+    }
 
     /**
      * Delete a device device, and all route subscriptions.

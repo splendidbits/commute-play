@@ -39,7 +39,6 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("unused")
 public class DeviceController extends Controller {
-
     private AccountsDao mAccountsDao;
     private DeviceDao mDeviceDao;
     private TaskQueue mTaskQueue;
