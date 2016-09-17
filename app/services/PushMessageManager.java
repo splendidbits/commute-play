@@ -4,6 +4,7 @@ import agency.AgencyAlertModifications;
 import com.google.inject.Inject;
 import dao.AccountsDao;
 import dao.DeviceDao;
+import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
 import enums.pushservices.RecipientState;
 import exceptions.pushservices.TaskValidationException;
@@ -193,16 +194,13 @@ public class PushMessageManager {
         }
 
         @Override
-        public void invalidRecipients(@Nonnull List<Recipient> recipients) {
-            Logger.warn(String.format("%d recipients need to be deleted.", recipients.size()));
-            for (Recipient recipientToRemove : recipients) {
-                mDeviceDao.removeDevice(recipientToRemove.token);
-            }
-        }
-
-        @Override
         public void failedRecipient(@Nonnull Recipient failedRecipient, @Nonnull PlatformFailure failure) {
             Logger.warn(String.format("Recipient %d failed - %s.", failedRecipient.id, failure.failureMessage));
+
+            if (failure.failure.equals(Failure.RECIPIENT_REGISTRATION_INVALID) ||
+                    failure.failure.equals(Failure.RECIPIENT_NOT_REGISTERED)) {
+                mDeviceDao.removeDevice(failedRecipient.token);
+            }
         }
 
         @Override

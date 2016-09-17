@@ -143,30 +143,6 @@ public class DeviceDao {
     }
 
     /**
-     * Get all devices and the corresponding subscriptions.
-     *
-     * @return a list of devices.
-     */
-    public List<Device> getAllDevices() {
-        List<Device> devices = new ArrayList<>();
-
-        try {
-            devices = mEbeanServer.createQuery(Device.class)
-                    .fetch("subscriptions")
-                    .findList();
-
-            if (devices.isEmpty()) {
-                Logger.error("No devices were found to fetch. Maybe there is a problem?");
-            }
-
-        } catch (Exception e) {
-            Logger.error(String.format("Error fetching all devices (error %s)", e.getMessage()));
-        }
-
-        return devices;
-    }
-
-    /**
      * Delete a device device, and all route subscriptions.
      *
      * @param deviceToken the device token for the device.
@@ -174,33 +150,24 @@ public class DeviceDao {
      * or never existed in the first place.
      */
     public boolean removeDevice(@Nonnull String deviceToken) {
-        Transaction transaction = mEbeanServer.createTransaction();
-
         try {
-            Query<Subscription> subscriptionQuery = mEbeanServer.createQuery(Subscription.class)
+            mEbeanServer.find(Subscription.class)
+                    .fetch("device")
                     .where()
                     .eq("device.token", deviceToken)
-                    .query();
+                    .delete();
 
-            Query<Device> deviceQuery = mEbeanServer.createQuery(Device.class)
+            mEbeanServer.find(Device.class)
                     .where()
                     .eq("token", deviceToken)
-                    .query();
-
-            mEbeanServer.delete(subscriptionQuery, transaction);
-            mEbeanServer.delete(deviceQuery, transaction);
-            transaction.commit();
+                    .delete();
 
             Logger.debug(String.format("Removed device %s,", deviceToken));
             return true;
 
         } catch (Exception e) {
-            transaction.rollback();
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
             return false;
-
-        } finally {
-            transaction.end();
         }
     }
 
