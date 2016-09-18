@@ -123,9 +123,9 @@ public class DeviceDao {
                     ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
                     : String.format("No device found for token %s", staleToken));
 
+            mEbeanServer.markAsDirty(device);
             if (device != null) {
                 device.token = newToken;
-                mEbeanServer.markAsDirty(device);
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
                 return true;
