@@ -83,11 +83,9 @@ public class PushMessageManager {
         }
 
         // Finally, if there are messages in each task, add them to the queue.
-        SendMessagePlatformQueueCallback platformCallback = new SendMessagePlatformQueueCallback(completableFuture);
-
         try {
             for (Task alertsTask : taskList) {
-                mTaskQueue.queueTask(alertsTask, platformCallback);
+                mTaskQueue.queueTask(alertsTask, new SendMessagePlatformQueueCallback(completableFuture));
             }
 
         } catch (TaskValidationException e) {
@@ -198,8 +196,8 @@ public class PushMessageManager {
             Logger.warn(String.format("Recipient %d failed - %s.", failedRecipient.id, failure.failureMessage));
 
             if (failure.failure != null &&
-                    (failure.failure.equals(Failure.RECIPIENT_REGISTRATION_INVALID) ||
-                    failure.failure.equals(Failure.RECIPIENT_NOT_REGISTERED))) {
+                    (failure.failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
+                    failure.failure == Failure.RECIPIENT_NOT_REGISTERED)) {
                 mDeviceDao.removeDevice(failedRecipient.token);
             }
         }
@@ -210,7 +208,7 @@ public class PushMessageManager {
 
             // Sanity check that all recipients are completed or failed.
             for (Recipient recipient : originalMessage.recipients) {
-                if (!(recipient.state == RecipientState.STATE_COMPLETE || recipient.state == RecipientState.STATE_FAILED)) {
+                if (recipient.state != RecipientState.STATE_COMPLETE) {
                     throw new RuntimeException("messageCompleted() response did not match recipient states.");
                 }
             }
