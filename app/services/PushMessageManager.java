@@ -1,6 +1,6 @@
 package services;
 
-import agency.AgencyAlertModifications;
+import models.AgencyAlertModifications;
 import com.google.inject.Inject;
 import dao.AccountsDao;
 import dao.DeviceDao;
@@ -19,7 +19,7 @@ import models.pushservices.PlatformFailure;
 import models.pushservices.Recipient;
 import models.pushservices.Task;
 import services.pushservices.TaskQueue;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

@@ -1,16 +1,16 @@
 CREATE ROLE splendidbits PASSWORD 'kYBaf34sfd8L' NOSUPERUSER CREATEDB NOCREATEROLE LOGIN;
-CREATE ROLE splendidlog PASSWORD 'esqH2gYJ' NOSUPERUSER CREATEDB NOCREATEROLE LOGIN;
 
-CREATE DATABASE commute_gcm;
-GRANT ALL PRIVILEGES ON DATABASE commute_gcm to splendidbits;
+CREATE DATABASE commutealerts;
+GRANT ALL PRIVILEGES ON DATABASE commutealerts to splendidbits;
 
-CREATE DATABASE push_services;
-GRANT ALL PRIVILEGES ON DATABASE push_services to splendidbits;
+CREATE DATABASE pushservices;
+GRANT ALL PRIVILEGES ON DATABASE pushservices to splendidbits;
 
-CREATE DATABASE splendid_log;
-GRANT ALL PRIVILEGES ON DATABASE splendid_log to splendidlog;
+CREATE DATABASE fluffylog;
+GRANT ALL PRIVILEGES ON DATABASE fluffylog to splendidbits;
 
 -----
+
 
 CREATE SCHEMA agency_alerts;
 CREATE SCHEMA device_information;
@@ -41,25 +41,27 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA api_accounts TO splendidbits;
 
 -----
 
-CREATE SCHEMA push_services;
 
-GRANT USAGE ON SCHEMA push_services TO splendidbits;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA push_services TO splendidbits;
-ALTER DEFAULT PRIVILEGES IN SCHEMA push_services GRANT ALL ON TABLES TO postgres;
+CREATE SCHEMA pushservices;
 
-GRANT ALL ON SCHEMA push_services TO splendidbits;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA push_services to splendidbits;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA push_services TO splendidbits;
+GRANT USAGE ON SCHEMA pushservices TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA pushservices TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA pushservices GRANT ALL ON TABLES TO postgres;
+
+GRANT ALL ON SCHEMA pushservices TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA pushservices to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pushservices TO splendidbits;
 
 -----
 
-CREATE SCHEMA splendid_log;
 
-GRANT USAGE ON SCHEMA splendid_log TO splendidlog;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA splendid_log TO splendidlog;
-ALTER DEFAULT PRIVILEGES IN SCHEMA splendid_log GRANT ALL ON TABLES TO postgres;
+CREATE SCHEMA fluffylog;
 
-GRANT ALL ON SCHEMA splendid_log TO splendidlog;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA splendid_log to splendidlog;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA splendid_log TO splendidlog;
+GRANT USAGE ON SCHEMA fluffylog TO splendidbits;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA fluffylog TO splendidbits;
+ALTER DEFAULT PRIVILEGES IN SCHEMA fluffylog GRANT ALL ON TABLES TO splendidbits;
+
+GRANT ALL ON SCHEMA fluffylog TO splendidbits;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA fluffylog to splendidbits;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA fluffylog TO splendidbits;
 

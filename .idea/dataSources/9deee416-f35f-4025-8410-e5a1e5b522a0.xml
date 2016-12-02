@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="push_services">
+  <database-model serializer="dbm" rdbms="POSTGRES" format-version="4.0">
+    <root id="1"/>
+    <database id="2" parent="1" name="push_services">
+      <ObjectId>16701</ObjectId>
+      <Current>1</Current>
+      <Visible>1</Visible>
+    </database>
+    <schema id="3" parent="2" name="public">
+      <ObjectId>2200</ObjectId>
+      <IntrospectionTimestamp>2016-10-13.15:35:27.047</IntrospectionTimestamp>
+      <IntrospectionStateNumber>918</IntrospectionStateNumber>
+      <Current>1</Current>
+    </schema>
+    <schema id="4" parent="2" name="pg_catalog">
+      <ObjectId>11</ObjectId>
+    </schema>
+    <schema id="5" parent="2" name="pg_toast">
+      <ObjectId>99</ObjectId>
+    </schema>
+    <schema id="6" parent="2" name="pg_temp_1">
+      <ObjectId>11848</ObjectId>
+    </schema>
+    <schema id="7" parent="2" name="pg_toast_temp_1">
+      <ObjectId>11849</ObjectId>
+    </schema>
+    <schema id="8" parent="2" name="information_schema">
+      <ObjectId>12381</ObjectId>
+    </schema>
+    <schema id="9" parent="2" name="push_services">
+      <ObjectId>16702</ObjectId>
+      <IntrospectionTimestamp>2016-10-13.15:38:35.097</IntrospectionTimestamp>
+      <IntrospectionStateNumber>918</IntrospectionStateNumber>
+      <Visible>1</Visible>
+    </schema>
+    <table id="10" parent="9" name="credentials">
+      <ObjectId>16704</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <table id="11" parent="9" name="messages">
+      <ObjectId>16717</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <table id="12" parent="9" name="payload_element">
+      <ObjectId>16725</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <table id="13" parent="9" name="recipient_failures">
+      <ObjectId>16735</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <table id="14" parent="9" name="recipients">
+      <ObjectId>16745</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <table id="15" parent="9" name="tasks">
+      <ObjectId>16756</ObjectId>
+      <StateNumber>918</StateNumber>
+    </table>
+    <column id="16" parent="10" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="17" parent="10" name="message_id">
+      <Position>2</Position>
+      <DataType>bigint|0</DataType>
+    </column>
+    <column id="18" parent="10" name="platform">
+      <Position>3</Position>
+      <DataType>varchar(4)|0</DataType>
+    </column>
+    <column id="19" parent="10" name="authorisation_key">
+      <Position>4</Position>
+      <DataType>text|0</DataType>
+    </column>
+    <column id="20" parent="10" name="certificate_body">
+      <Position>5</Position>
+      <DataType>text|0</DataType>
+    </column>
+    <column id="21" parent="10" name="package_uri">
+      <Position>6</Position>
+      <DataType>text|0</DataType>
+    </column>
+    <index id="22" parent="10" name="pk_credentials">
+      <ObjectId>16711</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <index id="23" parent="10" name="uq_credentials_message_id">
+      <ObjectId>16713</ObjectId>
+      <ColNames>message_id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <key id="24" parent="10" name="pk_credentials">
+      <ObjectId>16712</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_credentials</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <key id="25" parent="10" name="uq_credentials_message_id">
+      <ObjectId>16714</ObjectId>
+      <ColNames>message_id</ColNames>
+      <UnderlyingIndexName>uq_credentials_message_id</UnderlyingIndexName>
+    </key>
+    <foreign-key id="26" parent="10" name="fk_credentials_message_id">
+      <ObjectId>16763</ObjectId>
+      <ColNames>message_id</ColNames>
+      <RefTableName>messages</RefTableName>
+      <RefKeyName>pk_messages</RefKeyName>
+      <RefColNames>id</RefColNames>
+    </foreign-key>
+    <check id="27" parent="10" name="ck_credentials_platform">
+      <ObjectId>16707</ObjectId>
+      <ColNames>platform</ColNames>
+      <Predicate>(platform)::text = ANY ((ARRAY[&apos;GCM&apos;::character varying, &apos;APNS&apos;::character varying])::text[])</Predicate>
+    </check>
+    <column id="28" parent="11" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="29" parent="11" name="task_id">
+      <Position>2</Position>
+      <DataType>bigint|0</DataType>
+    </column>
+    <column id="30" parent="11" name="collapse_key">
+      <Position>3</Position>
+      <DataType>varchar(255)|0</DataType>
+    </column>
+    <column id="31" parent="11" name="priority">
+      <Position>4</Position>
+      <DataType>varchar(6)|0</DataType>
+    </column>
+    <column id="32" parent="11" name="ttl_seconds">
+      <Position>5</Position>
+      <DataType>integer|0</DataType>
+    </column>
+    <column id="33" parent="11" name="delay_while_idle">
+      <Position>6</Position>
+      <DataType>boolean|0</DataType>
+    </column>
+    <column id="34" parent="11" name="dry_run">
+      <Position>7</Position>
+      <DataType>boolean|0</DataType>
+    </column>
+    <column id="35" parent="11" name="maximum_retries">
+      <Position>8</Position>
+      <DataType>integer|0</DataType>
+    </column>
+    <column id="36" parent="11" name="sent_time">
+      <Position>9</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <index id="37" parent="11" name="pk_messages">
+      <ObjectId>16721</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <index id="38" parent="11" name="ix_messages_task_id">
+      <ObjectId>16773</ObjectId>
+      <ColNames>task_id</ColNames>
+    </index>
+    <key id="39" parent="11" name="pk_messages">
+      <ObjectId>16722</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_messages</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="40" parent="11" name="fk_messages_task_id">
+      <ObjectId>16768</ObjectId>
+      <ColNames>task_id</ColNames>
+      <RefTableName>tasks</RefTableName>
+      <RefKeyName>pk_tasks</RefKeyName>
+      <RefColNames>id</RefColNames>
+    </foreign-key>
+    <check id="41" parent="11" name="ck_messages_priority">
+      <ObjectId>16720</ObjectId>
+      <ColNames>priority</ColNames>
+      <Predicate>(priority)::text = ANY ((ARRAY[&apos;normal&apos;::character varying, &apos;low&apos;::character varying, &apos;high&apos;::character varying])::text[])</Predicate>
+    </check>
+    <column id="42" parent="12" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="43" parent="12" name="element_name">
+      <Position>2</Position>
+      <DataType>varchar(255)|0</DataType>
+    </column>
+    <column id="44" parent="12" name="element_value">
+      <Position>3</Position>
+      <DataType>text|0</DataType>
+    </column>
+    <column id="45" parent="12" name="message_id">
+      <Position>4</Position>
+      <DataType>bigint|0</DataType>
+    </column>
+    <index id="46" parent="12" name="pk_payload_element">
+      <ObjectId>16731</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <index id="47" parent="12" name="ix_payload_element_message_id">
+      <ObjectId>16779</ObjectId>
+      <ColNames>message_id</ColNames>
+    </index>
+    <key id="48" parent="12" name="pk_payload_element">
+      <ObjectId>16732</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_payload_element</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="49" parent="12" name="fk_payload_element_message_id">
+      <ObjectId>16774</ObjectId>
+      <ColNames>message_id</ColNames>
+      <RefTableName>messages</RefTableName>
+      <RefKeyName>pk_messages</RefKeyName>
+      <RefColNames>id</RefColNames>
+    </foreign-key>
+    <column id="50" parent="13" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="51" parent="13" name="recipient_id">
+      <Position>2</Position>
+      <DataType>bigint|0</DataType>
+    </column>
+    <column id="52" parent="13" name="type">
+      <Position>3</Position>
+      <DataType>varchar(30)|0</DataType>
+    </column>
+    <column id="53" parent="13" name="message">
+      <Position>4</Position>
+      <DataType>varchar(255)|0</DataType>
+    </column>
+    <column id="54" parent="13" name="fail_time">
+      <Position>5</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <index id="55" parent="13" name="pk_recipient_failures">
+      <ObjectId>16739</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <index id="56" parent="13" name="uq_recipient_failures_recipient_id">
+      <ObjectId>16741</ObjectId>
+      <ColNames>recipient_id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <key id="57" parent="13" name="pk_recipient_failures">
+      <ObjectId>16740</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_recipient_failures</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <key id="58" parent="13" name="uq_recipient_failures_recipient_id">
+      <ObjectId>16742</ObjectId>
+      <ColNames>recipient_id</ColNames>
+      <UnderlyingIndexName>uq_recipient_failures_recipient_id</UnderlyingIndexName>
+    </key>
+    <foreign-key id="59" parent="13" name="fk_recipient_failures_recipient_id">
+      <ObjectId>16780</ObjectId>
+      <ColNames>recipient_id</ColNames>
+      <RefTableName>recipients</RefTableName>
+      <RefKeyName>pk_recipients</RefKeyName>
+      <RefColNames>id</RefColNames>
+    </foreign-key>
+    <check id="60" parent="13" name="ck_recipient_failures_type">
+      <ObjectId>16738</ObjectId>
+      <ColNames>type</ColNames>
+      <Predicate>(type)::text = ANY ((ARRAY[&apos;TEMPORARILY_UNAVAILABLE&apos;::character varying, &apos;PLATFORM_LIMIT_EXCEEDED&apos;::character varying, &apos;MESSAGE_PAYLOAD_INVALID&apos;::character varying, &apos;MESSAGE_TTL_INVALID&apos;::character varying, &apos;MESSAGE_PACKAGE_INVALID&apos;::character varying, &apos;RECIPIENT_RATE_EXCEEDED&apos;::character varying, &apos;PLATFORM_AUTH_MISMATCHED&apos;::character varying, &apos;RECIPIENT_REGISTRATION_INVALID&apos;::character varying, &apos;MESSAGE_TOO_LARGE&apos;::character varying, &apos;RECIPIENT_NOT_REGISTERED&apos;::character varying, &apos;PLATFORM_AUTH_INVALID&apos;::character varying, &apos;MESSAGE_REGISTRATIONS_MISSING&apos;::character varying, &apos;ERROR_UNKNOWN&apos;::character varying])::text[])</Predicate>
+    </check>
+    <column id="61" parent="14" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="62" parent="14" name="token">
+      <Position>2</Position>
+      <DataType>text|0</DataType>
+    </column>
+    <column id="63" parent="14" name="message_id">
+      <Position>3</Position>
+      <DataType>bigint|0</DataType>
+    </column>
+    <column id="64" parent="14" name="state">
+      <Position>4</Position>
+      <DataType>varchar(13)|0</DataType>
+    </column>
+    <column id="65" parent="14" name="time_added">
+      <Position>5</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <column id="66" parent="14" name="send_attempts">
+      <Position>6</Position>
+      <DataType>integer|0</DataType>
+    </column>
+    <column id="67" parent="14" name="previous_attempt">
+      <Position>7</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <column id="68" parent="14" name="next_attempt">
+      <Position>8</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <index id="69" parent="14" name="pk_recipients">
+      <ObjectId>16752</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <index id="70" parent="14" name="ix_recipients_message_id">
+      <ObjectId>16790</ObjectId>
+      <ColNames>message_id</ColNames>
+    </index>
+    <key id="71" parent="14" name="pk_recipients">
+      <ObjectId>16753</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_recipients</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="72" parent="14" name="fk_recipients_message_id">
+      <ObjectId>16785</ObjectId>
+      <ColNames>message_id</ColNames>
+      <RefTableName>messages</RefTableName>
+      <RefKeyName>pk_messages</RefKeyName>
+      <RefColNames>id</RefColNames>
+    </foreign-key>
+    <check id="73" parent="14" name="ck_recipients_state">
+      <ObjectId>16748</ObjectId>
+      <ColNames>state</ColNames>
+      <Predicate>(state)::text = ANY ((ARRAY[&apos;WAITING_RETRY&apos;::character varying, &apos;COMPLETE&apos;::character varying, &apos;FAILED&apos;::character varying, &apos;IDLE&apos;::character varying, &apos;PROCESSING&apos;::character varying])::text[])</Predicate>
+    </check>
+    <column id="74" parent="15" name="id">
+      <Position>1</Position>
+      <DataType>bigint|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="75" parent="15" name="name">
+      <Position>2</Position>
+      <DataType>varchar(255)|0</DataType>
+    </column>
+    <column id="76" parent="15" name="priority">
+      <Position>3</Position>
+      <DataType>integer|0</DataType>
+    </column>
+    <column id="77" parent="15" name="added_time">
+      <Position>4</Position>
+      <DataType>timestamp|0</DataType>
+    </column>
+    <index id="78" parent="15" name="pk_tasks">
+      <ObjectId>16759</ObjectId>
+      <ColNames>id</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <key id="79" parent="15" name="pk_tasks">
+      <ObjectId>16760</ObjectId>
+      <ColNames>id</ColNames>
+      <UnderlyingIndexName>pk_tasks</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+  </database-model>
+</dataSource>

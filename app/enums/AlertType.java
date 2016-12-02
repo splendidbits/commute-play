@@ -28,8 +28,8 @@ public enum AlertType {
     @EnumValue("WEATHER")
     TYPE_WEATHER("Weather Alert"),
 
-    @EnumValue("APP")
-    TYPE_APP("Commute Message");
+    @EnumValue("IN_APP")
+    TYPE_IN_APP("Application Message");
 
     public String title;
 

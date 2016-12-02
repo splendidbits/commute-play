@@ -8,10 +8,10 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/modules/fluffylog" />
+            <option value="$PROJECT_DIR$/modules/fluffylog/project" />
             <option value="$PROJECT_DIR$/modules/pushservices" />
             <option value="$PROJECT_DIR$/modules/pushservices/project" />
-            <option value="$PROJECT_DIR$/modules/splendidlog" />
-            <option value="$PROJECT_DIR$/modules/splendidlog/project" />
             <option value="$PROJECT_DIR$/project" />
           </set>
         </option>

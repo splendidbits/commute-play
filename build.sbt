@@ -1,11 +1,11 @@
-name := """commute-gcm"""
+name := """commutealerts"""
 version := "0.1"
 
 lazy val buildSettings = Seq(
   scalaVersion := "2.11.8"
 )
 
-lazy val splendidlog = (project in file("modules/splendidlog"))
+lazy val fluffylog = (project in file("modules/fluffylog"))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .settings(buildSettings: _*)
 
@@ -13,11 +13,11 @@ lazy val pushservices = (project in file("modules/pushservices"))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .settings(buildSettings: _*)
 
-lazy val commutegcm = (project in file("."))
+lazy val commutealerts = (project in file("."))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
-  .dependsOn(splendidlog)
+  .dependsOn(fluffylog)
   .dependsOn(pushservices)
-  .aggregate(splendidlog)
+  .aggregate(fluffylog)
   .aggregate(pushservices)
   .settings(buildSettings: _*)
 

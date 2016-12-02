@@ -3,7 +3,7 @@ package dao;
 import com.avaje.ebean.*;
 import models.devices.Device;
 import models.devices.Subscription;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

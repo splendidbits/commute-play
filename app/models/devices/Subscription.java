@@ -13,7 +13,6 @@ public class Subscription extends Model {
     public static Finder<Long, Subscription> find = new Model.Finder<>(Subscription.class);
 
     @Id
-    @JsonIgnore
     @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscriptions_id_seq_gen")
     @Column(name = "id")

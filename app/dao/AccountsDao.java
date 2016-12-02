@@ -5,7 +5,7 @@ import com.avaje.ebean.FetchConfig;
 import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.alerts.Route;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

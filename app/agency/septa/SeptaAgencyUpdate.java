@@ -1,60 +1,58 @@
-package agency;
+package agency.septa;
 
+import agency.AgencyUpdate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dao.AgencyDao;
+import main.Constants;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
 import services.AlertsUpdateManager;
 import services.PushMessageManager;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 /**
- * Download SEPTA alerts from the json server and send them to the
- * dispatch processes.
- * <p>
- * Download current alerts.
- * 1: Download agency alerts.
- * 2: Bundle into standard format.
- * <p>
- * Send to GCM processor
- * <p>
- * 2.5: Go through each Route > Alert bundle and find any differences
- * 3: Collect the new alerts
- * 4: Persist new data
- * 5: Get list of subscriptions for route
- * 6: send data in batches of 1000 to google.
+ * Agency updater for SEPTA alerts.
  */
+@Singleton
 public class SeptaAgencyUpdate extends AgencyUpdate {
-//    private static final String SEPTA_ALERTS_JSON_URL = "http://localhost:9000/assets/resources/alerts.json";
-    private static final String SEPTA_ALERTS_JSON_URL = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all";
+    public static final int AGENCY_ID = 1;
+    public static String AGENCY_NAME = "South East Pennsylvania Transit Association";
+    private static final String APP_ALERT_URL = String.format(Locale.US,
+            "%s/alerts/v1/agency/%d/raw?req1=all", Constants.API_SERVER_HOST, AGENCY_ID);
+    private final ParseAgencyFunction mParseMessagesFunc;
 
     @Inject
     public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager, AgencyDao agencyDao,
                              PushMessageManager pushMessageManager) {
         super(wsClient, alertsUpdateManager, agencyDao, pushMessageManager);
+
+        mParseMessagesFunc = new ParseAgencyFunction();
     }
 
     @Override
     public void startAgencyUpdate() {
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
+            // Proxy pass-through to http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all
             CompletionStage<WSResponse> downloadStage = mWsClient
-                    .url(SEPTA_ALERTS_JSON_URL)
+                    .url(APP_ALERT_URL)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();
 
-            downloadStage.thenApply(new ParseAgencyFunction());
+            downloadStage.thenApply(mParseMessagesFunc);
 
         } catch (Exception exception) {
-            Logger.error("Error downloading agency data from " + SEPTA_ALERTS_JSON_URL, exception);
+            Logger.error("Error downloading agency data from " + APP_ALERT_URL, exception);
         }
     }
 

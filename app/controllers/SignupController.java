@@ -13,7 +13,7 @@ import play.data.validation.ValidationError;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.twirl.api.Html;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 import views.html.signup;
 
 import javax.annotation.Nonnull;

@@ -1,4 +1,4 @@
-package agency;
+package models;
 
 import models.alerts.Alert;
 

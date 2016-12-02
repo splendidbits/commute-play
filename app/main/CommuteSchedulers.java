@@ -7,6 +7,7 @@ import akka.actor.ActorSystem;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import enums.AgencyUpdateType;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Singleton
 public class CommuteSchedulers {
+    private final AgencyUpdateMessage mAgencyUpdateMessage;
     private ActorSystem mActorSystem;
     private ActorRef mAgencyActor;
 
@@ -24,6 +26,7 @@ public class CommuteSchedulers {
     public CommuteSchedulers(ActorSystem actorSystem, @Named(AgencyUpdateActor.ACTOR_NAME) ActorRef agencyActor) {
         mActorSystem = actorSystem;
         mAgencyActor = agencyActor;
+        mAgencyUpdateMessage = new AgencyUpdateMessage(AgencyUpdateType.TYPE_ALL);
 
         startAgencyUpdateSchedule(mActorSystem, mAgencyActor);
     }
@@ -34,15 +37,14 @@ public class CommuteSchedulers {
      */
     private void startAgencyUpdateSchedule(ActorSystem actorSystem, ActorRef agencyActor) {
         if (actorSystem != null) {
-            actorSystem.scheduler()
-                    .schedule(
-                            Duration.create(Constants.AGENCY_UPDATE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
-                            Duration.create(Constants.AGENCY_UPDATE_INTERVAL_SECONDS, TimeUnit.SECONDS),
-                            agencyActor,
-                            new AgencyUpdateMessage(),
-                            actorSystem.dispatchers().defaultGlobalDispatcher(),
-                            ActorRef.noSender()
-                    );
+            actorSystem.scheduler().schedule(
+                    Duration.create(Constants.AGENCY_UPDATE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
+                    Duration.create(Constants.AGENCY_UPDATE_INTERVAL_SECONDS, TimeUnit.SECONDS),
+                    agencyActor,
+                    mAgencyUpdateMessage,
+                    actorSystem.dispatchers().defaultGlobalDispatcher(),
+                    ActorRef.noSender()
+            );
         }
     }
 }

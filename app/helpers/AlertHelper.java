@@ -11,7 +11,7 @@ import models.devices.Device;
 import models.pushservices.Credentials;
 import models.pushservices.Message;
 import models.pushservices.PayloadElement;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -146,6 +146,7 @@ public class AlertHelper {
                     PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
                             .setCollapseKey(route.routeId)
                             .setPlatformCredentials(credentials)
+                            .setMessagePriority(alert.highPriority ? MessagePriority.PRIORITY_HIGH : MessagePriority.PRIORITY_NORMAL)
                             .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                             .putData(AlertMessageKey.KEY_ROUTE_NAME.key, route.routeName)
                             .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.key, alert.messageBody);
@@ -153,32 +154,26 @@ public class AlertHelper {
                     switch (alert.type) {
                         case TYPE_DETOUR:
                             messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
                         case TYPE_INFORMATION:
                             messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             break;
 
                         case TYPE_DISRUPTION:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
                         case TYPE_WEATHER:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
 
-                        case TYPE_APP:
+                        case TYPE_IN_APP:
                             messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             break;
 
                         case TYPE_MAINTENANCE:
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
                             break;
                     }
 

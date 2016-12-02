@@ -29,8 +29,9 @@ create table agency_alerts.alerts (
   message_subtitle              TEXT,
   message_body                  TEXT,
   external_uri                  TEXT,
+  high_priority                 boolean not null,
   last_updated                  timestamp without time zone,
-  constraint ck_alerts_type check ( type in ('','DISRUPTION','APP','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
+  constraint ck_alerts_type check ( type in ('','IN_APP','DISRUPTION','WEATHER','DETOUR','MAINTENANCE','INFORMATION')),
   constraint pk_alerts primary key (id)
 );
 create sequence alert_id_seq increment by 1;

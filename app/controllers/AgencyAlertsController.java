@@ -8,6 +8,8 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import play.libs.Json;
+import play.libs.ws.WSClient;
+import play.libs.ws.WSResponse;
 import play.mvc.Controller;
 import play.mvc.Result;
 
@@ -15,14 +17,52 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class AgencyAlertsController extends Controller {
+    private static final String SEPTA_RAW_JSON_FEED = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php";
 
     @Inject
     private AgencyDao mAgencyDao;
 
+    @Inject
+    private WSClient mWSClient;
+
     public Result index() {
         return ok();
+    }
+
+    /**
+     * Get raw alerts by proxying the SEPTA alerts feed;
+     *
+     * @return json SEPTA alerts in json format
+     */
+    public CompletionStage<Result> getRawAgencyAlerts(int agencyId) {
+        final String ROUTE_QUERY_ATTR = "req1";
+        CompletionStage<WSResponse> agencyFeedDownloadStage = new CompletableFuture<>();
+
+        Function<WSResponse, Result> checkResponseFunc = response -> {
+            String responseBody = response.getBody();
+            if (response.getStatus() == 200 && responseBody != null && !responseBody.isEmpty()) {
+                return ok(responseBody).as("application/json");
+            }
+            return badRequest();
+        };
+
+        Map<String, String[]> requestQueries = request().queryString();
+        if (requestQueries != null && !requestQueries.isEmpty() && requestQueries.containsKey(ROUTE_QUERY_ATTR)) {
+            agencyFeedDownloadStage = mWSClient.url(SEPTA_RAW_JSON_FEED)
+                    .setFollowRedirects(true)
+                    .setQueryParameter(ROUTE_QUERY_ATTR, requestQueries.get(ROUTE_QUERY_ATTR)[0])
+                    .get();
+        } else {
+            return CompletableFuture.completedFuture(badRequest());
+        }
+
+        return agencyFeedDownloadStage.thenApply(checkResponseFunc);
     }
 
     /**
@@ -72,7 +112,7 @@ public class AgencyAlertsController extends Controller {
      * @param agencyId agencyId for route.
      * @return Collection of matched alerts.
      */
-    public Result getAlertsForAgency(int agencyId) {
+    public Result getAlertsForRoute(int agencyId, String routeId) {
         List<Route> routes = mAgencyDao.getRoutes(agencyId);
         List<Alert> alerts = new ArrayList<>();
 

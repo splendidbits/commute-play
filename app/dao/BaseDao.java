@@ -5,7 +5,7 @@ import com.avaje.ebean.config.ServerConfig;
 import com.avaje.ebean.dbmigration.DdlGenerator;
 import com.avaje.ebeaninternal.api.SpiEbeanServer;
 import main.Constants;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 /**
  * GNU General Public License v3.0.

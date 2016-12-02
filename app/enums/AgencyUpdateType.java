@@ -7,7 +7,6 @@ package enums;
  */
 public enum AgencyUpdateType {
     TYPE_ALL,
-    TYPE_SEPTA,
-    TYPE_SOUND_TRANSIT,
-    TYPE_KING_TRANSIT
+    TYPE_IN_APP,
+    TYPE_SEPTA
 }

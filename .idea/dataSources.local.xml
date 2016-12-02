@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="agency_alerts" uuid="fee0e7e8-7e82-4f0a-ac34-8e53fa9f0406">
+      <database-info product="PostgreSQL" version="9.6.0" jdbc-version="4.0" driver-name="PostgreSQL Native Driver" driver-version="PostgreSQL 9.4 JDBC4 (build 1201)">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>splendidbits</user-name>
+    </data-source>
+    <data-source name="push_services" uuid="9deee416-f35f-4025-8410-e5a1e5b522a0">
+      <database-info product="PostgreSQL" version="9.6.0" jdbc-version="4.0" driver-name="PostgreSQL Native Driver" driver-version="PostgreSQL 9.4 JDBC4 (build 1201)">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>splendidbits</user-name>
+      <resolve-scope>commute_gcm:information_schema,pg_catalog,public</resolve-scope>
+    </data-source>
+  </component>
+</project>

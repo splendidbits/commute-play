@@ -1,5 +1,6 @@
 package serializers;
 
+import agency.septa.SeptaAgencyUpdate;
 import com.google.gson.*;
 import enums.AlertType;
 import enums.RouteFlag;
@@ -8,7 +9,7 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
@@ -31,8 +32,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         // Create agency if there was no partially filled agency from the client.
         if (mAgency == null) {
             mAgency = new Agency();
-            mAgency.id = 1;
-            mAgency.name = "South East Pennsylvania Transit Association";
+            mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
+            mAgency.name = SeptaAgencyUpdate.AGENCY_NAME;
             mAgency.phone = "12155807800";
             mAgency.externalUri = "http://www.septa.org";
             mAgency.utcOffset = -5f;
@@ -184,6 +185,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                             AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
+                            alert.highPriority = true;
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = type;
                             alert.messageTitle = type.title;
@@ -197,6 +199,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (isSnow.toLowerCase().equals("y")) {
                             AlertType typeWeather = AlertType.TYPE_WEATHER;
                             Alert alert = new Alert();
+                            alert.highPriority = true;
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeWeather;
                             alert.messageTitle = typeWeather.title;
@@ -208,6 +211,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (!advisoryMessage.isEmpty()) {
                             AlertType typeInformation = AlertType.TYPE_INFORMATION;
                             Alert alert = new Alert();
+                            alert.highPriority = false;
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeInformation;
                             alert.messageTitle = typeInformation.title;
@@ -219,6 +223,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (!currentMessage.isEmpty()) {
                             AlertType typeCurrent = AlertType.TYPE_DISRUPTION;
                             Alert alert = new Alert();
+                            alert.highPriority = true;
                             alert.lastUpdated = lastUpdateCalendar;
                             alert.type = typeCurrent;
                             alert.messageTitle = typeCurrent.title;

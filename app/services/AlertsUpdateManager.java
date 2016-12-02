@@ -1,13 +1,13 @@
 package services;
 
-import agency.AgencyAlertModifications;
+import models.AgencyAlertModifications;
 import dao.AgencyDao;
 import enums.AlertType;
 import helpers.AlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import services.splendidlog.Logger;
+import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;

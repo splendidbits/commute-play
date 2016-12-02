@@ -1,8 +1,5 @@
-[submodule "modules/splendidlog"]
-	path = modules/splendidlog
-	url = https://splendidbits@github.com/splendidbits/play-splendid-log.git
-	branch = internal-snapshot
 [submodule "modules/pushservices"]
 	path = modules/pushservices
-	url = https://splendidbits@github.com/splendidbits/play-push-services.git
+	url = https://splendidbits@github.com/splendidbits/play-pushservices.git
 	branch = internal-snapshot
+

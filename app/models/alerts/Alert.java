@@ -14,7 +14,6 @@ public class Alert extends Model implements Comparable {
     public static Finder<Long, Alert> find = new Finder<>(Alert.class);
 
     @Id
-    @JsonIgnore
     @Column(name = "id")
     @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
@@ -47,6 +46,9 @@ public class Alert extends Model implements Comparable {
     @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     public List<Location> locations;
 
+    @Column(name  = "high_priority", nullable = false)
+    public Boolean highPriority = false;
+
     @Basic
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
@@ -74,11 +76,13 @@ public class Alert extends Model implements Comparable {
             boolean bothLocationsEmpty = locations == null && other.locations == null ||
                     (locations != null && locations.isEmpty() && other.locations != null && other.locations.isEmpty());
 
+            boolean samePriority = other.highPriority = highPriority;
+
             boolean sameLocations = bothLocationsEmpty || locations != null && other.locations != null &&
                             (locations.containsAll(other.locations) && other.locations.containsAll(locations));
 
             // Match everything.
-            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameLocations);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameLocations && samePriority);
         }
 
         return obj.equals(this);
@@ -111,6 +115,8 @@ public class Alert extends Model implements Comparable {
         hashCode += locations != null
                 ? locations.hashCode()
                 : hashCode;
+
+        hashCode += highPriority ? 1 : 0;
 
         return hashCode.hashCode();
     }
