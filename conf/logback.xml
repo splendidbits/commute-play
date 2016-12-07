@@ -40,12 +40,14 @@
         <appender-ref ref="CHANGE_LOG"/>
     </logger>
 
-    <logger name="com.avaje.ebean" level="INFO"/>
-    <logger name="org.avaje.ebean" level="INFO"/>
+    <logger name="com.avaje.ebean" level="WARN"/>
+    <logger name="org.avaje.ebean.SQL" level="WARN"/>
+    <logger name="org.avaje.ebean.TXN" level="WARN"/>
+    <logger name="org.avaje.ebean.SUM" level="WARN"/>
+    <logger name="org.avaje.ebean.ELA" level="WARN"/>
 
-    <logger name="org.avaje.ebean.SQL" level="TRACE"/>
-    <logger name="org.avaje.ebean.TXN" level="TRACE"/>
-    <logger name="org.avaje.ebean.SUM" level="TRACE"/>
-    <logger name="org.avaje.ebean.ELA" level="TRACE"/>
+    <logger name="org.asynchttpclient.netty" level="WARN"/>
+    <logger name="com.zaxxer.hikari.pool" level="WARN"/>
+    <logger name="com.avaje.ebeaninternal" level="WARN"/>
 
 </configuration>
