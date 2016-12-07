@@ -7,8 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Contains a list of new, uddated, or removed alerts for an
- * {@link models.alerts.Agency}
+ * Contains a list of new, uddated, or removed alerts for an {@link models.alerts.Agency}
  */
 public class AgencyAlertModifications {
     private int mAgencyId;
@@ -52,7 +51,7 @@ public class AgencyAlertModifications {
      *
      * @param alert The alert to flag as updated or new.
      */
-    public void addUpdatedAlert(@Nonnull Alert alert) {
+    private void addUpdatedAlert(@Nonnull Alert alert) {
         if (alert.route == null || alert.route.routeId == null || alert.route.routeId.isEmpty()) {
             throw new RuntimeException("Updated alert must include a route parent.");
         }
@@ -76,7 +75,7 @@ public class AgencyAlertModifications {
      *
      * @param alert The alerts to add as stale.
      */
-    public void addStaleAlert(@Nonnull Alert alert) {
+    private void addStaleAlert(@Nonnull Alert alert) {
         mStaleAlerts.add(alert);
     }
 

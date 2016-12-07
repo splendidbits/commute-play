@@ -73,10 +73,10 @@ public class Alert extends Model implements Comparable {
             boolean sameUri = (externalUri == null && other.externalUri == null) ||
                     (externalUri != null && other.externalUri != null && externalUri.equals(other.externalUri));
 
+            boolean samePriority = other.highPriority == highPriority;
+
             boolean bothLocationsEmpty = locations == null && other.locations == null ||
                     (locations != null && locations.isEmpty() && other.locations != null && other.locations.isEmpty());
-
-            boolean samePriority = other.highPriority = highPriority;
 
             boolean sameLocations = bothLocationsEmpty || locations != null && other.locations != null &&
                             (locations.containsAll(other.locations) && other.locations.containsAll(locations));
@@ -116,6 +116,10 @@ public class Alert extends Model implements Comparable {
                 ? locations.hashCode()
                 : hashCode;
 
+        hashCode += lastUpdated != null
+                ? lastUpdated.hashCode()
+                : hashCode;
+
         hashCode += highPriority ? 1 : 0;
 
         return hashCode.hashCode();
@@ -138,19 +142,18 @@ public class Alert extends Model implements Comparable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        markAsDirty();
-
         Alert alert = new Alert();
         alert.id = id;
+        alert.route = route;
         alert.type = type;
         alert.messageTitle = messageTitle;
         alert.messageSubtitle = messageSubtitle;
         alert.messageBody = messageBody;
         alert.externalUri = externalUri;
-        alert.lastUpdated = lastUpdated;
-        alert.route = route;
         alert.locations = locations;
-
+        alert.lastUpdated = lastUpdated;
+        alert.highPriority = highPriority;
+        alert.markAsDirty();
         return alert;
     }
 }

@@ -31,10 +31,9 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
         // Create agency if there was no partially filled agency from the client.
         if (mAgency == null) {
-            mAgency = new Agency();
-            mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
+            mAgency = new Agency(SeptaAgencyUpdate.AGENCY_ID);
             mAgency.name = SeptaAgencyUpdate.AGENCY_NAME;
-            mAgency.phone = "12155807800";
+            mAgency.phone = "+1 (215) 580 7800";
             mAgency.externalUri = "http://www.septa.org";
             mAgency.utcOffset = -5f;
             mAgency.routes = new ArrayList<>();
@@ -42,8 +41,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     }
 
     @Override
-    public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-            throws JsonParseException {
+    public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         Logger.debug("Started parsing SEPTA alerts json body");
 
         // The SEPTA alerts feed uses different date formats depending on the field

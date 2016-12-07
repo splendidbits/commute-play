@@ -5,7 +5,6 @@ import com.avaje.ebean.EbeanServerFactory;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -17,6 +16,7 @@ import models.devices.Subscription;
 import org.avaje.datasource.DataSourceConfig;
 import play.Configuration;
 
+import javax.inject.Singleton;
 import java.util.ArrayList;
 
 /**
@@ -57,8 +57,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setMaxInactiveTimeSecs(30);
         dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
         dataSourceConfig.setTrimPoolFreqSecs(60 * 5);
-        dataSourceConfig.setCaptureStackTrace(true);
-
+        dataSourceConfig.setCaptureStackTrace(false);
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table

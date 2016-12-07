@@ -21,22 +21,19 @@ import java.util.*;
  */
 public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
-
     private Agency mAgency;
-    public static final String AGENCY_FEED_URL = String.format(Locale.US, "%s/alerts/v1/agency/%s/route/%s/alerts",
-            Constants.API_SERVER_HOST, InAppMessageUpdate.AGENCY_ID, InAppMessageUpdate.ROUTE_ID);
 
     public InAppMessagesDeserializer(@Nullable Agency partialAgency) {
         mAgency = partialAgency;
 
         // Create agency if there was no partially filled agency from the client.
         if (mAgency == null) {
-            mAgency = new Agency();
-            mAgency.id = InAppMessageUpdate.AGENCY_ID;
+            mAgency = new Agency(InAppMessageUpdate.AGENCY_ID);
             mAgency.name = InAppMessageUpdate.AGENCY_NAME;
+            mAgency.phone = "+1 (555) 867 5309";
             mAgency.utcOffset = -8f;
             mAgency.routes = new ArrayList<>();
-            mAgency.externalUri = AGENCY_FEED_URL;
+            mAgency.externalUri = String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.API_SERVER_HOST);
         }
     }
 

@@ -3,31 +3,30 @@
 # ~~~~
 
 # Home page
-GET         /                                                     controllers.Application.index()
-GET         /robots.txt                                           controllers.Application.robots()
+GET         /                                        controllers.Application.index()
+GET         /robots.txt                              controllers.Application.robots()
 
 # App API endpoints
-POST        /api/gcm/v1/register                                  controllers.DeviceController.register()
-POST        /api/gcm/v1/subscribe                                 controllers.SubscriptionController.subscribe()
+POST        /gcm/v1/register                         controllers.DeviceController.register()
+POST        /gcm/v1/subscribe                        controllers.SubscriptionController.subscribe()
 
 # Public API endpoints
-GET         /api/alerts/v1/agency                                 controllers.AgencyAlertsController.getAgencies
-GET         /api/alerts/v1/agency/:aId                            controllers.AgencyAlertsController.getRoutesForAgency(aId: Int)
-GET         /api/alerts/v1/agency/:aId/raw                        controllers.AgencyAlertsController.getRawAgencyAlerts(aId: Int)
-GET         /api/alerts/v1/agency/:aId/route/:rId                 controllers.AgencyAlertsController.getAlertsForAgencyRoute(aId: Int, rId: String)
-GET         /api/alerts/v1/agency/:aId/route/:rId/alerts          controllers.AgencyAlertsController.getAlertsForRoute(aId: Int, rId: String)
+GET         /alerts/v1/agency/all                    controllers.AgencyAlertsController.getAgencies
+GET         /alerts/v1/agency/:aId                   controllers.AgencyAlertsController.getAgencyAlerts(aId: Int)
+GET         /alerts/v1/agency/:aId/raw               controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: Int)
+GET         /alerts/v1/agency/:aId/route/:rId        controllers.AgencyAlertsController.getRouteAlerts(aId: Int, rId: String)
 
 # Device information for accounts
-GET         /api/account/v1/devices                               controllers.DeviceController.getDevices
-GET         /api/account/v1/devices/page/:page                    controllers.DeviceController.getDevicesPage(page: Int)
-GET         /api/account/v1/devices/page/:page/agency/:aId        controllers.DeviceController.getDevicesPageAgency(page: Int, aId: Int)
+#GET         /account/v1/devices                               controllers.DeviceController.getDevices
+#GET         /account/v1/devices/page/:page                    controllers.DeviceController.getDevicesPage(page: int)
+#GET         /account/v1/devices/page/:page/agency/:aId        controllers.DeviceController.getDevicesPageAgency(page: Int, aId: int)
 
 # Signup
-GET         /api/signup                                           controllers.SignupController.signup()
-POST        /api/signup/adduser                                   controllers.SignupController.addUser()
+GET         /signup                                  controllers.SignupController.signup()
+POST        /signup/adduser                          controllers.SignupController.addUser()
 
 # fluffylog
-->          /api/debug/logs                                       splendidlog.Routes
+->          /debug/logs                              fluffylog.Routes
 
 # Map static resources from the /public folder to the /assets URL path
-GET         /assets/*file                                         controllers.Assets.at(path="/public", file)
+GET         /assets/*file                            controllers.Assets.at(path="/public", file)

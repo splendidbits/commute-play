@@ -1,4 +1,4 @@
-create table push_services.credentials (
+create table pushservices.credentials (
   id                            bigint not null,
   message_id                    bigint,
   platform                      varchar(4),
@@ -11,7 +11,7 @@ create table push_services.credentials (
 );
 create sequence credentials_id_seq increment by 1;
 
-create table push_services.messages (
+create table pushservices.messages (
   id                            bigint not null,
   task_id                       bigint,
   collapse_key                  varchar(255),
@@ -26,7 +26,7 @@ create table push_services.messages (
 );
 create sequence message_id_seq increment by 1;
 
-create table push_services.payload_element (
+create table pushservices.payload_element (
   id                            bigint not null,
   element_name                  varchar(255),
   element_value                 TEXT,
@@ -35,7 +35,7 @@ create table push_services.payload_element (
 );
 create sequence element_id_seq increment by 1;
 
-create table push_services.recipient_failures (
+create table pushservices.recipient_failures (
   id                            bigint not null,
   recipient_id                  bigint,
   type                          varchar(30),
@@ -47,7 +47,7 @@ create table push_services.recipient_failures (
 );
 create sequence failure_id_seq increment by 1;
 
-create table push_services.recipients (
+create table pushservices.recipients (
   id                            bigint not null,
   token                         TEXT,
   message_id                    bigint,
@@ -61,7 +61,7 @@ create table push_services.recipients (
 );
 create sequence recipient_id_seq increment by 1;
 
-create table push_services.tasks (
+create table pushservices.tasks (
   id                            bigint not null,
   name                          varchar(255),
   priority                      integer,
@@ -70,16 +70,16 @@ create table push_services.tasks (
 );
 create sequence task_id_seq increment by 1;
 
-alter table push_services.credentials add constraint fk_credentials_message_id foreign key (message_id) references push_services.messages (id) on delete restrict on update restrict;
+alter table pushservices.credentials add constraint fk_credentials_message_id foreign key (message_id) references pushservices.messages (id) on delete restrict on update restrict;
 
-alter table push_services.messages add constraint fk_messages_task_id foreign key (task_id) references push_services.tasks (id) on delete restrict on update restrict;
-create index ix_messages_task_id on push_services.messages (task_id);
+alter table pushservices.messages add constraint fk_messages_task_id foreign key (task_id) references pushservices.tasks (id) on delete restrict on update restrict;
+create index ix_messages_task_id on pushservices.messages (task_id);
 
-alter table push_services.payload_element add constraint fk_payload_element_message_id foreign key (message_id) references push_services.messages (id) on delete restrict on update restrict;
-create index ix_payload_element_message_id on push_services.payload_element (message_id);
+alter table pushservices.payload_element add constraint fk_payload_element_message_id foreign key (message_id) references pushservices.messages (id) on delete restrict on update restrict;
+create index ix_payload_element_message_id on pushservices.payload_element (message_id);
 
-alter table push_services.recipient_failures add constraint fk_recipient_failures_recipient_id foreign key (recipient_id) references push_services.recipients (id) on delete restrict on update restrict;
+alter table pushservices.recipient_failures add constraint fk_recipient_failures_recipient_id foreign key (recipient_id) references pushservices.recipients (id) on delete restrict on update restrict;
 
-alter table push_services.recipients add constraint fk_recipients_message_id foreign key (message_id) references push_services.messages (id) on delete restrict on update restrict;
-create index ix_recipients_message_id on push_services.recipients (message_id);
+alter table pushservices.recipients add constraint fk_recipients_message_id foreign key (message_id) references pushservices.messages (id) on delete restrict on update restrict;
+create index ix_recipients_message_id on pushservices.recipients (message_id);
 

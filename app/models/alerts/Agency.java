@@ -30,10 +30,10 @@ public class Agency extends Model implements Cloneable {
     public List<Route> routes;
 
     @SuppressWarnings("unused")
-    public Agency() {
+    private Agency() {
     }
 
-    public Agency(Integer id) {
+    public Agency(int id) {
         this.id = id;
     }
 
@@ -105,15 +105,13 @@ public class Agency extends Model implements Cloneable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        markAsDirty();
-
-        Agency agency = new Agency();
-        agency.id = id;
+        Agency agency = new Agency(id);
         agency.name = name;
         agency.phone = phone;
         agency.externalUri = externalUri;
         agency.utcOffset = utcOffset;
         agency.routes = routes;
+        agency.markAsDirty();
 
         return agency;
     }

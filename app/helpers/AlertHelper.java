@@ -4,21 +4,24 @@ import enums.AlertType;
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
 import helpers.pushservices.PlatformMessageBuilder;
+import models.AgencyAlertModifications;
 import models.accounts.PlatformAccount;
+import models.alerts.Agency;
 import models.alerts.Alert;
+import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import models.pushservices.Credentials;
 import models.pushservices.Message;
 import models.pushservices.PayloadElement;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.safety.Whitelist;
 import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Used to easily create relevant push platform messages for different app alert types,
@@ -65,12 +68,78 @@ public class AlertHelper {
     }
 
     /**
+     * Strip a string of HTML but preserve all kinds of line-breaks.
+     *
+     * @param agency agency to parse
+     * @return formatted string stripped of HTML.
+     */
+    @Nonnull
+    public static void parseHtml(@Nonnull Agency agency) {
+        if (agency.routes != null) {
+            for (Route route : agency.routes) {
+
+                if (route.routeName != null && route.routeName.isEmpty()) {
+                    route.routeName = fixCommonHtmlIssues(route.routeName);
+                }
+
+                if (route.alerts != null) {
+                    for (Alert alert : route.alerts) {
+
+                        if (alert.messageTitle != null && !alert.messageTitle.isEmpty()) {
+                            alert.messageTitle = fixCommonHtmlIssues(alert.messageTitle);
+                        }
+
+                        if (alert.messageSubtitle != null && !alert.messageSubtitle.isEmpty()) {
+                            alert.messageSubtitle = fixCommonHtmlIssues(alert.messageSubtitle);
+                        }
+
+                        if (alert.messageBody != null && !alert.messageBody.isEmpty()) {
+                            alert.messageBody = fixCommonHtmlIssues(alert.messageBody);
+                        }
+
+                        if (alert.locations != null) {
+                            for (Location location : alert.locations) {
+
+                                if (location.name != null && !location.name.isEmpty()) {
+                                    location.name = fixCommonHtmlIssues(location.name);
+                                }
+                                if (location.message != null && !location.message.isEmpty()) {
+                                    location.message = fixCommonHtmlIssues(location.message);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Strip complex HTML from a string but preserve bold, italics, newlines and whitesspace.
+     *
+     * @param input string to strip html from.
+     * @return original string minus dom syntax but keeping whitespace.
+     */
+    private static String fixCommonHtmlIssues(@Nonnull String input) {
+        // Strip complex html.
+        input = Jsoup.clean(input, "", Whitelist.basic(), new Document.OutputSettings().prettyPrint(false));
+
+        // Remove any tabs special characters.
+        input = input.replace("\t", "");
+
+        // Remove whitespace at start and end of string to prepare for the next loop.
+        input = input.trim();
+
+        return input;
+    }
+
+    /**
      * Build a list of commute update (detour, advisory, etc), or route cancellation push messages
      * with a set of recipients for an updated route.
      *
      * @param route           route which has been updated.
      * @param platformAccount platform account for the alert message.
-     * @param isCancellation set whether the alert message is an update or cancellation (clear).
+     * @param isCancellation  set whether the alert message is an update or cancellation (clear).
      * @return List of platform messages for route.
      */
     public static List<Message> getAlertMessages(@Nonnull Route route,
@@ -326,7 +395,7 @@ public class AlertHelper {
      * @param account platform  credentials for message.
      * @return push-service credentials model populated with platform specific keys, etc.
      */
-    public static Credentials getMessageCredentials(@Nonnull PlatformAccount account) {
+    private static Credentials getMessageCredentials(@Nonnull PlatformAccount account) {
         if (account.platformType != null) {
             Credentials credentials = new Credentials();
             credentials.platformType = PlatformType.SERVICE_GCM;
@@ -369,6 +438,162 @@ public class AlertHelper {
     }
 
     /**
+     * Creates a list of new and removed alerts for a given agency bundle.
+     *
+     * @param existingAgency the currently saved agency.
+     * @param updatedAgency  the agency which is to be updated.
+     * @return A list of removed and added alerts for that agency.
+     */
+    @Nullable
+    public static AgencyAlertModifications getAgencyModifications(@Nullable Agency existingAgency, @Nullable Agency updatedAgency) {
+
+        // Both agencies do not exist. This is bad.
+        if (existingAgency == null && updatedAgency == null) {
+            Logger.warn("Both agencies for modifications calculation were null!");
+            return null;
+        }
+
+        // Copy the routes.
+        List<Route> existingRoutes = existingAgency != null ? copyRoute(existingAgency.routes) : null;
+        List<Route> freshRoutes = updatedAgency != null ? copyRoute(updatedAgency.routes) : null;
+
+        int agencyId = updatedAgency != null ? updatedAgency.id : existingAgency.id;
+        AgencyAlertModifications alertModifications = new AgencyAlertModifications(agencyId);
+
+        // Updated agency exists and Existing agency does not.
+        if ((existingRoutes == null || existingRoutes.isEmpty()) && freshRoutes != null) {
+            Logger.info(String.format("Existing routes for agency %d missing. Marking all as updated.", agencyId));
+
+            for (Route freshRoute : freshRoutes) {
+                alertModifications.addUpdatedAlerts(freshRoute.alerts);
+            }
+            return alertModifications;
+        }
+
+        // Existing agency exists and Updated agency does not.
+        if ((freshRoutes == null || freshRoutes.isEmpty()) && existingRoutes != null) {
+            Logger.info(String.format("New routes for agency %d missing. Marking all as stale.", agencyId));
+
+            for (Route staleRoute : existingRoutes) {
+                alertModifications.addUpdatedAlerts(staleRoute.alerts);
+            }
+            return alertModifications;
+        }
+
+        List<Alert> updatedAlerts = new ArrayList<>();
+        List<Alert> staleAlerts = new ArrayList<>();
+
+        // Iterate through the existing routes and check existing and fresh Routes are the same.
+        if (freshRoutes != null) {
+            for (Route freshRoute : freshRoutes) {
+                for (Route existingRoute : existingRoutes) {
+
+                    if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                        updatedAlerts.addAll(getUpdatedAlerts(existingRoute, existingRoute.alerts, freshRoute.alerts));
+                        staleAlerts.addAll(getStaleAlerts(existingRoute, existingRoute.alerts, freshRoute.alerts));
+
+                        // There was a route match so skip the inner loop.
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Remove any alert from the stale alerts where the route type was updated.
+        Iterator<Alert> staleAlertsIterator = staleAlerts.iterator();
+        while (staleAlertsIterator.hasNext()) {
+            Alert staleAlert = staleAlertsIterator.next();
+
+            // If the stale alert routeId is the same as the updated alert, remove the stale alert.
+            for (Alert updatedAlert : updatedAlerts) {
+                boolean bothRouteIdsExist = updatedAlert.route != null && updatedAlert.route.routeId != null &&
+                        staleAlert.route != null && staleAlert.route.routeId != null;
+
+                if (bothRouteIdsExist && updatedAlert.route.routeId.equals(staleAlert.route.routeId)) {
+                    staleAlertsIterator.remove();
+                    break;
+                }
+            }
+        }
+
+        alertModifications.addUpdatedAlerts(updatedAlerts);
+        alertModifications.addStaleAlerts(staleAlerts);
+        return alertModifications;
+    }
+
+    /**
+     * Get a list of fresh (new) alerts that do not exist in the previous (existing) collection.
+     *
+     * @param existingAlerts The previous stored agency route alerts.
+     * @param freshAlerts    The current fresh agency route alerts.
+     * @return The list of updated route alerts.
+     */
+    @Nonnull
+    private static List<Alert> getUpdatedAlerts(Route route, List<Alert> existingAlerts, List<Alert> freshAlerts) {
+        List<Alert> updatedAlerts = new ArrayList<>();
+
+        if (freshAlerts != null) {
+            for (Alert freshAlert : freshAlerts) {
+
+                if (!AlertHelper.isAlertEmpty(freshAlert) &&
+                        (existingAlerts == null || existingAlerts.isEmpty() || !existingAlerts.contains(freshAlert))) {
+                    Logger.info(String.format("Alert in route %1$s was new or updated.", route.routeId));
+                    freshAlert.route = route;
+                    updatedAlerts.add(freshAlert);
+                }
+            }
+        }
+
+        return updatedAlerts;
+    }
+
+    /**
+     * An stale alert is defined as an existing {@link enums.AlertType} for the route which no longer
+     * exists in the fresh route alert types.
+     *
+     * @param existingAlerts The previous stored agency route alerts.
+     * @param freshAlerts    The current fresh agency route alerts.
+     * @return The list of stale route alerts.
+     */
+    @Nonnull
+    private static List<Alert> getStaleAlerts(Route route, List<Alert> existingAlerts, List<Alert> freshAlerts) {
+        List<Alert> staleAlerts = new ArrayList<>();
+
+        // Sanity check for both lists being empty.
+        if ((existingAlerts == null || existingAlerts.isEmpty()) && (freshAlerts == null || freshAlerts.isEmpty())) {
+            return staleAlerts;
+        }
+
+        // Mark all existing alerts as stale if fresh alerts are empty.
+        if (freshAlerts == null || freshAlerts.isEmpty() && existingAlerts != null && !existingAlerts.isEmpty()) {
+            return existingAlerts;
+        }
+
+        // Sanity check the fresh alert is empty, use this iteration to add to stale alerts.
+        if (AlertHelper.isAlertsEmpty(freshAlerts) && (existingAlerts != null && !existingAlerts.isEmpty())) {
+            return existingAlerts;
+        }
+
+        if (existingAlerts != null) {
+            Set<AlertType> freshAlertTypes = new HashSet<>();
+
+            // Add all fresh alert types to a set.
+            for (Alert freshAlert : freshAlerts) {
+                freshAlertTypes.add(freshAlert.type);
+            }
+
+            // If an existing alert type does not exist in the updated fresh alerts, it is stale.
+            for (Alert existingAlert : existingAlerts) {
+                if (!freshAlertTypes.contains(existingAlert.type)) {
+                    Logger.info(String.format("Alert in route %s became stale.", route.routeId));
+                    staleAlerts.add(existingAlert);
+                }
+            }
+        }
+        return staleAlerts;
+    }
+
+    /**
      * Check if the Alert is "empty" (if there is no message, or type.
      *
      * @param alert the alert to check.
@@ -384,6 +609,7 @@ public class AlertHelper {
 
     /**
      * Returns true if all alerts are empty.
+     *
      * @param alerts list of alerts to check.
      * @return true if all alerts in collection are empty.
      */

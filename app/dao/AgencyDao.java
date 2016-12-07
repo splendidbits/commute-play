@@ -236,6 +236,43 @@ public class AgencyDao extends BaseDao {
         return null;
     }
 
+    @Nullable
+    public Route getRoute(int agencyId, @Nonnull String routeId) {
+        Transaction transaction = mEbeanServer.createTransaction();
+        transaction.setReadOnly(true);
+
+        try {
+            Route route = mEbeanServer.find(Route.class)
+                    .fetch("agency")
+                    .fetch("alerts")
+                    .fetch("alerts.locations")
+                    .where()
+                    .conjunction()
+                    .eq("agency.id", agencyId)
+                    .eq("routeId", routeId)
+                    .endJunction()
+                    .findUnique();
+
+            return route;
+
+        } catch (PersistenceException e) {
+            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains("does not exist") &&
+                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
+                createDatabase();
+            }
+
+        } catch (Exception e) {
+            Logger.error("Error getting routes for agency.", e);
+
+        } finally {
+            transaction.end();
+        }
+        return null;
+    }
+
     /**
      * Get a s saved agency and all children.
      *

@@ -1,12 +1,11 @@
 package agency;
 
-import dao.AgencyDao;
+import helpers.AlertHelper;
 import models.AgencyAlertModifications;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import play.libs.ws.WSClient;
-import services.AlertsUpdateManager;
+import services.AgencyManager;
 import services.PushMessageManager;
 import services.fluffylog.Logger;
 
@@ -30,21 +29,14 @@ import java.util.Collections;
  * 6: send data in batches of 1000 to google.
  */
 public abstract class AgencyUpdate {
-    public int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
-    private AgencyDao mAgencyDao;
+    protected static final int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
+
     private PushMessageManager mPushMessageManager;
-    private AlertsUpdateManager mAlertsUpdateManager;
-    protected WSClient mWsClient;
+    private AgencyManager mAgencyManager;
 
-    protected AgencyUpdate(@Nonnull WSClient wsClient, @Nonnull AlertsUpdateManager alertsUpdateManager,
-                           @Nonnull AgencyDao agencyDao, @Nonnull PushMessageManager pushMessageManager) {
-        mWsClient = wsClient;
-        mAlertsUpdateManager = alertsUpdateManager;
-        mAgencyDao = agencyDao;
+    protected AgencyUpdate(@Nonnull AgencyManager agencyManager, @Nonnull PushMessageManager pushMessageManager) {
+        mAgencyManager = agencyManager;
         mPushMessageManager = pushMessageManager;
-    }
-
-    private AgencyUpdate() {
     }
 
     /**
@@ -52,8 +44,7 @@ public abstract class AgencyUpdate {
      * model data.
      * When this is complete, call processAgencyUpdate() and supply the Agency data.
      */
-    public void startAgencyUpdate() {
-    }
+    public abstract void startAgencyUpdate();
 
     /**
      * Starts of a chain of things when an agency is passed into this method:
@@ -73,37 +64,28 @@ public abstract class AgencyUpdate {
             // Add the parent route back into each alert model.
             fillAlertsWithRoutes(updatedAgency);
 
+            // Parse html and fix text formatting inconsistencies.
+            AlertHelper.parseHtml(updatedAgency);
+
             // Diff the new and existing agency data and form a modifications model.
-            AgencyAlertModifications agencyAlertModifications = mAlertsUpdateManager.getUpdatedRoutesAlerts(updatedAgency);
+            Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
+            AgencyAlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
-            if (agencyAlertModifications.hasModifiedAlerts()) {
-                // Cache the various possible request json responses.
-                cacheAlertResponses(updatedAgency);
-
+            if (agencyModifications != null && agencyModifications.hasModifiedAlerts()) {
                 // Save the agency in the datastore.
                 Logger.debug("Saving new or updated agency data.");
-                boolean alertsPersisted = mAgencyDao.saveAgency(updatedAgency);
 
-                // NOTE: This is a sanity-check to ensure we don't bombard clients with
-                // alerts if there's an issue with database persistence.
+                // Don't send notifications to clients with alerts if there's an issue with database persistence.
+                boolean alertsPersisted = mAgencyManager.saveAgency(updatedAgency);
                 if (alertsPersisted) {
                     Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
-                    mPushMessageManager.dispatchAlerts(agencyAlertModifications);
+                    mPushMessageManager.dispatchAlerts(agencyModifications);
                 }
 
             } else {
                 Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
             }
         }
-    }
-
-    /**
-     * Cache the json responses for the possible Alert API requests
-     *
-     * @param agency agency to cachce responses for.
-     */
-    private void cacheAlertResponses(@Nonnull Agency agency) {
-
     }
 
     /**
@@ -157,6 +139,5 @@ public abstract class AgencyUpdate {
                 }
             }
         }
-
     }
 }

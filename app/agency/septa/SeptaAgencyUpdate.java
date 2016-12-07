@@ -3,18 +3,16 @@ package agency.septa;
 import agency.AgencyUpdate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dao.AgencyDao;
 import main.Constants;
 import models.alerts.Agency;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
-import services.AlertsUpdateManager;
+import services.AgencyManager;
 import services.PushMessageManager;
 import services.fluffylog.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -22,20 +20,20 @@ import java.util.function.Function;
 /**
  * Agency updater for SEPTA alerts.
  */
-@Singleton
 public class SeptaAgencyUpdate extends AgencyUpdate {
+    public static final String AGENCY_NAME = "South East Pennsylvania Transit Association";
     public static final int AGENCY_ID = 1;
-    public static String AGENCY_NAME = "South East Pennsylvania Transit Association";
-    private static final String APP_ALERT_URL = String.format(Locale.US,
-            "%s/alerts/v1/agency/%d/raw?req1=all", Constants.API_SERVER_HOST, AGENCY_ID);
-    private final ParseAgencyFunction mParseMessagesFunc;
+    private static String APP_ALERT_URL = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.API_SERVER_HOST, AGENCY_ID);
+
+    private ParseAgencyFunction mParseMessagesFunc;
+    private WSClient mWsClient;
 
     @Inject
-    public SeptaAgencyUpdate(WSClient wsClient, AlertsUpdateManager alertsUpdateManager, AgencyDao agencyDao,
-                             PushMessageManager pushMessageManager) {
-        super(wsClient, alertsUpdateManager, agencyDao, pushMessageManager);
+    public SeptaAgencyUpdate(WSClient wsClient, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
+        super(agencyManager, pushMessageManager);
 
         mParseMessagesFunc = new ParseAgencyFunction();
+        mWsClient = wsClient;
     }
 
     @Override
@@ -72,7 +70,6 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
                         .create();
 
                 Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-
                 agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
                 processAgencyUpdate(agencyAlerts);
             }

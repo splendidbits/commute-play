@@ -121,8 +121,6 @@ public class Location extends Model implements Comparable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        markAsDirty();
-
         Location location = new Location();
         location.id = id;
         location.name = name;
@@ -132,6 +130,7 @@ public class Location extends Model implements Comparable {
         location.sequence = sequence;
         location.date = date;
         location.alert = alert;
+        location.markAsDirty();
 
         return location;
     }

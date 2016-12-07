@@ -154,8 +154,6 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        markAsDirty();
-
         Route route = new Route();
         route.id = id;
         route.routeId = routeId;
@@ -167,6 +165,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
         route.agency = agency;
         route.alerts = alerts;
         route.subscriptions = subscriptions;
+        route.markAsDirty();
 
         return route;
     }

@@ -2,7 +2,7 @@
 <dataSource name="push_services">
   <database-model serializer="dbm" rdbms="POSTGRES" format-version="4.0">
     <root id="1"/>
-    <database id="2" parent="1" name="push_services">
+    <database id="2" parent="1" name="pushservices">
       <ObjectId>16701</ObjectId>
       <Current>1</Current>
       <Visible>1</Visible>
@@ -28,7 +28,7 @@
     <schema id="8" parent="2" name="information_schema">
       <ObjectId>12381</ObjectId>
     </schema>
-    <schema id="9" parent="2" name="push_services">
+    <schema id="9" parent="2" name="pushservices">
       <ObjectId>16702</ObjectId>
       <IntrospectionTimestamp>2016-10-13.15:38:35.097</IntrospectionTimestamp>
       <IntrospectionStateNumber>918</IntrospectionStateNumber>

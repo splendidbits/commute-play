@@ -1,5 +1,5 @@
 name := """commutealerts"""
-version := "0.1"
+version := "0.2"
 
 lazy val buildSettings = Seq(
   scalaVersion := "2.11.8"
@@ -30,13 +30,13 @@ libraryDependencies ++= Seq(
   javaWs,
   javaJpa,
   "org.avaje" % "avaje-agentloader" % "2.1.2",
-  "org.postgresql" % "postgresql" % "9.4.1209",
-  "org.jsoup" % "jsoup" % "1.7.2",
+  "org.postgresql" % "postgresql" % "9.4.1212",
+  "org.jsoup" % "jsoup" % "1.10.1",
   "junit" % "junit" % "4.11" % Test,
-  "com.google.code.gson" % "gson" % "2.2"
+  "com.google.code.gson" % "gson" % "2.8.0"
 )
-dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "7.13.1"
-dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "4.10.1"
+dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "8.1.1"
+dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "8.1.1"
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 //resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/local")
