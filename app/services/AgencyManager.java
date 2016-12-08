@@ -26,8 +26,6 @@ import java.util.Locale;
  */
 //@Singleton
 public class AgencyManager {
-    //    private static final int AGENCY_CACHE_DURATION_SECS = 60 * 2;
-//    private static final int ALL_AGENCIES_CACHE_DURATION_SECS = 60 * 60 * 24;
     private static final String CACHE_ALL_KEY = "cache_agency_all";
     private static final String CACHE_AGENCY_KEY = "cache_agency_%d";
 
