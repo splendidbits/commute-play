@@ -16,5 +16,6 @@
       </array>
     </option>
     <option name="USE_AUTO_FORMATTING_IN_ROUTES" value="true" />
+    <option name="EXCLUDE_SBT_TARGET" value="true" />
   </component>
 </project>

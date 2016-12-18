@@ -24,7 +24,6 @@ import java.util.Locale;
  * 5: Get list of subscriptions for route
  * 6: send data in batches of 1000 to google.
  */
-//@Singleton
 public class AgencyManager {
     private static final String CACHE_ALL_KEY = "cache_agency_all";
     private static final String CACHE_AGENCY_KEY = "cache_agency_%d";

@@ -15,12 +15,11 @@ import java.util.List;
 /**
  * A DAO class for both device device / subscription data.
  */
-public class DeviceDao {
-    private EbeanServer mEbeanServer;
+public class DeviceDao extends BaseDao {
 
     @Inject
     public DeviceDao(EbeanServer ebeanServer) {
-        mEbeanServer = ebeanServer;
+        super(ebeanServer);
     }
 
     @Nonnull
@@ -51,9 +50,10 @@ public class DeviceDao {
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency model to database: %s.", e.getMessage()));
-            if (e.getMessage() != null &&
-                    e.getMessage().contains("does not exist") &&
+
+            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
                     e.getMessage().contains("Query threw SQLException ERROR:")) {
+                createDatabase();
             }
 
         } catch (Exception e) {
@@ -111,21 +111,26 @@ public class DeviceDao {
      */
     public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
         Transaction transaction = mEbeanServer.createTransaction();
+        transaction.setReadOnly(false);
 
         try {
             Query<Device> deviceQuery = mEbeanServer.find(Device.class)
                     .where()
                     .eq("token", staleToken)
+                    .or()
+                    .where()
+                    .eq("token", newToken)
                     .query();
+
             Device device = mEbeanServer.findUnique(deviceQuery, transaction);
 
             Logger.debug(device != null
                     ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
                     : String.format("No device found for token %s", staleToken));
 
-            mEbeanServer.markAsDirty(device);
             if (device != null) {
                 device.token = newToken;
+                mEbeanServer.markAsDirty(device);
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
                 return true;
@@ -134,7 +139,7 @@ public class DeviceDao {
             return false;
 
         } catch (Exception e) {
-            Logger.error("Error persisting subscription", e);
+            Logger.error("Error persisting updated Device Token", e);
             return false;
 
         } finally {
@@ -199,13 +204,17 @@ public class DeviceDao {
                         .findUnique();
             }
 
-            // Update an existing device if it exists.
+            // Delete and save an existing device if it exists.
             if (matchingDevice != null) {
-
-                // Delete existing subscriptions
                 mEbeanServer.find(Subscription.class)
                         .where()
                         .eq("device.id", matchingDevice.id)
+                        .or()
+                        .where()
+                        .eq("device.deviceId", matchingDevice.deviceId)
+                        .or()
+                        .where()
+                        .eq("device.token", matchingDevice.token)
                         .delete();
 
                 matchingDevice.deviceId = device.deviceId;
@@ -224,7 +233,7 @@ public class DeviceDao {
             return true;
 
         } catch (Exception e) {
-            Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
+            Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e);
             transaction.rollback();
 
         } finally {

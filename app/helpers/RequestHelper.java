@@ -14,23 +14,6 @@ import java.util.List;
 public class RequestHelper {
 
     /**
-     * Remove an element name in a json array child object (only the top level parent,
-     * does not cascade).
-     *
-     * @param arrayNode   Json Array node to find matching child-object element
-     * @param elementName name of element to remove
-     */
-    public static JsonNode removeJsonArrayElement(@Nonnull JsonNode arrayNode, @Nonnull String elementName) {
-        for (JsonNode jsonNode : arrayNode) {
-            if (jsonNode instanceof ObjectNode) {
-                ObjectNode jsonElement = (ObjectNode) jsonNode;
-                jsonElement.remove(elementName);
-            }
-        }
-        return arrayNode;
-    }
-
-    /**
      * Remove the device > subscription > route > alerts attributes.
      *
      * @param arrayNode the json to traverse.

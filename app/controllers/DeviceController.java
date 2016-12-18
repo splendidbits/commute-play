@@ -12,7 +12,6 @@ import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
 import services.PushMessageManager;
-import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,14 +32,12 @@ import java.util.concurrent.CompletionStage;
 public class DeviceController extends Controller {
     private AccountsDao mAccountsDao;
     private DeviceDao mDeviceDao;
-    private TaskQueue mTaskQueue;
     private PushMessageManager mPushMessageManager;
 
     @Inject
-    public DeviceController(AccountsDao accountsDao, DeviceDao deviceDao, TaskQueue taskQueue, PushMessageManager pushMessageManager) {
+    public DeviceController(AccountsDao accountsDao, DeviceDao deviceDao, PushMessageManager pushMessageManager) {
         mAccountsDao = accountsDao;
         mDeviceDao = deviceDao;
-        mTaskQueue = taskQueue;
         mPushMessageManager = pushMessageManager;
     }
 

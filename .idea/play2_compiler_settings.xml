@@ -4,5 +4,6 @@
     <option name="PLAY_ENABLED" value="true" />
     <option name="PROJECT_PLAY_MODULE" value="commutealerts" />
     <option name="PROJECT_URI" value="" />
+    <option name="WATCHER_ENABLED" value="true" />
   </component>
 </project>
