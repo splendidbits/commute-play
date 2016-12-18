@@ -1,6 +1,7 @@
 package dao;
 
 import com.avaje.ebean.*;
+import com.oracle.tools.packager.Log;
 import models.devices.Device;
 import models.devices.Subscription;
 import services.fluffylog.Logger;
@@ -78,23 +79,35 @@ public class DeviceDao extends BaseDao {
         transaction.setReadOnly(true);
 
         try {
-            Query<Device> deviceQuery = mEbeanServer.find(Device.class)
+            QueryIterator<Device> deviceQuery = mEbeanServer.find(Device.class)
                     .fetch("subscriptions")
                     .where()
                     .eq("deviceId", deviceId)
-                    .query();
+                    .setOrderBy("timeRegistered")
+                    .findIterate();
 
-            Device device = mEbeanServer.findUnique(deviceQuery, transaction);
+            // If there is more than one device that matches, delete all but the first result.
+            Device foundDevice = null;
+            while (deviceQuery.hasNext()) {
+                Device workingDevice = deviceQuery.next();
 
-            String logString = device != null
-                    ? String.format("Found device with deviceId %s", device.deviceId)
+                if (foundDevice == null) {
+                    foundDevice = workingDevice;
+                } else {
+                    Log.debug(String.format("Deleting duplicate device for deviceId %s", workingDevice.deviceId));
+                    workingDevice.delete();
+                }
+            }
+
+            String logString = foundDevice != null
+                    ? String.format("Found device with deviceId %s", foundDevice.deviceId)
                     : String.format("No device found deviceId %s", deviceId);
 
             Logger.debug(logString);
-            return device;
+            return foundDevice;
 
         } catch (Exception e) {
-            Logger.error(String.format("Error persisting subscription: %s", e.getMessage()), e);
+            Logger.error(String.format("Error getting device for deviceId %s: %s", deviceId, e.getMessage()), e);
             return null;
 
         } finally {
