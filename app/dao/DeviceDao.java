@@ -209,12 +209,6 @@ public class DeviceDao extends BaseDao {
                 mEbeanServer.find(Subscription.class)
                         .where()
                         .eq("device.id", matchingDevice.id)
-                        .or()
-                        .where()
-                        .eq("device.deviceId", matchingDevice.deviceId)
-                        .or()
-                        .where()
-                        .eq("device.token", matchingDevice.token)
                         .delete();
 
                 matchingDevice.deviceId = device.deviceId;
