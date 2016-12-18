@@ -94,7 +94,7 @@ public class DeviceDao extends BaseDao {
             return device;
 
         } catch (Exception e) {
-            Logger.error("Error persisting subscription", e);
+            Logger.error(String.format("Error persisting subscription: %s", e.getMessage()), e);
             return null;
 
         } finally {
