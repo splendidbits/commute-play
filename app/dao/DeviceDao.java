@@ -94,13 +94,13 @@ public class DeviceDao extends BaseDao {
                 if (foundDevice == null) {
                     foundDevice = workingDevice;
                 } else {
-                    Log.debug(String.format("Deleting duplicate device for deviceId %s", workingDevice.deviceId));
+                    Log.debug(String.format("Deleting duplicate device for deviceId %s", deviceId));
                     workingDevice.delete();
                 }
             }
 
             String logString = foundDevice != null
-                    ? String.format("Found device with deviceId %s", foundDevice.deviceId)
+                    ? String.format("Found device with deviceId %s", deviceId)
                     : String.format("No device found deviceId %s", deviceId);
 
             Logger.debug(logString);
