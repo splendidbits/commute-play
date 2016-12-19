@@ -26,6 +26,7 @@ import java.util.ArrayList;
  */
 @Singleton
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
+    private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
 
     private Configuration mConfiguration;
@@ -48,16 +49,15 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setUsername(datasourceUsername);
         dataSourceConfig.setPassword(datasourcePassword);
 
-        dataSourceConfig.setHeartbeatFreqSecs(60);
+        dataSourceConfig.setHeartbeatFreqSecs(60 * 60);
         dataSourceConfig.setHeartbeatTimeoutSeconds(60);
         dataSourceConfig.setMinConnections(1);
-        dataSourceConfig.setMaxConnections(20);
-        dataSourceConfig.setLeakTimeMinutes(3);
+        dataSourceConfig.setMaxConnections(10);
+        dataSourceConfig.setLeakTimeMinutes(2);
         dataSourceConfig.setMaxInactiveTimeSecs(30);
-        dataSourceConfig.setWaitTimeoutMillis(1000 * 30);
-        dataSourceConfig.setTrimPoolFreqSecs(60);
+        dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
+        dataSourceConfig.setTrimPoolFreqSecs(60 * 5);
         dataSourceConfig.setCaptureStackTrace(true);
-
 
         // Set the isolation level so reads wait for uncommitted data.
         // http://stackoverflow.com/questions/16162357/transaction-isolation-levels-relation-with-locks-on-table
@@ -74,17 +74,18 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Subscription.class);
 
         ServerConfig serverConfig = new ServerConfig();
-        serverConfig.setDatabaseSequenceBatchSize(1);
         serverConfig.setName(Constants.DATABASE_SERVER_NAME);
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
-        serverConfig.setDatabasePlatformName(Constants.DATABASE_TYPE);
+        serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
+
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setUpdateAllPropertiesInBatch(true);
         serverConfig.setRegister(true);
+        serverConfig.setAutoCommitMode(false);
         serverConfig.setClasses(models);
         serverConfig.setDataSourceConfig(dataSourceConfig);
-        serverConfig.setDdlGenerate(false);
+        serverConfig.setDdlGenerate(true);
 
         return EbeanServerFactory.create(serverConfig);
     }
