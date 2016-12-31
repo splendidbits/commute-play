@@ -11,9 +11,9 @@ import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
-import models.pushservices.Credentials;
-import models.pushservices.Message;
-import models.pushservices.PayloadElement;
+import models.pushservices.db.Credentials;
+import models.pushservices.db.Message;
+import models.pushservices.db.PayloadElement;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
@@ -71,9 +71,7 @@ public class AlertHelper {
      * Strip a string of HTML but preserve all kinds of line-breaks.
      *
      * @param agency agency to parse
-     * @return formatted string stripped of HTML.
      */
-    @Nonnull
     public static void parseHtml(@Nonnull Agency agency) {
         if (agency.routes != null) {
             for (Route route : agency.routes) {
@@ -142,10 +140,8 @@ public class AlertHelper {
      * @param isCancellation  set whether the alert message is an update or cancellation (clear).
      * @return List of platform messages for route.
      */
-    public static List<Message> getAlertMessages(@Nonnull Route route,
-                                                 @Nonnull List<Device> devices,
-                                                 @Nonnull PlatformAccount platformAccount,
-                                                 boolean isCancellation) {
+    public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
+                                                 @Nonnull PlatformAccount platformAccount, boolean isCancellation) {
 
         // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
         if (!isCancellation) {
@@ -441,23 +437,23 @@ public class AlertHelper {
      * Creates a list of new and removed alerts for a given agency bundle.
      *
      * @param existingAgency the currently saved agency.
-     * @param updatedAgency  the agency which is to be updated.
+     * @param agency  the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
     @Nullable
-    public static AgencyAlertModifications getAgencyModifications(@Nullable Agency existingAgency, @Nullable Agency updatedAgency) {
+    public static AgencyAlertModifications getAgencyModifications(@Nullable Agency existingAgency, @Nullable Agency agency) {
 
         // Both agencies do not exist. This is bad.
-        if (existingAgency == null && updatedAgency == null) {
+        if (existingAgency == null && agency == null) {
             Logger.warn("Both agencies for modifications calculation were null!");
             return null;
         }
 
         // Copy the routes.
         List<Route> existingRoutes = existingAgency != null ? copyRoute(existingAgency.routes) : null;
-        List<Route> freshRoutes = updatedAgency != null ? copyRoute(updatedAgency.routes) : null;
+        List<Route> freshRoutes = agency != null ? copyRoute(agency.routes) : null;
 
-        int agencyId = updatedAgency != null ? updatedAgency.id : existingAgency.id;
+        int agencyId = agency != null ? agency.id : existingAgency.id;
         AgencyAlertModifications alertModifications = new AgencyAlertModifications(agencyId);
 
         // Updated agency exists and Existing agency does not.
@@ -570,7 +566,7 @@ public class AlertHelper {
         }
 
         // Sanity check the fresh alert is empty, use this iteration to add to stale alerts.
-        if (AlertHelper.isAlertsEmpty(freshAlerts) && (existingAlerts != null && !existingAlerts.isEmpty())) {
+        if (AlertHelper.areAlertsEmpty(freshAlerts) && (existingAlerts != null && !existingAlerts.isEmpty())) {
             return existingAlerts;
         }
 
@@ -599,7 +595,7 @@ public class AlertHelper {
      * @param alert the alert to check.
      * @return true if the message is empty.
      */
-    public static boolean isAlertEmpty(@Nonnull Alert alert) {
+    private static boolean isAlertEmpty(@Nonnull Alert alert) {
         boolean messageBodyEmpty = alert.messageBody == null || alert.messageBody.isEmpty();
         boolean messageTitleEmpty = alert.messageTitle == null || alert.messageTitle.isEmpty();
         boolean messageTypeNone = alert.type == null || AlertType.TYPE_NONE.equals(alert.type);
@@ -613,7 +609,7 @@ public class AlertHelper {
      * @param alerts list of alerts to check.
      * @return true if all alerts in collection are empty.
      */
-    public static boolean isAlertsEmpty(@Nonnull List<Alert> alerts) {
+    private static boolean areAlertsEmpty(@Nonnull List<Alert> alerts) {
         for (Alert alert : alerts) {
             if (!isAlertEmpty(alert)) {
                 return false;
@@ -628,7 +624,7 @@ public class AlertHelper {
      * @param routes {@link List<Route>} list to copy.
      * @return copied {@link List<Route>}.
      */
-    public static List<Route> copyRoute(List<Route> routes) {
+    private static List<Route> copyRoute(List<Route> routes) {
         List<Route> copiedRoutes = new ArrayList<>();
         if (routes != null) {
             for (Route route : routes) {
@@ -645,8 +641,7 @@ public class AlertHelper {
      * @param route {@link Route} to copy.
      * @return copied {@link Route}.
      */
-    @SuppressWarnings("WeakerAccess")
-    public static Route copyRoute(@Nonnull Route route) {
+    private static Route copyRoute(@Nonnull Route route) {
         try {
             return (Route) route.clone();
 

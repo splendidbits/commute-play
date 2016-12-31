@@ -22,7 +22,6 @@ public class CommuteStartModule extends AbstractModule implements AkkaGuiceSuppo
         bindActor(AgencyUpdateActor.class, AgencyUpdateActor.ACTOR_NAME);
 
         // Bind the scheduling system.
-        bind(CommuteSchedulers.class)
-                .asEagerSingleton();
+        bind(CommuteSchedulers.class).asEagerSingleton();
     }
 }

@@ -16,16 +16,12 @@ GET         /alerts/v1/agency/:aId                   controllers.AgencyAlertsCon
 GET         /alerts/v1/agency/:aId/raw               controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: Int)
 GET         /alerts/v1/agency/:aId/route/:rId        controllers.AgencyAlertsController.getRouteAlerts(aId: Int, rId: String)
 
-# Device information for accounts
-#GET         /account/v1/devices                               controllers.DeviceController.getDevices
-#GET         /account/v1/devices/page/:page                    controllers.DeviceController.getDevicesPage(page: int)
-#GET         /account/v1/devices/page/:page/agency/:aId        controllers.DeviceController.getDevicesPageAgency(page: Int, aId: int)
-
 # Signup
 GET         /signup                                  controllers.SignupController.signup()
 POST        /signup/adduser                          controllers.SignupController.addUser()
 
-# fluffylog
+# debug endpoints.
+POST        /debug/alldeviceresubscribe              controllers.DeviceController.requestDeviceSubscriptionResend()
 ->          /debug/logs                              fluffylog.Routes
 
 # Map static resources from the /public folder to the /assets URL path

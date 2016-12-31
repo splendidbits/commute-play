@@ -32,9 +32,11 @@ libraryDependencies ++= Seq(
   "org.avaje" % "avaje-agentloader" % "2.1.2",
   "org.postgresql" % "postgresql" % "9.4.1212",
   "org.jsoup" % "jsoup" % "1.10.1",
-  "junit" % "junit" % "4.11" % Test,
-  "com.google.code.gson" % "gson" % "2.8.0"
+  "com.google.code.gson" % "gson" % "2.8.0",
+  "junit" % "junit" % "4.12" % Test,
+  "org.mockito" % "mockito-all" % "2.0.2-beta" % Test
 )
+
 dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "8.1.1"
 dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "8.1.1"
 

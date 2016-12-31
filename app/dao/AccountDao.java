@@ -17,10 +17,10 @@ import java.util.List;
  * A DAO class for platform + API account functions.
  * <p>
  */
-public class AccountsDao extends BaseDao {
+public class AccountDao extends BaseDao {
 
     @Inject
-    public AccountsDao(EbeanServer ebeanServer) {
+    public AccountDao(EbeanServer ebeanServer) {
         super(ebeanServer);
     }
 
@@ -66,28 +66,6 @@ public class AccountsDao extends BaseDao {
         }
 
         return accounts != null ? accounts : new ArrayList<>();
-    }
-
-    /**
-     * Get a API service Account.
-     *
-     * @param email registered email address for account.
-     * @return an Account object, null if not found.
-     */
-    @Nullable
-    public Account getAccountForEmail(@Nonnull String email) {
-        Account account = mEbeanServer.createQuery(Account.class)
-                .fetch("platformAccounts")
-                .where()
-                .eq("account_email", email)
-                .findUnique();
-
-        String logString = account != null
-                ? String.format("Found an API account for email %s", email)
-                : String.format("No API account found for email %s", email);
-
-        Logger.debug(logString);
-        return account;
     }
 
     /**

@@ -2,6 +2,7 @@ package actors;
 
 import agency.inapp.InAppMessageUpdate;
 import agency.septa.SeptaAgencyUpdate;
+import akka.actor.DeadLetter;
 import akka.actor.UntypedActor;
 import com.google.inject.Inject;
 import enums.AgencyUpdateType;
@@ -19,6 +20,18 @@ public class AgencyUpdateActor extends UntypedActor {
     public AgencyUpdateActor(SeptaAgencyUpdate septaUpdate, InAppMessageUpdate inAppUpdate) {
         mSeptaAgencyUpdate = septaUpdate;
         mInAppUpdate = inAppUpdate;
+    }
+
+    @Override
+    public void preStart() throws Exception {
+        super.preStart();
+        context().system().eventStream().subscribe(self(), DeadLetter.class);
+    }
+
+    @Override
+    public void postStop() throws Exception {
+        context().system().eventStream().unsubscribe(self());
+        super.postStop();
     }
 
     @Override
@@ -42,6 +55,9 @@ public class AgencyUpdateActor extends UntypedActor {
                     mSeptaAgencyUpdate.startAgencyUpdate();
                     break;
             }
+        } else if (msg instanceof DeadLetter) {
+            // No-op
+            context().system().eventStream().unsubscribe(self());
         }
     }
 }

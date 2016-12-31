@@ -125,10 +125,6 @@ public class AgencyDao extends BaseDao {
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency alerts model to database: %s.", e.getMessage()));
-            if (transaction != null) {
-                transaction.rollback();
-            }
-
             if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
                     e.getMessage().contains("Query threw SQLException:ERROR:")) {
                 createDatabase();
@@ -137,13 +133,10 @@ public class AgencyDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
-            if (transaction != null) {
-                transaction.rollback();
-            }
             return false;
 
         } finally {
-            if (transaction != null) {
+            if (transaction != null && transaction.isActive()) {
                 transaction.end();
             }
         }
@@ -170,8 +163,6 @@ public class AgencyDao extends BaseDao {
      */
     @Nonnull
     public List<Route> getRoutes(int agencyId, @Nonnull List<String> routeIds) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(true);
         List<Route> returnRouteList = new ArrayList<>();
 
         List<Route> routes = getRoutes(agencyId);
@@ -190,7 +181,6 @@ public class AgencyDao extends BaseDao {
                 }
             }
         }
-        transaction.end();
         return returnRouteList;
     }
 
@@ -268,7 +258,9 @@ public class AgencyDao extends BaseDao {
             Logger.error("Error getting routes for agency.", e);
 
         } finally {
-            transaction.end();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
         return null;
     }
@@ -309,7 +301,9 @@ public class AgencyDao extends BaseDao {
             return null;
 
         } finally {
-            transaction.end();
+            if (transaction.isActive()) {
+                transaction.end();
+            }
         }
     }
 }

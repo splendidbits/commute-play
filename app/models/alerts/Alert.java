@@ -125,10 +125,6 @@ public class Alert extends Model implements Comparable {
         return hashCode.hashCode();
     }
 
-    @SuppressWarnings("unused")
-    public Alert() {
-    }
-
     @Override
     public int compareTo(Object o) {
         if (o instanceof Alert) {
