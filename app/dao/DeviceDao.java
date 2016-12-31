@@ -224,7 +224,7 @@ public class DeviceDao extends BaseDao {
 
                 mEbeanServer.deleteAll(deviceSubscriptions, transaction);
                 mEbeanServer.deleteAll(devices, transaction);
-                mEbeanServer.save(device, transaction);
+                mEbeanServer.insert(device, transaction);
 
                 transaction.commit();
                 return true;
