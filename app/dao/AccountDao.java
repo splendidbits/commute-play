@@ -17,10 +17,10 @@ import java.util.List;
  * A DAO class for platform + API account functions.
  * <p>
  */
-public class AccountsDao extends BaseDao {
+public class AccountDao extends BaseDao {
 
     @Inject
-    public AccountsDao(EbeanServer ebeanServer) {
+    public AccountDao(EbeanServer ebeanServer) {
         super(ebeanServer);
     }
 

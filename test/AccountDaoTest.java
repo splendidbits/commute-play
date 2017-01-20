@@ -1,4 +1,4 @@
-import dao.AccountsDao;
+import dao.AccountDao;
 import dao.AgencyDao;
 import dao.DeviceDao;
 import enums.pushservices.PlatformType;
@@ -21,15 +21,15 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class AccountsDaoTest extends CommuteTestApplication {
+public class AccountDaoTest extends CommuteTestApplication {
     private static DeviceDao mDeviceDao;
-    private static AccountsDao mAccountsDao;
+    private static AccountDao mAccountDao;
     private static AgencyDao mAgencyDao;
 
     @BeforeClass
     public static void initialise() {
         mDeviceDao = application.injector().instanceOf(DeviceDao.class);
-        mAccountsDao = application.injector().instanceOf(AccountsDao.class);
+        mAccountDao = application.injector().instanceOf(AccountDao.class);
         mAgencyDao = application.injector().instanceOf(AgencyDao.class);
     }
 
@@ -53,7 +53,7 @@ public class AccountsDaoTest extends CommuteTestApplication {
         assertFalse(agency.routes.isEmpty());
 
         // Get a valid account
-        Account mainAccount = mAccountsDao.getAccountForKey("UfhV6Lt");
+        Account mainAccount = mAccountDao.getAccountForKey("UfhV6Lt");
         assertNotNull(mainAccount);
 
         // Set up a new device with a route subscription for the agency.
@@ -70,7 +70,7 @@ public class AccountsDaoTest extends CommuteTestApplication {
         assertTrue(mDeviceDao.saveDevice(device));
 
         // Fetch the persisted device.
-        List<Account> accounts = mAccountsDao.getAccountDevices(PlatformType.SERVICE_GCM, agency.id, route.routeId);
+        List<Account> accounts = mAccountDao.getAccountDevices(PlatformType.SERVICE_GCM, agency.id, route.routeId);
         Device matchingDevice = null;
 
         for (Account account : accounts) {
