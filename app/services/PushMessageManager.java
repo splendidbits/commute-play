@@ -1,8 +1,8 @@
 package services;
 
 import com.google.inject.Inject;
-import daos.AccountDao;
-import daos.DeviceDao;
+import dao.AccountDao;
+import dao.DeviceDao;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;

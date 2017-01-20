@@ -1,4 +1,4 @@
-package daos;
+package dao;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;

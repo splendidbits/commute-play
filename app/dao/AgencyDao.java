@@ -1,4 +1,4 @@
-package daos;
+package dao;
 
 import com.avaje.ebean.*;
 import models.alerts.Agency;

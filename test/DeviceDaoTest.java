@@ -1,4 +1,4 @@
-import daos.DeviceDao;
+import dao.DeviceDao;
 import models.accounts.Account;
 import models.alerts.Route;
 import models.devices.Device;

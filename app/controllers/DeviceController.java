@@ -1,8 +1,8 @@
 package controllers;
 
 import agency.inapp.InAppMessageUpdate;
-import daos.AccountDao;
-import daos.DeviceDao;
+import dao.AccountDao;
+import dao.DeviceDao;
 import enums.AlertType;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;

@@ -1,6 +1,6 @@
-import daos.AccountDao;
-import daos.AgencyDao;
-import daos.DeviceDao;
+import dao.AccountDao;
+import dao.AgencyDao;
+import dao.DeviceDao;
 import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.alerts.Agency;

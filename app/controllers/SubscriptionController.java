@@ -6,8 +6,8 @@ import models.devices.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import daos.AgencyDao;
-import daos.DeviceDao;
+import dao.AgencyDao;
+import dao.DeviceDao;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

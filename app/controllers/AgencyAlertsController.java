@@ -2,7 +2,7 @@ package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
-import daos.AgencyDao;
+import dao.AgencyDao;
 import main.Constants;
 import models.alerts.Agency;
 import models.alerts.Route;
