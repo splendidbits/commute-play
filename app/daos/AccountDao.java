@@ -1,4 +1,4 @@
-package dao;
+package daos;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.FetchConfig;

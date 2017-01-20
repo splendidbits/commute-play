@@ -3,7 +3,7 @@ package helpers;
 import enums.AlertType;
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
-import helpers.pushservices.PlatformMessageBuilder;
+import helpers.pushservices.MessageBuilder;
 import models.AgencyAlertModifications;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -178,7 +178,7 @@ public class AlertHelper {
             Set<String> tokens = new HashSet<>();
             tokens.add(device.token);
 
-            return new PlatformMessageBuilder.Builder()
+            return new MessageBuilder.Builder()
                     .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setPlatformCredentials(credentials)
@@ -208,7 +208,7 @@ public class AlertHelper {
                 Credentials credentials = getMessageCredentials(platformAccount);
 
                 if (credentials != null) {
-                    PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
+                    MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                             .setCollapseKey(route.routeId)
                             .setPlatformCredentials(credentials)
                             .setMessagePriority(alert.highPriority ? MessagePriority.PRIORITY_HIGH : MessagePriority.PRIORITY_NORMAL)
@@ -274,7 +274,7 @@ public class AlertHelper {
             Credentials credentials = getMessageCredentials(platformAccount);
 
             if (credentials != null) {
-                PlatformMessageBuilder.Builder messageBuilder = new PlatformMessageBuilder.Builder()
+                MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
                         .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setPlatformCredentials(credentials)
@@ -395,9 +395,9 @@ public class AlertHelper {
         if (account.platformType != null) {
             Credentials credentials = new Credentials();
             credentials.platformType = PlatformType.SERVICE_GCM;
-            credentials.authorisationKey = account.authorisationKey;
+            credentials.authKey = account.authorisationKey;
             credentials.packageUri = account.packageUri;
-            credentials.certificateBody = account.certificateBody;
+            credentials.certBody = account.certificateBody;
             return credentials;
         }
         return null;
@@ -437,7 +437,7 @@ public class AlertHelper {
      * Creates a list of new and removed alerts for a given agency bundle.
      *
      * @param existingAgency the currently saved agency.
-     * @param agency  the agency which is to be updated.
+     * @param agency         the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
     @Nullable

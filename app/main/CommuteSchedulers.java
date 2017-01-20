@@ -18,30 +18,24 @@ import java.util.concurrent.TimeUnit;
  */
 @Singleton
 public class CommuteSchedulers {
-    private final AgencyUpdateMessage mAgencyUpdateMessage;
-    private ActorSystem mActorSystem;
-    private ActorRef mAgencyActor;
 
     @Inject
     public CommuteSchedulers(ActorSystem actorSystem, @Named(AgencyUpdateActor.ACTOR_NAME) ActorRef agencyActor) {
-        mActorSystem = actorSystem;
-        mAgencyActor = agencyActor;
-        mAgencyUpdateMessage = new AgencyUpdateMessage(AgencyUpdateType.TYPE_ALL);
-
-        startAgencyUpdateSchedule(mActorSystem, mAgencyActor);
+        AgencyUpdateMessage agencyUpdateMessage = new AgencyUpdateMessage(AgencyUpdateType.TYPE_ALL);
+        startAgencyUpdateSchedule(actorSystem, agencyActor, agencyUpdateMessage);
     }
 
     /**
      * Start the Agencies updater using the Akka scheduler actor system.
      * http://doc.akka.io/docs/akka/1.2/java/untyped-actors.html
      */
-    private void startAgencyUpdateSchedule(ActorSystem actorSystem, ActorRef agencyActor) {
+    private void startAgencyUpdateSchedule(ActorSystem actorSystem, ActorRef actor, AgencyUpdateMessage message) {
         if (actorSystem != null) {
             actorSystem.scheduler().schedule(
                     Duration.create(Constants.AGENCY_UPDATE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
                     Duration.create(Constants.AGENCY_UPDATE_INTERVAL_SECONDS, TimeUnit.SECONDS),
-                    agencyActor,
-                    mAgencyUpdateMessage,
+                    actor,
+                    message,
                     actorSystem.dispatchers().defaultGlobalDispatcher(),
                     ActorRef.noSender()
             );

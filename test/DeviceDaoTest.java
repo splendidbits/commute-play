@@ -1,6 +1,5 @@
-package dao;
-
-import main.AbstractApplicationTest;
+import daos.DeviceDao;
+import models.accounts.Account;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
@@ -8,6 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,11 +18,12 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class DeviceDaoTest extends AbstractApplicationTest {
+public class DeviceDaoTest extends CommuteTestApplication {
     private static String TEST_DEVICE_ID = "test_id_123456";
     private static String TEST_DEVICE_TOKEN = "test_token_123456";
 
     private static DeviceDao mDeviceDao;
+    private Account mAccount;
 
     @BeforeClass
     public static void initialise() {
@@ -32,28 +33,24 @@ public class DeviceDaoTest extends AbstractApplicationTest {
     @Before
     public void startup() {
         mDeviceDao.saveDevice(new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN));
+
+        mAccount = Mockito.mock(Account.class);
+        Mockito.when(mAccount.active).thenReturn(true);
+        Mockito.when(mAccount.apiKey).thenReturn("apiKey");
     }
 
     @After
     public void teardown() {
-        mDeviceDao.removeDevice(TEST_DEVICE_TOKEN);
+        mDeviceDao.removeDevice(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
     }
 
     @Test
     public void testSaveDevice() {
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.timeRegistered = new Date();
+        device.account = mAccount;
 
         assertTrue(mDeviceDao.saveDevice(device));
-    }
-
-    @Test
-    public void testGetDevice() {
-        // Fetch test device
-        Device fetchedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
-        assertNotNull(fetchedDevice);
-        assertNotNull(fetchedDevice.token);
-        assertNotNull(fetchedDevice.timeRegistered);
     }
 
     @Test
@@ -62,6 +59,9 @@ public class DeviceDaoTest extends AbstractApplicationTest {
         String newDeviceToken = "updated_test_token_123456";
         Device staleDevice = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         Device updatedDevice = new Device(TEST_DEVICE_ID, newDeviceToken);
+        staleDevice.account = mAccount;
+        updatedDevice.account = mAccount;
+
         assertTrue(mDeviceDao.saveUpdatedToken(staleDevice.token, updatedDevice.token));
 
         // Get the changed device.
@@ -75,11 +75,14 @@ public class DeviceDaoTest extends AbstractApplicationTest {
 
     @Test
     public void testRemoveDevice() {
+        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
+        device.account = mAccount;
+
         // Add test device.
-        mDeviceDao.saveDevice(new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN));
+        mDeviceDao.saveDevice(device);
 
         // Remove device.
-        assertTrue(mDeviceDao.removeDevice(TEST_DEVICE_TOKEN));
+        assertTrue(mDeviceDao.removeDevice(device.deviceId, device.token));
     }
 
     @Test
@@ -99,22 +102,31 @@ public class DeviceDaoTest extends AbstractApplicationTest {
 
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.subscriptions = subscriptions;
+        device.account = mAccount;
+
+        // Test saving the device.
         assertTrue(mDeviceDao.saveDevice(device));
 
+        // Test retrieving the same device.
         Device fetchedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
         assertNotNull(fetchedDevice);
         assertNotNull(fetchedDevice.subscriptions);
-        assertTrue(fetchedDevice.subscriptions.size() == 3);
+        assertNotNull(fetchedDevice.account);
+        assertEquals(fetchedDevice.subscriptions.size(), 3);
     }
 
     @Test
     public void testRemoveSubscriptions() {
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.subscriptions = null;
-        assertNotNull(mDeviceDao.saveDevice(device));
+        device.account = mAccount;
+
+        assertTrue(mDeviceDao.saveDevice(device));
 
         Device fetchedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+
         assertNotNull(fetchedDevice);
-        assertTrue(fetchedDevice.subscriptions == null || fetchedDevice.subscriptions.isEmpty());
+        assertNotNull(fetchedDevice.subscriptions);
+        assertTrue(fetchedDevice.subscriptions.isEmpty());
     }
 }

@@ -1,8 +1,8 @@
 package services;
 
 import com.google.inject.Inject;
-import dao.AccountDao;
-import dao.DeviceDao;
+import daos.AccountDao;
+import daos.DeviceDao;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
@@ -189,7 +189,7 @@ public class PushMessageManager {
                 if (failure.failure != null && (failure.failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
                         failure.failure == Failure.RECIPIENT_NOT_REGISTERED ||
                         failure.failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    mDeviceDao.removeDevice(failedRecipient.token);
+                    mDeviceDao.removeDevice(null, failedRecipient.token);
                 }
             }
         }

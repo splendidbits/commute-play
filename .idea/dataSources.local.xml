@@ -8,6 +8,7 @@
       <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
       <secret-storage>master_key</secret-storage>
       <user-name>splendidbits</user-name>
+      <introspection-schemas>commute_gcm:agency_alerts,api_accounts,device_information</introspection-schemas>
     </data-source>
     <data-source name="push_services" uuid="9deee416-f35f-4025-8410-e5a1e5b522a0">
       <database-info product="PostgreSQL" version="9.6.1" jdbc-version="4.0" driver-name="PostgreSQL Native Driver" driver-version="PostgreSQL 9.4 JDBC4 (build 1201)">
@@ -16,7 +17,9 @@
       <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
       <secret-storage>master_key</secret-storage>
       <user-name>splendidbits</user-name>
+      <introspection-schemas>pushservices:pushservices</introspection-schemas>
       <resolve-scope>commute_gcm:information_schema,pg_catalog,public</resolve-scope>
+      <unqualified-resolve-schemas>commute_gcm:information_schema,pg_catalog,public</unqualified-resolve-schemas>
     </data-source>
     <data-source name="fluffylog" uuid="53b18b43-a35a-4c2f-aec6-bb53c27076b7">
       <database-info product="PostgreSQL" version="9.6.1" jdbc-version="4.0" driver-name="PostgreSQL Native Driver" driver-version="PostgreSQL 9.4 JDBC4 (build 1201)">
@@ -25,7 +28,9 @@
       <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
       <secret-storage>master_key</secret-storage>
       <user-name>splendidbits</user-name>
+      <introspection-schemas>fluffylog:public</introspection-schemas>
       <resolve-scope>fluffylog:public,splendidbits</resolve-scope>
+      <unqualified-resolve-schemas>fluffylog:public,splendidbits</unqualified-resolve-schemas>
     </data-source>
   </component>
 </project>

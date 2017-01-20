@@ -1,10 +1,12 @@
-package main;
+package injection.providers;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
 import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
+import main.Constants;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -16,7 +18,6 @@ import models.devices.Subscription;
 import org.avaje.datasource.DataSourceConfig;
 import play.Configuration;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 
 /**
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
     private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
-
     private Configuration mConfiguration;
 
     @Inject

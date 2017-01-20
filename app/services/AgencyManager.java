@@ -1,6 +1,6 @@
 package services;
 
-import dao.AgencyDao;
+import daos.AgencyDao;
 import models.alerts.Agency;
 import models.alerts.Route;
 import play.cache.CacheApi;

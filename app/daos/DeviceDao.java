@@ -1,4 +1,4 @@
-package dao;
+package daos;
 
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.ExpressionList;
@@ -78,6 +78,7 @@ public class DeviceDao extends BaseDao {
         try {
             latestDevice = mEbeanServer.find(Device.class)
                     .fetch("subscriptions")
+                    .fetch("account")
                     .where()
                     .eq("deviceId", deviceId)
                     .orderBy("timeRegistered desc")
@@ -164,22 +165,34 @@ public class DeviceDao extends BaseDao {
      * @return true if the device was deleted, or false if there was an exception
      * or never existed in the first place.
      */
-    public boolean removeDevice(@Nonnull String deviceToken) {
+    public boolean removeDevice(@Nullable String deviceId, @Nullable String deviceToken) {
         Transaction transaction = mEbeanServer.createTransaction();
 
         try {
-            List<Subscription> deviceSubscriptions = mEbeanServer.find(Subscription.class)
+            ExpressionList<Subscription> subscriptionsQuery = mEbeanServer.find(Subscription.class)
                     .fetch("device")
-                    .where()
-                    .eq("device.token", deviceToken)
-                    .findList();
+                    .where();
 
-            List<Device> devices = mEbeanServer.find(Device.class)
-                    .where()
-                    .eq("token", deviceToken)
-                    .findList();
+            ExpressionList<Device> deviceQuery = mEbeanServer.find(Device.class)
+                    .where();
 
-            mEbeanServer.deleteAll(deviceSubscriptions, transaction);
+            if (deviceId != null) {
+                subscriptionsQuery.eq("device.deviceId", deviceId);
+                deviceQuery.eq("device.deviceId", deviceId);
+
+            } else if (deviceToken != null) {
+                subscriptionsQuery.eq("device.token", deviceToken);
+                deviceQuery.eq("device.token", deviceToken);
+
+            } else {
+                Logger.warn("A deviceId or deviceToken must be included to remove a device");
+                return false;
+            }
+
+            List<Subscription> subscriptions = subscriptionsQuery.findList();
+            List<Device> devices = deviceQuery.findList();
+
+            mEbeanServer.deleteAll(subscriptions, transaction);
             mEbeanServer.deleteAll(devices, transaction);
 
             transaction.commit();

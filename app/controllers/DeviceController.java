@@ -1,8 +1,8 @@
 package controllers;
 
 import agency.inapp.InAppMessageUpdate;
-import dao.AccountDao;
-import dao.DeviceDao;
+import daos.AccountDao;
+import daos.DeviceDao;
 import enums.AlertType;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
@@ -290,7 +290,7 @@ public class DeviceController extends Controller {
                 if (failure != null && (failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
                         failure == Failure.RECIPIENT_NOT_REGISTERED ||
                         failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    mDeviceDao.removeDevice(recipient.token);
+                    mDeviceDao.removeDevice(null, recipient.token);
                 }
             }
         }

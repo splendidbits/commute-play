@@ -1,6 +1,7 @@
 package controllers;
 
 import com.avaje.ebean.EbeanServer;
+import com.google.inject.Inject;
 import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
 import models.accounts.Account;
@@ -17,7 +18,6 @@ import services.fluffylog.Logger;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +27,14 @@ import java.util.Map;
  */
 public class SignupController extends Controller {
     private static final String COMMUTE_IO_API_KEY = "UfhV6Lt";
-
-    @Inject
     private EbeanServer mEbeanServer;
+    private FormFactory mFormFactory;
 
     @Inject
-    private FormFactory mFormFactory;
+    public SignupController(EbeanServer ebeanServer, FormFactory formFactory) {
+        mEbeanServer = ebeanServer;
+        mFormFactory = formFactory;
+    }
 
     public Result signup() {
         return ok(signup.render(null, mFormFactory.form()));

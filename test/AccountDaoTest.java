@@ -1,7 +1,7 @@
-package dao;
-
+import daos.AccountDao;
+import daos.AgencyDao;
+import daos.DeviceDao;
 import enums.pushservices.PlatformType;
-import main.AbstractApplicationTest;
 import models.accounts.Account;
 import models.alerts.Agency;
 import models.alerts.Route;
@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class AccountDaoTest extends AbstractApplicationTest {
+public class AccountDaoTest extends CommuteTestApplication {
     private static DeviceDao mDeviceDao;
     private static AccountDao mAccountDao;
     private static AgencyDao mAgencyDao;
@@ -93,6 +93,6 @@ public class AccountDaoTest extends AbstractApplicationTest {
         assertEquals(matchingDevice.token, device.token);
 
         // Remove the device
-        assertTrue(mDeviceDao.removeDevice(deviceToken));
+        assertTrue(mDeviceDao.removeDevice(deviceId, deviceToken));
     }
 }
