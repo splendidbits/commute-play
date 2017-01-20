@@ -74,17 +74,19 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Subscription.class);
 
         ServerConfig serverConfig = new ServerConfig();
+        serverConfig.setDatabaseSequenceBatchSize(1);
         serverConfig.setName(Constants.DATABASE_SERVER_NAME);
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
         serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
-        serverConfig.setDataSourceConfig(dataSourceConfig);
+
         serverConfig.setDefaultServer(true);
-        serverConfig.setRegister(true);
-        serverConfig.setClasses(models);
         serverConfig.setUpdatesDeleteMissingChildren(true);
         serverConfig.setUpdateAllPropertiesInBatch(true);
-        serverConfig.setDdlGenerate(false);
-        serverConfig.setUpdateChangesOnly(true);
+        serverConfig.setRegister(true);
+        serverConfig.setAutoCommitMode(false);
+        serverConfig.setClasses(models);
+        serverConfig.setDataSourceConfig(dataSourceConfig);
+        serverConfig.setDdlGenerate(true);
 
         return EbeanServerFactory.create(serverConfig);
     }
