@@ -1,4 +1,3 @@
-public/resources/alerts.json
 .idea/libraries/
 workspace.xml
 *.iml
@@ -14,11 +13,7 @@ repository/
 monitoring/
 project
 target/*
-#target/universal/tmp
 logs/
-#!target/universal
 bin/
-project/activator-sbt-eclipse-shim.sbt
-project/activator-sbt-idea-shim.sbt
 .sbtserver
-
+out/
