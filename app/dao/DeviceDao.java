@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -81,22 +82,30 @@ public class DeviceDao extends BaseDao {
                     .fetch("account")
                     .where()
                     .eq("deviceId", deviceId)
-                    .orderBy("timeRegistered desc")
                     .setMaxRows(1)
+                    .orderBy().desc("id")
                     .findUnique();
 
             // Delete older devices matching the same deviceId. This is to cleanup a previous bug,
             if (latestDevice != null) {
-                List<Device> olderDevices = mEbeanServer.find(Device.class)
+                List<Device> devices = mEbeanServer.find(Device.class)
                         .fetch("subscriptions")
                         .where()
                         .conjunction()
                         .eq("deviceId", deviceId)
-                        .ne("id", latestDevice.id)
                         .endJunction()
                         .findList();
 
-                mEbeanServer.deleteAll(olderDevices, transaction);
+                // TODO: Add to actual SQL query above, but this will be fast (and readable).
+                Iterator<Device> deviceIterator = devices.iterator();
+                while (deviceIterator.hasNext()) {
+                    Device device = deviceIterator.next();
+                    if (device.id.equals(latestDevice.id)) {
+                        deviceIterator.remove();
+                    }
+                }
+
+                mEbeanServer.deleteAll(devices, transaction);
                 transaction.commit();
             }
 
@@ -219,38 +228,56 @@ public class DeviceDao extends BaseDao {
      * @return success boolean.
      */
     public boolean saveDevice(@Nonnull Device device) {
-        if (device.deviceId != null && device.account != null) {
-            Transaction transaction = mEbeanServer.createTransaction();
-            device.markAsDirty();
+        Transaction transaction = mEbeanServer.createTransaction();
+        mEbeanServer.markAsDirty(device);
 
-            try {
-                List<Device> devices = mEbeanServer.find(Device.class)
+        try {
+            Device matchingDevice = null;
+
+            // Build a query depending on if we have a token, and or device identifier.
+            if (device.token != null) {
+                matchingDevice = mEbeanServer.createQuery(Device.class)
                         .where()
-                        .eq("deviceId", device.deviceId)
-                        .findList();
+                        .eq("token", device.token)
+                        .findUnique();
 
-                List<Subscription> deviceSubscriptions = mEbeanServer.find(Subscription.class)
-                        .fetch("device")
+            } else if (device.deviceId != null) {
+                matchingDevice = mEbeanServer.createQuery(Device.class)
                         .where()
-                        .eq("device.deviceId", device.deviceId)
-                        .findList();
-
-                mEbeanServer.deleteAll(deviceSubscriptions, transaction);
-                mEbeanServer.deleteAll(devices, transaction);
-                mEbeanServer.insert(device, transaction);
-
-                transaction.commit();
-                return true;
-
-            } catch (Exception e) {
-                Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e);
-                transaction.rollback();
-
-            } finally {
-                if (transaction.isActive()) {
-                    transaction.end();
-                }
+                        .eq("deviceId", device.id)
+                        .findUnique();
             }
+
+            // Update an existing device if it exists.
+            if (matchingDevice != null) {
+
+                // Delete existing subscriptions
+                mEbeanServer.find(Subscription.class)
+                        .where()
+                        .eq("device.id", matchingDevice.id)
+                        .delete();
+
+                matchingDevice.deviceId = device.deviceId;
+                matchingDevice.token = device.token;
+                matchingDevice.account = device.account;
+                matchingDevice.appKey = device.appKey;
+                matchingDevice.userKey = device.userKey;
+                matchingDevice.subscriptions = device.subscriptions;
+                mEbeanServer.save(matchingDevice, transaction);
+
+            } else {
+                mEbeanServer.insert(device, transaction);
+            }
+
+            transaction.commit();
+            return true;
+
+        } catch (Exception e) {
+            Logger.error(String.format("Error saving device device for %s.", device.deviceId), e);
+            transaction.rollback();
+
+        } finally {
+            transaction.end();
         }
 
         return false;

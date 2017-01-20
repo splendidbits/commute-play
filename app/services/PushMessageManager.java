@@ -1,7 +1,7 @@
 package services;
 
 import com.google.inject.Inject;
-import dao.AccountDao;
+import dao.AccountsDao;
 import dao.DeviceDao;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
@@ -31,13 +31,13 @@ import java.util.List;
  * the platform push services such as APNS or GCM.
  */
 public class PushMessageManager {
-    private AccountDao mAccountDao;
+    private AccountsDao mAccountsDao;
     private DeviceDao mDeviceDao;
     private TaskQueue mTaskQueue;
 
     @Inject
-    public PushMessageManager(AccountDao accountDao, DeviceDao deviceDao, TaskQueue taskQueue) {
-        mAccountDao = accountDao;
+    public PushMessageManager(AccountsDao accountsDao, DeviceDao deviceDao, TaskQueue taskQueue) {
+        mAccountsDao = accountsDao;
         mDeviceDao = deviceDao;
         mTaskQueue = taskQueue;
     }
@@ -56,7 +56,7 @@ public class PushMessageManager {
         // Iterate through the updated (fresh) Alert Routes to send messages for.
         for (Route updatedRoute : updatedAlertRoutes) {
             Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
-                    ? updatedRoute.agency.id : -1, updatedRoute.routeId));
+                    ? updatedRoute.agency.id : 999, updatedRoute.routeId));
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
             updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute, false);
 
@@ -68,7 +68,7 @@ public class PushMessageManager {
         // Iterate through the stale (canceled) Alert Routes to send messages for.
         for (Route staleRoute : staleAlertRoutes) {
             Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s",
-                    staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
+                    staleRoute.agency != null ? staleRoute.agency.id : 999, staleRoute.routeId));
             staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
             List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute, true);
 
@@ -108,7 +108,7 @@ public class PushMessageManager {
         }
 
         List<Message> messages = new ArrayList<>();
-        List<Account> accounts = mAccountDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route.routeId);
+        List<Account> accounts = mAccountsDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route.routeId);
         for (Account account : accounts) {
 
             // Build a new message for the platform task per API and then Platform account.

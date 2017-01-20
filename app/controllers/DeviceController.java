@@ -1,7 +1,7 @@
 package controllers;
 
 import agency.inapp.InAppMessageUpdate;
-import dao.AccountDao;
+import dao.AccountsDao;
 import dao.DeviceDao;
 import enums.AlertType;
 import enums.pushservices.Failure;
@@ -49,14 +49,14 @@ public class DeviceController extends Controller {
     private static final String APP_ID_KEY = "app_id";
     private static final String APP_USER_ID_KEY = "user_id";
 
-    private AccountDao mAccountDao;
+    private AccountsDao mAccountsDao;
     private DeviceDao mDeviceDao;
     private PushMessageManager mPushMessageManager;
     private TaskQueue mTaskQueue;
 
     @Inject
-    public DeviceController(AccountDao accountDao, DeviceDao deviceDao, PushMessageManager pushMessageManager, TaskQueue taskQueue) {
-        mAccountDao = accountDao;
+    public DeviceController(AccountsDao accountsDao, DeviceDao deviceDao, PushMessageManager pushMessageManager, TaskQueue taskQueue) {
+        mAccountsDao = accountsDao;
         mDeviceDao = deviceDao;
         mPushMessageManager = pushMessageManager;
         mTaskQueue = taskQueue;
@@ -116,7 +116,7 @@ public class DeviceController extends Controller {
                         }
 
                         // Return error if there is no Account or platform accounts for apiKey.
-                        Account account = mAccountDao.getAccountForKey(apiKey);
+                        Account account = mAccountsDao.getAccountForKey(apiKey);
                         if (account == null || !account.active || account.platformAccounts == null || account.platformAccounts.isEmpty()) {
                             return DeviceControllerResult.BAD_ACCOUNT.value;
                         }
@@ -188,7 +188,7 @@ public class DeviceController extends Controller {
                 foundApiKey = value.substring(1, value.length() - 1);
             }
         }
-        return mAccountDao.getAccountForKey(foundApiKey);
+        return mAccountsDao.getAccountForKey(foundApiKey);
     }
 
     /**
@@ -229,7 +229,7 @@ public class DeviceController extends Controller {
             return CompletableFuture.completedFuture(DeviceControllerResult.MISSING_PARAMS_RESULT);
         }
 
-        Account account = mAccountDao.getAccountForKey(apiKey);
+        Account account = mAccountsDao.getAccountForKey(apiKey);
         if (account == null || !account.active) {
             return CompletableFuture.completedFuture(DeviceControllerResult.BAD_ACCOUNT);
         }
