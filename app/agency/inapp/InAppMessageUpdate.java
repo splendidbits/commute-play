@@ -45,7 +45,7 @@ public class InAppMessageUpdate extends AgencyUpdate {
     @Override
     public void startAgencyUpdate() {
         Logger.debug("Starting compilation of Commute App Message alerts.");
-        String hostname = mEnvironment.isProd() ? Constants.PROD_API_SERVER_HOST : Constants.DEBUG_API_SERVER_HOST;
+        String hostname = Constants.IS_DEBUG ? Constants.PROD_API_SERVER_HOST : Constants.DEBUG_API_SERVER_HOST;
         String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
 
         try {
