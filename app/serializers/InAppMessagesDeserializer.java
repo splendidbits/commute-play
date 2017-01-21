@@ -28,13 +28,14 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
 
         // Create agency if there was no partially filled agency from the client.
         if (mAgency == null) {
-            mAgency = new Agency(InAppMessageUpdate.AGENCY_ID);
             mAgency.name = InAppMessageUpdate.AGENCY_NAME;
             mAgency.phone = "+1 (555) 867 5309";
             mAgency.utcOffset = -8f;
             mAgency.routes = new ArrayList<>();
             mAgency.externalUri = String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.PROD_API_SERVER_HOST);
         }
+
+        mAgency = new Agency(InAppMessageUpdate.AGENCY_ID);
     }
 
     @Override

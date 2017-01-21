@@ -23,7 +23,6 @@ import java.util.*;
  */
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
-
     private Agency mAgency;
 
     public SeptaAlertsDeserializer(@Nullable Agency partialAgency) {
@@ -38,6 +37,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             mAgency.utcOffset = -5f;
             mAgency.routes = new ArrayList<>();
         }
+
+        mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
     }
 
     @Override
