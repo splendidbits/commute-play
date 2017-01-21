@@ -1,10 +1,12 @@
 package agency;
 
+import com.google.inject.Inject;
 import helpers.AlertHelper;
 import models.AgencyAlertModifications;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
+import play.Environment;
 import services.AgencyManager;
 import services.PushMessageManager;
 import services.fluffylog.Logger;
@@ -30,9 +32,11 @@ import java.util.Collections;
  */
 public abstract class AgencyUpdate {
     protected static final int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
-
     private PushMessageManager mPushMessageManager;
     private AgencyManager mAgencyManager;
+
+    @Inject
+    public Environment mEnvironiment;
 
     protected AgencyUpdate(@Nonnull AgencyManager agencyManager, @Nonnull PushMessageManager pushMessageManager) {
         mAgencyManager = agencyManager;

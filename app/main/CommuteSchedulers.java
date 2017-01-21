@@ -31,8 +31,7 @@ public class CommuteSchedulers {
      */
     private void startAgencyUpdateSchedule(ActorSystem actorSystem, ActorRef actor, AgencyUpdateMessage message) {
         if (actorSystem != null) {
-            actorSystem.scheduler().schedule(
-                    Duration.create(Constants.AGENCY_UPDATE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
+            actorSystem.scheduler().schedule(Duration.create(Constants.AGENCY_UPDATE_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS),
                     Duration.create(Constants.AGENCY_UPDATE_INTERVAL_SECONDS, TimeUnit.SECONDS),
                     actor,
                     message,

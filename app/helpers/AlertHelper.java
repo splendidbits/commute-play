@@ -31,7 +31,7 @@ public class AlertHelper {
     private static final int MAX_MESSAGE_PAYLOAD_LENGTH = 1500;
     private static final int ALERT_BODY_MINIMUM_LENGTH = 12;
 
-    /*
+    /**
      * Different types of commute push message types.
      */
     private enum MessageType {
@@ -52,7 +52,7 @@ public class AlertHelper {
         }
     }
 
-    /*
+    /**
      * Message payload data keys for Alert message.
      */
     private enum AlertMessageKey {

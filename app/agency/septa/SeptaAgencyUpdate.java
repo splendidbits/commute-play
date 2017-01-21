@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;
 import models.alerts.Agency;
+import play.Environment;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
@@ -23,34 +24,37 @@ import java.util.function.Function;
 public class SeptaAgencyUpdate extends AgencyUpdate {
     public static final String AGENCY_NAME = "South East Pennsylvania Transit Association";
     public static final int AGENCY_ID = 1;
-    private static String APP_ALERT_URL = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.API_SERVER_HOST, AGENCY_ID);
 
-    private ParseAgencyFunction mParseMessagesFunc;
     private WSClient mWsClient;
+    private Environment mEnvironment;
 
     @Inject
-    public SeptaAgencyUpdate(WSClient wsClient, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
+    public SeptaAgencyUpdate(WSClient wsClient, Environment environment, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
         super(agencyManager, pushMessageManager);
 
-        mParseMessagesFunc = new ParseAgencyFunction();
         mWsClient = wsClient;
+        mEnvironment = environment;
     }
 
     @Override
     public void startAgencyUpdate() {
+        String hostname = mEnvironment.isProd() ? Constants.PROD_API_SERVER_HOST  : Constants.DEBUG_API_SERVER_HOST;
+        String appAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
+
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
+
             // Proxy pass-through to http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all
             CompletionStage<WSResponse> downloadStage = mWsClient
-                    .url(APP_ALERT_URL)
+                    .url(appAlertUrl)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();
 
-            downloadStage.thenApply(mParseMessagesFunc);
+            downloadStage.thenApply(new ParseAgencyFunction());
 
         } catch (Exception exception) {
-            Logger.error("Error downloading agency data from " + APP_ALERT_URL, exception);
+            Logger.error("Error downloading agency data from " + appAlertUrl, exception);
         }
     }
 

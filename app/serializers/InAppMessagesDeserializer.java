@@ -33,7 +33,7 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
             mAgency.phone = "+1 (555) 867 5309";
             mAgency.utcOffset = -8f;
             mAgency.routes = new ArrayList<>();
-            mAgency.externalUri = String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.API_SERVER_HOST);
+            mAgency.externalUri = String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.PROD_API_SERVER_HOST);
         }
     }
 

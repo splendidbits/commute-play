@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;
 import models.alerts.Agency;
+import play.Environment;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.InAppMessagesDeserializer;
@@ -27,27 +28,31 @@ public class InAppMessageUpdate extends AgencyUpdate {
     public static final String AGENCY_NAME = "Commute App";
     public static final String ROUTE_ID = "commuteapp";
     public static final String ROUTE_NAME = "Commute App Messages";
-    private static String APP_ALERT_URL = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw", Constants.API_SERVER_HOST, AGENCY_ID);
 
     private ParseMessages mParseMessagesFunc;
     private WSClient mWsClient;
+    private Environment mEnvironment;
 
     @Inject
-    public InAppMessageUpdate(WSClient wsClient, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
+    public InAppMessageUpdate(WSClient wsClient, Environment environment, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
         super(agencyManager, pushMessageManager);
 
         mWsClient = wsClient;
+        mEnvironment = environment;
         mParseMessagesFunc = new ParseMessages();
     }
 
     @Override
     public void startAgencyUpdate() {
         Logger.debug("Starting compilation of Commute App Message alerts.");
+        String hostname = mEnvironment.isProd() ? Constants.PROD_API_SERVER_HOST : Constants.DEBUG_API_SERVER_HOST;
+        String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
 
         try {
+
             Logger.debug("Starting download of in-app messages.");
             CompletionStage<WSResponse> downloadStage = mWsClient
-                    .url(APP_ALERT_URL)
+                    .url(alertUrl)
                     .setRequestTimeout(APP_ALERT_TIMEOUT)
                     .setFollowRedirects(true)
                     .get();
@@ -55,7 +60,7 @@ public class InAppMessageUpdate extends AgencyUpdate {
             downloadStage.thenApply(mParseMessagesFunc);
 
         } catch (Exception exception) {
-            Logger.error("Error downloading agency data from " + APP_ALERT_URL, exception);
+            Logger.error("Error downloading agency data from " + alertUrl, exception);
         }
     }
 

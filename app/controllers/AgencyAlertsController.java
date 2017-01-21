@@ -22,7 +22,8 @@ import java.util.concurrent.CompletionStage;
 
 public class AgencyAlertsController extends Controller {
     private static final String SEPTA_RAW_JSON_FEED = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php";
-    private static final String INAPP_RAW_JSON_FEED = String.format(Locale.US, "%s/alerts/inapp", Constants.API_SERVER_HOST);
+    private static final String INAPP_RAW_JSON_FEED = String.format(Locale.US,
+            "%s/alerts/inapp", Constants.PROD_API_SERVER_HOST);
 
     @Inject
     private AgencyDao mAgencyDao;

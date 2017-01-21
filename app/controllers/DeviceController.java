@@ -35,7 +35,6 @@ import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 
 /**
@@ -99,74 +98,70 @@ public class DeviceController extends Controller {
         final Http.Context inboundReqContext = ctx();
 
         return CompletableFuture.supplyAsync(() -> inboundReqContext)
-                .thenApply(new Function<Http.Context, Result>() {
+                .thenApply(context -> {
+                    String resendSubscriptionsName = "route_resend_subscriptions";
+                    Http.RequestBody requestBody = context.request().body();
 
-                    @Override
-                    public Result apply(Http.Context context) {
-                        String resendSubscriptionsName = "route_resend_subscriptions";
-                        Http.RequestBody requestBody = context.request().body();
+                    String apiKey = (requestBody != null && requestBody.asMultipartFormData() != null &&
+                            requestBody.asMultipartFormData().asFormUrlEncoded().containsKey(API_KEY))
+                            ? requestBody.asMultipartFormData().asFormUrlEncoded().get(API_KEY)[0]
+                            : null;
 
-                        String apiKey = (requestBody != null && requestBody.asMultipartFormData() != null &&
-                                requestBody.asMultipartFormData().asFormUrlEncoded().containsKey(API_KEY))
-                                ? requestBody.asMultipartFormData().asFormUrlEncoded().get(API_KEY)[0]
-                                : null;
+                    if (apiKey == null) {
+                        return DeviceControllerResult.MISSING_PARAMS_RESULT.value;
+                    }
 
-                        if (apiKey == null) {
-                            return DeviceControllerResult.MISSING_PARAMS_RESULT.value;
-                        }
+                    // Return error if there is no Account or platform accounts for apiKey.
+                    Account account = mAccountDao.getAccountForKey(apiKey);
+                    if (account == null || !account.active || account.platformAccounts == null || account.platformAccounts.isEmpty()) {
+                        return DeviceControllerResult.BAD_ACCOUNT.value;
+                    }
 
-                        // Return error if there is no Account or platform accounts for apiKey.
-                        Account account = mAccountDao.getAccountForKey(apiKey);
-                        if (account == null || !account.active || account.platformAccounts == null || account.platformAccounts.isEmpty()) {
-                            return DeviceControllerResult.BAD_ACCOUNT.value;
-                        }
+                    // Fetch all devices for the given account.
+                    List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, null);
+                    if (allDevices.isEmpty()) {
+                        return DeviceControllerResult.OK.value;
+                    }
 
-                        // Fetch all devices for the given account.
-                        List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, null);
-                        if (allDevices.isEmpty()) {
-                            return DeviceControllerResult.OK.value;
-                        }
+                    // Create an agency alert modifications for a route that doesn't exist.
+                    Route route = new Route(resendSubscriptionsName, resendSubscriptionsName);
+                    route.routeName = resendSubscriptionsName;
+                    route.agency = new Agency(InAppMessageUpdate.AGENCY_ID);
 
-                        // Create an agency alert modifications for a route that doesn't exist.
-                        Route route = new Route(resendSubscriptionsName, resendSubscriptionsName);
-                        route.routeName = resendSubscriptionsName;
-                        route.agency = new Agency(InAppMessageUpdate.AGENCY_ID);
+                    // This will invoke each device to resubscribe.
+                    Alert updateAlert = new Alert();
+                    updateAlert.highPriority = false;
+                    updateAlert.messageTitle = resendSubscriptionsName;
+                    updateAlert.type = AlertType.TYPE_IN_APP;
+                    updateAlert.messageBody = resendSubscriptionsName;
+                    updateAlert.route = route;
 
-                        // This will invoke each device to resubscribe.
-                        Alert updateAlert = new Alert();
-                        updateAlert.highPriority = false;
-                        updateAlert.messageTitle = resendSubscriptionsName;
-                        updateAlert.type = AlertType.TYPE_IN_APP;
-                        updateAlert.messageBody = resendSubscriptionsName;
-                        updateAlert.route = route;
-
-                        AgencyAlertModifications alertUpdate = new AgencyAlertModifications(InAppMessageUpdate.AGENCY_ID);
-                        alertUpdate.addUpdatedAlerts(Collections.singletonList(updateAlert));
+                    AgencyAlertModifications alertUpdate = new AgencyAlertModifications(InAppMessageUpdate.AGENCY_ID);
+                    alertUpdate.addUpdatedAlerts(Collections.singletonList(updateAlert));
 
 
-                        // Send update using one of each platform.
-                        for (PlatformAccount platformAccount : account.platformAccounts) {
-                            if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
+                    // Send update using one of each platform.
+                    for (PlatformAccount platformAccount : account.platformAccounts) {
+                        if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
 
-                                // Create push services messages for the update.
-                                List<Message> messages = AlertHelper.getAlertMessages(route, allDevices, platformAccount, true);
-                                if (messages != null && !messages.isEmpty()) {
-                                    Task task = new Task(resendSubscriptionsName);
-                                    task.messages = messages;
-                                    task.priority = Task.TASK_PRIORITY_LOW;
+                            // Create push services messages for the update.
+                            List<Message> messages = AlertHelper.getAlertMessages(route, allDevices, platformAccount, true);
+                            if (messages != null && !messages.isEmpty()) {
+                                Task task = new Task(resendSubscriptionsName);
+                                task.messages = messages;
+                                task.priority = Task.TASK_PRIORITY_LOW;
 
-                                    try {
-                                        mTaskQueue.queueTask(task, new PingAllDevicesCallback());
+                                try {
+                                    mTaskQueue.queueTask(task, new PingAllDevicesCallback());
 
-                                    } catch (TaskValidationException e) {
-                                        Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
-                                    }
+                                } catch (TaskValidationException e) {
+                                    Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
                                 }
                             }
                         }
-
-                        return DeviceControllerResult.OK.value;
                     }
+
+                    return DeviceControllerResult.OK.value;
                 });
     }
 
