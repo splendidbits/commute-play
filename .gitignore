@@ -11,7 +11,8 @@ workspace.xml
 RUNNING_PID
 repository/
 monitoring/
-project
+project/target/*
+project/project/target/*
 target/*
 logs/
 bin/
