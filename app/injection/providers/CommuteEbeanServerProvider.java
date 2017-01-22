@@ -52,11 +52,11 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setHeartbeatFreqSecs(60 * 60);
         dataSourceConfig.setHeartbeatTimeoutSeconds(60);
         dataSourceConfig.setMinConnections(1);
-        dataSourceConfig.setMaxConnections(20);
-        dataSourceConfig.setLeakTimeMinutes(3);
+        dataSourceConfig.setMaxConnections(10);
+        dataSourceConfig.setLeakTimeMinutes(2);
         dataSourceConfig.setMaxInactiveTimeSecs(30);
         dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
-        dataSourceConfig.setTrimPoolFreqSecs(60 * 1000);
+        dataSourceConfig.setTrimPoolFreqSecs(60 * 5);
         dataSourceConfig.setCaptureStackTrace(true);
 
         // Set the isolation level so reads wait for uncommitted data.
@@ -74,19 +74,16 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Subscription.class);
 
         ServerConfig serverConfig = new ServerConfig();
-        serverConfig.setDatabaseSequenceBatchSize(1);
-        serverConfig.setName(Constants.DATABASE_SERVER_NAME);
+        serverConfig.setName(main.pushservices.Constants.DATABASE_SERVER_NAME);
+        serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
         serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
-
-        serverConfig.setDefaultServer(true);
-        serverConfig.setUpdatesDeleteMissingChildren(true);
-        serverConfig.setUpdateAllPropertiesInBatch(true);
         serverConfig.setRegister(true);
-        serverConfig.setAutoCommitMode(false);
+        serverConfig.setDefaultServer(true);
+        serverConfig.setUpdatesDeleteMissingChildren(false);
         serverConfig.setClasses(models);
-        serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setDdlGenerate(true);
+        serverConfig.setUpdateChangesOnly(false);
 
         return EbeanServerFactory.create(serverConfig);
     }
