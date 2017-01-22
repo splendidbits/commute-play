@@ -23,7 +23,7 @@ public class DeviceDao extends BaseDao {
     }
 
     @Nonnull
-    public List<Device> getAccountDevices(@Nonnull String apiKey, Integer agencyId) {
+    public List<Device> getAccountDevices(@Nonnull String apiKey, int agencyId) {
         List<Device> foundDevices = new ArrayList<>();
 
         Transaction transaction = mEbeanServer.createTransaction();
@@ -40,11 +40,11 @@ public class DeviceDao extends BaseDao {
                     .fetch("subscriptions.route")
                     .fetch("subscriptions.route.agency")
                     .where()
-                    .eq("account.apiKey", apiKey)
-                    .eq("subscriptions.route.agency.id", agencyId != null ? agencyId : 999);
+                    .eq("account.apiKey", apiKey);
 
             List<Device> devices = mEbeanServer.findList(devicesQuery.query(), transaction);
-            if (devices != null) {
+
+            if (devices != null && !devices.isEmpty()) {
                 foundDevices.addAll(devices);
             }
 
@@ -86,14 +86,14 @@ public class DeviceDao extends BaseDao {
                     .eq("deviceId", deviceId)
                     .query();
 
-            Device device = mEbeanServer.findUnique(deviceQuery, transaction);
+            List<Device> devices = mEbeanServer.findList(deviceQuery, transaction);
 
-            String logString = device != null
-                    ? String.format("Found device with deviceId %s", device.deviceId)
+            String logString = devices != null && !devices.isEmpty()
+                    ? String.format("Found device with deviceId %s", devices.get(0).deviceId)
                     : String.format("No device found deviceId %s", deviceId);
 
             Logger.debug(logString);
-            return device;
+            return devices.get(0);
 
         } catch (Exception e) {
             Logger.error("Error persisting subscription", e);
@@ -120,25 +120,28 @@ public class DeviceDao extends BaseDao {
                     .setMaxRows(1)
                     .orderBy().desc("id")
                     .where()
+                    .disjunction()
                     .eq("token", staleToken)
-                    .or()
-                    .where()
                     .eq("token", newToken)
+                    .endJunction()
                     .query();
 
-            Device device = mEbeanServer.findUnique(deviceQuery, transaction);
+            List<Device> devices = mEbeanServer.findList(deviceQuery, transaction);
+            Device device = null;
 
-            Logger.debug(device != null
-                    ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
-                    : String.format("No device found for token %s", staleToken));
-
-            if (device != null) {
-                device.token = newToken;
+            if (devices != null && !devices.isEmpty()) {
+                device = devices.get(0);
                 mEbeanServer.markAsDirty(device);
+
+                device.token = newToken;
                 mEbeanServer.save(device, transaction);
                 transaction.commit();
                 return true;
             }
+
+            Logger.debug(devices != null && !devices.isEmpty()
+                    ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
+                    : String.format("No device found for token %s", staleToken));
 
             return false;
 
@@ -192,53 +195,46 @@ public class DeviceDao extends BaseDao {
         mEbeanServer.markAsDirty(device);
 
         try {
-            Device matchingDevice = null;
+            List<Device> matchingDevices;
 
             // Build a query depending on if we have a token, and or device identifier.
-            if (device.token != null) {
-                matchingDevice = mEbeanServer.createQuery(Device.class)
+            if (device.deviceId != null) {
+                matchingDevices = mEbeanServer.createQuery(Device.class)
                         .orderBy().desc("id")
                         .setMaxRows(1)
                         .where()
-                        .eq("token", device.token)
-                        .findUnique();
+                        .eq("deviceId", device.deviceId)
+                        .findList();
 
-            } else if (device.deviceId != null) {
-                matchingDevice = mEbeanServer.createQuery(Device.class)
-                        .orderBy().desc("id")
-                        .setMaxRows(1)
-                        .where()
-                        .eq("deviceId", device.id)
-                        .findUnique();
-            }
+                // If a device exists. update, otherwise insert.
+                if (matchingDevices != null && !matchingDevices.isEmpty()) {
+                    Device latestDevice = matchingDevices.get(0);
 
-            // Delete and save an existing device if it exists.
-            if (matchingDevice != null) {
-                mEbeanServer.find(Subscription.class)
-                        .where()
-                        .eq("device.id", matchingDevice.id)
-                        .or()
-                        .where()
-                        .eq("device.deviceId", matchingDevice.deviceId)
-                        .or()
-                        .where()
-                        .eq("device.token", matchingDevice.token)
-                        .delete();
+                    // Delete any current subscriptions
+                    mEbeanServer.find(Subscription.class)
+                            .where()
+                            .eq("device.deviceId", latestDevice.deviceId)
+                            .delete();
 
-                matchingDevice.deviceId = device.deviceId;
-                matchingDevice.token = device.token;
-                matchingDevice.account = device.account;
-                matchingDevice.appKey = device.appKey;
-                matchingDevice.userKey = device.userKey;
-                matchingDevice.subscriptions = device.subscriptions;
-                mEbeanServer.save(matchingDevice, transaction);
+                    latestDevice.id = device.id;
+                    latestDevice.deviceId = device.deviceId;
+                    latestDevice.token = device.token;
+                    latestDevice.account = device.account;
+                    latestDevice.appKey = device.appKey;
+                    latestDevice.userKey = device.userKey;
+                    latestDevice.subscriptions = device.subscriptions;
+                    mEbeanServer.save(matchingDevices, transaction);
+
+                } else {
+                    mEbeanServer.insert(device, transaction);
+                }
+
+                transaction.commit();
+                return true;
 
             } else {
-                mEbeanServer.insert(device, transaction);
+                Logger.error("Device must contain a deviceId (UUID) to save.");
             }
-
-            transaction.commit();
-            return true;
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e);
