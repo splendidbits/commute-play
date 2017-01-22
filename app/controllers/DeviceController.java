@@ -118,7 +118,7 @@ public class DeviceController extends Controller {
                     }
 
                     // Fetch all devices for the given account.
-                    List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, null);
+                    List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, 2);
                     if (allDevices.isEmpty()) {
                         return DeviceControllerResult.OK.value;
                     }
@@ -285,7 +285,7 @@ public class DeviceController extends Controller {
                 if (failure != null && (failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
                         failure == Failure.RECIPIENT_NOT_REGISTERED ||
                         failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    mDeviceDao.removeDevice(null, recipient.token);
+                    mDeviceDao.removeDevice(recipient.token);
                 }
             }
         }

@@ -23,7 +23,7 @@ public class DeviceDao extends BaseDao {
     }
 
     @Nonnull
-    public List<Device> getAccountDevices(@Nonnull String apiKey, int page, Integer agencyId) {
+    public List<Device> getAccountDevices(@Nonnull String apiKey, Integer agencyId) {
         List<Device> foundDevices = new ArrayList<>();
 
         Transaction transaction = mEbeanServer.createTransaction();

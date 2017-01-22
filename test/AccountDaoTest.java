@@ -93,6 +93,6 @@ public class AccountDaoTest extends CommuteTestApplication {
         assertEquals(matchingDevice.token, device.token);
 
         // Remove the device
-        assertTrue(mDeviceDao.removeDevice(deviceId, deviceToken));
+        assertTrue(mDeviceDao.removeDevice(deviceToken));
     }
 }

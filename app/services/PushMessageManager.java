@@ -189,7 +189,7 @@ public class PushMessageManager {
                 if (failure.failure != null && (failure.failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
                         failure.failure == Failure.RECIPIENT_NOT_REGISTERED ||
                         failure.failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    mDeviceDao.removeDevice(null, failedRecipient.token);
+                    mDeviceDao.removeDevice(failedRecipient.token);
                 }
             }
         }
