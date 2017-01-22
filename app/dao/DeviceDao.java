@@ -223,7 +223,7 @@ public class DeviceDao extends BaseDao {
                     latestDevice.appKey = device.appKey;
                     latestDevice.userKey = device.userKey;
                     latestDevice.subscriptions = device.subscriptions;
-                    mEbeanServer.save(matchingDevices, transaction);
+                    mEbeanServer.save(latestDevice, transaction);
 
                 } else {
                     mEbeanServer.insert(device, transaction);
