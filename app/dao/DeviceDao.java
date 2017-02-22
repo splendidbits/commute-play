@@ -26,11 +26,10 @@ public class DeviceDao extends BaseDao {
     public List<Device> getAccountDevices(@Nonnull String apiKey, int agencyId) {
         List<Device> foundDevices = new ArrayList<>();
 
-        Transaction transaction = mEbeanServer.createTransaction();
+        Transaction transaction = mEbeanServer.beginTransaction();
         int batchSize = 500;
         transaction.setBatchMode(true);
         transaction.setBatchSize(batchSize);
-        transaction.setReadOnly(true);
 
         try {
             ExpressionList<Device> devicesQuery = mEbeanServer.createQuery(Device.class)
@@ -74,8 +73,7 @@ public class DeviceDao extends BaseDao {
      */
     @Nullable
     public Device getDevice(@Nonnull String deviceId) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(true);
+        Transaction transaction = mEbeanServer.beginTransaction();
 
         try {
             Query<Device> deviceQuery = mEbeanServer.find(Device.class)
@@ -112,11 +110,8 @@ public class DeviceDao extends BaseDao {
      * @return true if the stale device was found by token and updated
      */
     public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(false);
-
         try {
-            Query<Device> deviceQuery = mEbeanServer.find(Device.class)
+            List<Device> devices = mEbeanServer.find(Device.class)
                     .setMaxRows(1)
                     .orderBy().desc("id")
                     .where()
@@ -124,9 +119,8 @@ public class DeviceDao extends BaseDao {
                     .eq("token", staleToken)
                     .eq("token", newToken)
                     .endJunction()
-                    .query();
+                    .findList();
 
-            List<Device> devices = mEbeanServer.findList(deviceQuery, transaction);
             Device device = null;
 
             if (devices != null && !devices.isEmpty()) {
@@ -134,8 +128,7 @@ public class DeviceDao extends BaseDao {
                 mEbeanServer.markAsDirty(device);
 
                 device.token = newToken;
-                mEbeanServer.save(device, transaction);
-                transaction.commit();
+                mEbeanServer.save(device);
                 return true;
             }
 
@@ -148,9 +141,6 @@ public class DeviceDao extends BaseDao {
         } catch (Exception e) {
             Logger.error("Error persisting updated Device Token", e);
             return false;
-
-        } finally {
-            transaction.end();
         }
     }
 
@@ -191,7 +181,6 @@ public class DeviceDao extends BaseDao {
      * @return success boolean.
      */
     public boolean saveDevice(@Nonnull Device device) {
-        Transaction transaction = mEbeanServer.createTransaction();
         mEbeanServer.markAsDirty(device);
 
         try {
@@ -223,13 +212,12 @@ public class DeviceDao extends BaseDao {
                     latestDevice.appKey = device.appKey;
                     latestDevice.userKey = device.userKey;
                     latestDevice.subscriptions = device.subscriptions;
-                    mEbeanServer.save(latestDevice, transaction);
+                    mEbeanServer.save(latestDevice);
 
                 } else {
-                    mEbeanServer.insert(device, transaction);
+                    mEbeanServer.insert(device);
                 }
 
-                transaction.commit();
                 return true;
 
             } else {
@@ -238,10 +226,6 @@ public class DeviceDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e);
-            transaction.rollback();
-
-        } finally {
-            transaction.end();
         }
 
         return false;
