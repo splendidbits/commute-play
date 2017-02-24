@@ -50,13 +50,13 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         dataSourceConfig.setPassword(datasourcePassword);
 
         dataSourceConfig.setHeartbeatFreqSecs(60 * 60);
-        dataSourceConfig.setHeartbeatTimeoutSeconds(60);
-        dataSourceConfig.setMinConnections(1);
-        dataSourceConfig.setMaxConnections(20);
-        dataSourceConfig.setLeakTimeMinutes(3);
-        dataSourceConfig.setMaxInactiveTimeSecs(30);
+        dataSourceConfig.setHeartbeatTimeoutSeconds(30);
+        dataSourceConfig.setMinConnections(5);
+        dataSourceConfig.setMaxConnections(30);
+        dataSourceConfig.setLeakTimeMinutes(2);
+        dataSourceConfig.setMaxInactiveTimeSecs(10);
         dataSourceConfig.setWaitTimeoutMillis(1000 * 120);
-        dataSourceConfig.setTrimPoolFreqSecs(60 * 1000);
+        dataSourceConfig.setTrimPoolFreqSecs(60);
         dataSourceConfig.setCaptureStackTrace(true);
 
         // Set the isolation level so reads wait for uncommitted data.
