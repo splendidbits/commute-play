@@ -34,7 +34,6 @@ public class AgencyDao extends BaseDao {
         Logger.debug("Persisting agency routes in database.");
 
         Agency existingAgency = getAgency(newAgency.id);
-        Transaction transaction = mEbeanServer.createTransaction();
         mEbeanServer.markAsDirty(newAgency);
         boolean modifiedData = false;
 
@@ -44,7 +43,7 @@ public class AgencyDao extends BaseDao {
 
                 // Agency doesn't exist or Routes empty:
                 Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
-                mEbeanServer.save(newAgency, transaction);
+                newAgency.save();
                 modifiedData = true;
 
             } else if (newAgency.routes != null) {
@@ -69,7 +68,7 @@ public class AgencyDao extends BaseDao {
                         Logger.debug(String.format("Saving new route: %s.", freshRoute.routeName));
                         freshRoute.agency = existingAgency;
 
-                        mEbeanServer.insert(freshRoute, transaction);
+                        freshRoute.insert();
                         modifiedData = true;
 
                         // Existing route_id exists and all children are stale:
@@ -84,7 +83,7 @@ public class AgencyDao extends BaseDao {
                                 .eq("route.id", existingRouteMatch.id)
                                 .findList();
 
-                        mEbeanServer.deleteAll(previousAlerts, transaction);
+                        mEbeanServer.deleteAll(previousAlerts);
                         modifiedData = true;
 
                         // Existing route_id exists and existing alert children are empty and different from Fresh alerts.
@@ -94,7 +93,7 @@ public class AgencyDao extends BaseDao {
                         Logger.debug(String.format("Saving alert-less route: %s.", freshRoute.routeName));
                         freshRoute.id = existingRouteMatch.id;
 
-                        mEbeanServer.saveAll(freshRoute.alerts, transaction);
+                        mEbeanServer.saveAll(freshRoute.alerts);
                         modifiedData = true;
 
                         // Existing route_id exists existing children have been updated:
@@ -110,15 +109,11 @@ public class AgencyDao extends BaseDao {
                                 .eq("route.id", existingRouteMatch.id)
                                 .findList();
 
-                        mEbeanServer.deleteAllPermanent(previousAlerts, transaction);
-                        mEbeanServer.saveAll(freshRoute.alerts, transaction);
+                        mEbeanServer.deleteAllPermanent(previousAlerts);
+                        mEbeanServer.saveAll(freshRoute.alerts);
                         modifiedData = true;
                     }
                 }
-            }
-
-            if (modifiedData) {
-                transaction.commit();
             }
 
             return modifiedData;
@@ -134,11 +129,6 @@ public class AgencyDao extends BaseDao {
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
             return false;
-
-        } finally {
-            if (transaction != null && transaction.isActive()) {
-                transaction.end();
-            }
         }
     }
 
@@ -192,9 +182,6 @@ public class AgencyDao extends BaseDao {
      */
     @Nullable
     public List<Route> getRoutes(@Nullable Integer agencyId) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(true);
-
         try {
             ExpressionList<Route> routesQuery = mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
@@ -206,7 +193,7 @@ public class AgencyDao extends BaseDao {
                 routesQuery.eq("agency.id", agencyId);
             }
 
-            return mEbeanServer.findList(routesQuery.query(), transaction);
+            return mEbeanServer.find(Route.class).findList();
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
@@ -219,20 +206,14 @@ public class AgencyDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
-
-        } finally {
-            transaction.end();
         }
         return null;
     }
 
     @Nullable
     public Route getRoute(int agencyId, @Nonnull String routeId) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(true);
-
         try {
-            Route route = mEbeanServer.find(Route.class)
+            return mEbeanServer.find(Route.class)
                     .fetch("agency")
                     .fetch("alerts")
                     .fetch("alerts.locations")
@@ -243,8 +224,6 @@ public class AgencyDao extends BaseDao {
                     .endJunction()
                     .findUnique();
 
-            return route;
-
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
 
@@ -256,11 +235,6 @@ public class AgencyDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
-
-        } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
         }
         return null;
     }
@@ -273,19 +247,15 @@ public class AgencyDao extends BaseDao {
      */
     @Nullable
     public Agency getAgency(int agencyId) {
-        Transaction transaction = mEbeanServer.createTransaction();
-        transaction.setReadOnly(true);
-
         try {
-            Query<Agency> query = mEbeanServer.createQuery(Agency.class)
+            return mEbeanServer.find(Agency.class)
                     .fetch("routes")
                     .fetch("routes.alerts")
                     .fetch("routes.alerts.locations")
                     .where()
                     .idEq(agencyId)
-                    .query();
-
-            return mEbeanServer.findUnique(query, transaction);
+                    .query()
+                    .findUnique();
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching Agency models from database: %s.", e.getMessage()));
@@ -299,11 +269,6 @@ public class AgencyDao extends BaseDao {
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
             return null;
-
-        } finally {
-            if (transaction.isActive()) {
-                transaction.end();
-            }
         }
     }
 }

@@ -41,7 +41,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @After
     public void teardown() {
-        mDeviceDao.removeDevice(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
+        mDeviceDao.removeDevice(TEST_DEVICE_ID);
     }
 
     @Test
@@ -82,7 +82,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
         mDeviceDao.saveDevice(device);
 
         // Remove device.
-        assertTrue(mDeviceDao.removeDevice(device.deviceId, device.token));
+        assertTrue(mDeviceDao.removeDevice(device.deviceId));
     }
 
     @Test

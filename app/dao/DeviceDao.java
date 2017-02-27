@@ -25,23 +25,18 @@ public class DeviceDao extends BaseDao {
     @Nonnull
     public List<Device> getAccountDevices(@Nonnull String apiKey, int agencyId) {
         List<Device> foundDevices = new ArrayList<>();
-
-        Transaction transaction = mEbeanServer.beginTransaction();
         int batchSize = 500;
-        transaction.setBatchMode(true);
-        transaction.setBatchSize(batchSize);
 
         try {
-            ExpressionList<Device> devicesQuery = mEbeanServer.createQuery(Device.class)
-                    .setLazyLoadBatchSize(250)
+            List<Device> devices = mEbeanServer.createQuery(Device.class)
+                    .setLazyLoadBatchSize(batchSize)
                     .fetch("account")
                     .fetch("subscriptions")
                     .fetch("subscriptions.route")
                     .fetch("subscriptions.route.agency")
                     .where()
-                    .eq("account.apiKey", apiKey);
-
-            List<Device> devices = mEbeanServer.findList(devicesQuery.query(), transaction);
+                    .eq("account.apiKey", apiKey)
+                    .findList();
 
             if (devices != null && !devices.isEmpty()) {
                 foundDevices.addAll(devices);
@@ -57,9 +52,6 @@ public class DeviceDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
-
-        } finally {
-            transaction.end();
         }
 
         return foundDevices;
@@ -73,18 +65,15 @@ public class DeviceDao extends BaseDao {
      */
     @Nullable
     public Device getDevice(@Nonnull String deviceId) {
-        Transaction transaction = mEbeanServer.beginTransaction();
-
         try {
-            Query<Device> deviceQuery = mEbeanServer.find(Device.class)
+            List<Device> devices = mEbeanServer.find(Device.class)
                     .setMaxRows(1)
                     .orderBy().desc("id")
                     .fetch("subscriptions")
                     .where()
                     .eq("deviceId", deviceId)
-                    .query();
-
-            List<Device> devices = mEbeanServer.findList(deviceQuery, transaction);
+                    .query()
+                    .findList();
 
             String logString = devices != null && !devices.isEmpty()
                     ? String.format("Found device with deviceId %s", devices.get(0).deviceId)
@@ -96,9 +85,6 @@ public class DeviceDao extends BaseDao {
         } catch (Exception e) {
             Logger.error("Error persisting subscription", e);
             return null;
-
-        } finally {
-            transaction.end();
         }
     }
 
@@ -184,11 +170,9 @@ public class DeviceDao extends BaseDao {
         mEbeanServer.markAsDirty(device);
 
         try {
-            List<Device> matchingDevices;
-
             // Build a query depending on if we have a token, and or device identifier.
             if (device.deviceId != null) {
-                matchingDevices = mEbeanServer.createQuery(Device.class)
+                List<Device> matchingDevices = mEbeanServer.createQuery(Device.class)
                         .orderBy().desc("id")
                         .setMaxRows(1)
                         .where()
