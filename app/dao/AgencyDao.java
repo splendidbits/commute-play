@@ -43,7 +43,7 @@ public class AgencyDao extends BaseDao {
 
                 // Agency doesn't exist or Routes empty:
                 Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
-                newAgency.save();
+                mEbeanServer.save(newAgency);
                 modifiedData = true;
 
             } else if (newAgency.routes != null) {
@@ -68,7 +68,7 @@ public class AgencyDao extends BaseDao {
                         Logger.debug(String.format("Saving new route: %s.", freshRoute.routeName));
                         freshRoute.agency = existingAgency;
 
-                        freshRoute.insert();
+                        mEbeanServer.insert(freshRoute);
                         modifiedData = true;
 
                         // Existing route_id exists and all children are stale:
