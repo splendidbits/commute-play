@@ -1,8 +1,8 @@
-name := """commutealerts"""
+name := "commutealerts"
 version := "0.2"
 
 lazy val buildSettings = Seq(
-  scalaVersion := "2.11.8"
+  scalaVersion := "2.11.7"
 )
 
 lazy val fluffylog = (project in file("modules/fluffylog"))
