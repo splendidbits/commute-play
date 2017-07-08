@@ -2,7 +2,7 @@ name := "commutealerts"
 version := "0.2"
 
 lazy val buildSettings = Seq(
-  scalaVersion := "2.11.7"
+  scalaVersion := "2.11.8"
 )
 
 lazy val fluffylog = (project in file("modules/fluffylog"))
@@ -14,7 +14,8 @@ lazy val pushservices = (project in file("modules/pushservices"))
   .settings(buildSettings: _*)
 
 lazy val commutealerts = (project in file("."))
-  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
+  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer, PlayNettyServer)
+  .disablePlugins(PlayAkkaHttpServer)
   .dependsOn(fluffylog)
   .dependsOn(pushservices)
   .aggregate(fluffylog)
@@ -26,11 +27,17 @@ resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/reposi
 libraryDependencies ++= Seq(
   javaCore,
   javaJdbc,
-  cache,
-  javaWs,
+  cacheApi,
+  ehcache,
   javaJpa,
+  javaWs,
+  guice,
+  "com.typesafe.play" %% "play-ahc-ws-standalone" % "1.0.1",
+  "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
+  "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",
+  "com.typesafe.play" %% "play-json" % "2.6.0",
   "org.avaje" % "avaje-agentloader" % "2.1.2",
-  "org.postgresql" % "postgresql" % "9.4.1212",
+  "org.postgresql" % "postgresql" % "42.1.1",
   "org.jsoup" % "jsoup" % "1.10.1",
   "com.google.code.gson" % "gson" % "2.8.0",
   "junit" % "junit" % "4.12" % Test,

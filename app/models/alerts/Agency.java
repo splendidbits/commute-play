@@ -1,6 +1,7 @@
 package models.alerts;
 
-import com.avaje.ebean.Model;
+import io.ebean.Finder;
+import io.ebean.Model;
 
 import javax.persistence.*;
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.List;
 @Entity
 @Table(name = "agencies", schema = "agency_alerts")
 public class Agency extends Model implements Cloneable {
-    public static Finder<Integer, Agency> find = new Model.Finder<>(Agency.class);
+    public static Finder<Integer, Agency> find = new Finder<>(Agency.class);
 
     @Id
     @Column(name = "id")

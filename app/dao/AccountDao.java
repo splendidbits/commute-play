@@ -1,8 +1,8 @@
 package dao;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.FetchConfig;
 import enums.pushservices.PlatformType;
+import io.ebean.EbeanServer;
+import io.ebean.FetchConfig;
 import models.accounts.Account;
 import models.alerts.Route;
 import services.fluffylog.Logger;

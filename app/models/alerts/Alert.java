@@ -1,8 +1,9 @@
 package models.alerts;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.AlertType;
+import io.ebean.Finder;
+import io.ebean.Model;
 
 import javax.persistence.*;
 import java.util.Calendar;

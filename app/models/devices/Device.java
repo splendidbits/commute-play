@@ -1,7 +1,8 @@
 package models.devices;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.ebean.Finder;
+import io.ebean.Model;
 import models.accounts.Account;
 
 import javax.annotation.Nonnull;
@@ -13,7 +14,7 @@ import java.util.List;
 @Entity
 @Table(name = "devices", schema = "device_information")
 public class Device extends Model {
-    public static Finder<Long, Device> find = new Model.Finder<>(Device.class);
+    public static Finder<Long, Device> find = new Finder<>(Device.class);
 
     @Id
     @JsonIgnore

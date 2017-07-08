@@ -1,9 +1,9 @@
 package controllers;
 
-import com.avaje.ebean.EbeanServer;
 import com.google.inject.Inject;
 import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
+import io.ebean.EbeanServer;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;

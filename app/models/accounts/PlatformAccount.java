@@ -1,8 +1,9 @@
 package models.accounts;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.pushservices.PlatformType;
+import io.ebean.Finder;
+import io.ebean.Model;
 
 import javax.persistence.*;
 

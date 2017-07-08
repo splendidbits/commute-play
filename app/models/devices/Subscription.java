@@ -1,7 +1,8 @@
 package models.devices;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.ebean.Finder;
+import io.ebean.Model;
 import models.alerts.Route;
 
 import javax.persistence.*;
@@ -10,7 +11,7 @@ import java.util.Date;
 @Entity
 @Table(name = "subscriptions", schema = "device_information")
 public class Subscription extends Model {
-    public static Finder<Long, Subscription> find = new Model.Finder<>(Subscription.class);
+    public static Finder<Long, Subscription> find = new Finder<>(Subscription.class);
 
     @Id
     @SequenceGenerator(name = "subscriptions_id_seq_gen", sequenceName = "subscriptions_id_seq", allocationSize = 1)

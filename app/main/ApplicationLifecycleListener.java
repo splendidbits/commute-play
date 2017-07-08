@@ -1,7 +1,7 @@
 package main;
 
-import com.avaje.ebean.EbeanServer;
 import com.google.inject.Singleton;
+import io.ebean.EbeanServer;
 import play.inject.ApplicationLifecycle;
 
 import java.util.concurrent.Callable;

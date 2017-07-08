@@ -1,11 +1,12 @@
 package injection.providers;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.config.ServerConfig;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import io.ebean.EbeanServer;
+import io.ebean.EbeanServerFactory;
+import io.ebean.config.ServerConfig;
+import io.ebean.config.dbplatform.postgres.PostgresPlatform;
 import main.Constants;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -76,7 +77,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setName(main.pushservices.Constants.DATABASE_SERVER_NAME);
         serverConfig.setDataSourceConfig(dataSourceConfig);
-        serverConfig.setDatabasePlatform(new com.avaje.ebean.config.dbplatform.PostgresPlatform());
+        serverConfig.setDatabasePlatform(new PostgresPlatform());
         serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
         serverConfig.setRegister(true);
         serverConfig.setDefaultServer(true);

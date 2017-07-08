@@ -1,8 +1,8 @@
 package injection.providers;
 
-import com.avaje.ebean.EbeanServer;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import io.ebean.EbeanServer;
 import main.ApplicationLifecycleListener;
 import play.inject.ApplicationLifecycle;
 

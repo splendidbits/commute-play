@@ -3,8 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea_modules/commutealerts.iml" filepath="$PROJECT_DIR$/.idea_modules/commutealerts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/commutealerts-build.iml" filepath="$PROJECT_DIR$/.idea/modules/commutealerts-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea_modules/fluffylog.iml" filepath="$PROJECT_DIR$/.idea_modules/fluffylog.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fluffylog-build.iml" filepath="$PROJECT_DIR$/.idea/modules/fluffylog-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea_modules/pushservices.iml" filepath="$PROJECT_DIR$/.idea_modules/pushservices.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pushservices-build.iml" filepath="$PROJECT_DIR$/.idea/modules/pushservices-build.iml" />
     </modules>
   </component>
 </project>

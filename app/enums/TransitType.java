@@ -1,6 +1,6 @@
 package enums;
 
-import com.avaje.ebean.annotation.EnumValue;
+import io.ebean.annotation.EnumValue;
 
 /**
  * The transport type for a route. (trolley, bus, etc).

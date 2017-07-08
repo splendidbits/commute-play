@@ -1,9 +1,10 @@
 package models.alerts;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.RouteFlag;
 import enums.TransitType;
+import io.ebean.Finder;
+import io.ebean.Model;
 import models.devices.Subscription;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,7 +16,7 @@ import java.util.List;
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
 public class Route extends Model implements Comparable<Route>, Cloneable {
-    public static Finder<String, Route> find = new Model.Finder<>(Route.class);
+    public static Finder<String, Route> find = new Finder<>(Route.class);
 
     @Id
     @Column(name = "id")

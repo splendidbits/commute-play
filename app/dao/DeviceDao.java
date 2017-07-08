@@ -1,6 +1,6 @@
 package dao;
 
-import com.avaje.ebean.*;
+import io.ebean.EbeanServer;
 import models.devices.Device;
 import models.devices.Subscription;
 import services.fluffylog.Logger;

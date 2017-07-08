@@ -1,7 +1,8 @@
 package models.accounts;
 
-import com.avaje.ebean.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.ebean.Finder;
+import io.ebean.Model;
 import models.devices.Device;
 
 import javax.annotation.Nullable;

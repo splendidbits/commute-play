@@ -1,8 +1,8 @@
 package injection.modules;
 
-import com.avaje.ebean.EbeanServer;
 import com.google.inject.AbstractModule;
 import injection.providers.CommuteEbeanServerProvider;
+import io.ebean.EbeanServer;
 
 /**
  * GuiseModule for invoking the ebean Database provider.

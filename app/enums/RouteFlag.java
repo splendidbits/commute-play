@@ -1,6 +1,6 @@
 package enums;
 
-import com.avaje.ebean.annotation.EnumValue;
+import io.ebean.annotation.EnumValue;
 
 /**
  * The type of route. (route features).

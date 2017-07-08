@@ -1,9 +1,9 @@
 package dao;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.config.ServerConfig;
-import com.avaje.ebean.dbmigration.DdlGenerator;
-import com.avaje.ebeaninternal.api.SpiEbeanServer;
+import io.ebean.EbeanServer;
+import io.ebean.config.ServerConfig;
+import io.ebean.dbmigration.DdlGenerator;
+import io.ebeaninternal.api.SpiEbeanServer;
 import main.Constants;
 import services.fluffylog.Logger;
 

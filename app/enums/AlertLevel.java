@@ -1,6 +1,6 @@
 package enums;
 
-import com.avaje.ebean.annotation.EnumValue;
+import io.ebean.annotation.EnumValue;
 
 /**
  * Defines different levels for Agency {@link models.alerts.Alert} messages.
