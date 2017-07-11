@@ -1,6 +1,6 @@
 package models;
 
-import models.alerts.Alert;
+import models.alerts.Route;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -11,11 +11,11 @@ import java.util.List;
  */
 public class AgencyAlertModifications {
     private int mAgencyId;
-    private List<Alert> mUpdatedAlerts = new ArrayList<>();
-    private List<Alert> mStaleAlerts = new ArrayList<>();
+    private List<Route> mUpdatedRoutes = new ArrayList<>();
+    private List<Route> mStaleRoutes = new ArrayList<>();
 
     /**
-     * Create a alert modifications model for a specific agency.
+     * Create a modifications model for a specific agency.
      *
      * @param agencyId Identifier of agency for updated or stale alerts.
      */
@@ -24,77 +24,52 @@ public class AgencyAlertModifications {
     }
 
     /**
-     * Check to see if there are modified alerts for an alert / agency.
+     * Check to see if there are modified routes (either new / stale routes / alerts).
      * These include alerts which are  new, updated, or stale.
      *
-     * @return true if the agency has updated alerts within this model.
+     * @return true if the agency has updated routes (either stale or new).
      */
-    public boolean hasModifiedAlerts() {
-        return !mStaleAlerts.isEmpty() || !mUpdatedAlerts.isEmpty();
-    }
-
-    /**
-     * Add a list of new or updated alerts.
-     *
-     * @param alerts The alerts to set as updated or new.
-     */
-    public void addUpdatedAlerts(List<Alert> alerts) {
-        if (alerts != null) {
-            for (Alert alert : alerts) {
-                addUpdatedAlert(alert);
-            }
-        }
+    public boolean hasUpdatedRoutes() {
+        return !mUpdatedRoutes.isEmpty() || !mStaleRoutes.isEmpty();
     }
 
     /**
      * Add a new, or updated alert.
      *
-     * @param alert The alert to flag as updated or new.
+     * @param route The route to flag as updated or new.
      */
-    private void addUpdatedAlert(@Nonnull Alert alert) {
-        if (alert.route == null || alert.route.routeId == null || alert.route.routeId.isEmpty()) {
-            throw new RuntimeException("Updated alert must include a route parent.");
-        }
-
-        mUpdatedAlerts.add(alert);
-    }
-
-    /**
-     * Add a list of stale or purged alerts.
-     *
-     * @param alerts The alerts to set as updated or stale.
-     */
-    public void addStaleAlerts(@Nonnull List<Alert> alerts) {
-        for (Alert alert : alerts) {
-            addStaleAlert(alert);
+    public void addUpdatedRoute(@Nonnull Route route) {
+        if (route != null && route.routeId != null && !route.routeId.isEmpty()) {
+            mUpdatedRoutes.add(route);
         }
     }
 
     /**
-     * Add a alert which contain stale, purged alerts.
+     * Add a route that is stale
      *
-     * @param alert The alerts to add as stale.
+     * @param route The route which is deemed stale.
      */
-    private void addStaleAlert(@Nonnull Alert alert) {
-        mStaleAlerts.add(alert);
+    public void addStaleRoute(@Nonnull Route route) {
+        if (route != null && route.routeId != null && !route.routeId.isEmpty()) {
+            mStaleRoutes.add(route);
+        }
     }
 
     /**
-     * Get a list of all new or updated Agency {@link Alert}s.
+     * Get a list of all new or updated Agency {@link Route}'s.
      *
-     * @return list of updated Agency alerts.
+     * @return list of updated routes.
      */
-    public List<Alert> getUpdatedAlerts() {
-        return mUpdatedAlerts;
+    public List<Route> getUpdatedRoutes() {
+        return mUpdatedRoutes;
     }
 
     /**
-     * Get a list of all stale Agency {@link Alert}s.
-     *
-     * @return list of all stale alerts.
+     * Get all routes, with alerts, which should be considered stale)
+     * @return list of stale routes.
      */
-    public List<Alert> getStaleAlerts() {
-        return mStaleAlerts;
+    public List<Route> getStaleRoutes() {
+        return mStaleRoutes;
     }
 
     /**

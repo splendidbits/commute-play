@@ -1,5 +1,6 @@
 package models.alerts;
 
+import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
 
@@ -43,28 +44,17 @@ public class Agency extends Model implements Cloneable {
         if (obj instanceof Agency) {
             Agency other = (Agency) obj;
 
-            boolean sameId = (id == null && other.id == null) ||
-                    (id != null && other.id != null && id.equals(other.id));
+            boolean sameId = CompareUtils.areAllEquals(id, other.id);
 
-            boolean sameName = (name == null && other.name == null) ||
-                    (name != null && other.name != null && name.equals(other.name));
+            boolean sameName = CompareUtils.areAllEquals(name, other.name);
 
-            boolean samePhone = (phone == null && other.phone == null) ||
-                    (phone != null && other.phone != null && phone.equals(other.phone));
+            boolean samePhone = (CompareUtils.areAllEquals(phone, other.phone));
 
-            boolean sameUri = (externalUri == null && other.externalUri == null) ||
-                    (externalUri != null && other.externalUri != null && externalUri.equals(other.externalUri));
+            boolean sameUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
 
-            boolean sameUtcOffset = (utcOffset == null && other.utcOffset == null) ||
-                    (utcOffset != null && other.utcOffset != null && utcOffset.equals(other.utcOffset));
+            boolean sameUtcOffset = CompareUtils.areAllEquals(utcOffset, other.utcOffset);
 
-            boolean bothRoutesEmpty = routes == null && other.routes == null ||
-                    routes == null && other.routes.isEmpty() ||
-                    routes.isEmpty() && other.routes == null;
-
-            boolean sameRoutes = bothRoutesEmpty ||
-                    routes != null && routes != null && other.routes != null &&
-                            (routes.containsAll(other.routes) && other.routes.containsAll(routes));
+            boolean sameRoutes = CompareUtils.areAllEquals(routes, other.routes);
 
             // Match everything.
             return (sameId && sameName && samePhone && sameUri && sameUtcOffset && sameRoutes);

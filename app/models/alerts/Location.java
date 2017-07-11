@@ -3,6 +3,8 @@ package models.alerts;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.ebean.Finder;
 import io.ebean.Model;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -52,28 +54,21 @@ public class Location extends Model implements Comparable {
             Location other = (Location) o;
 
             // Match on everything else.
-            boolean sameName = name == null && other.name == null ||
-                    (name != null && name.equals(other.name));
+            boolean sameName = StringUtils.equals(name, other.name);
 
-            boolean sameMessage = message == null && other.message == null ||
-                    (message != null && message.equals(other.message));
+            boolean sameMessage = StringUtils.equals(message, other.message);
 
             boolean sameSequence = sequence == null && other.sequence == null ||
                     (sequence != null && sequence.equals(other.sequence));
 
-            boolean sameLatitude = latitude == null && other.latitude == null ||
-                    (latitude != null && latitude.equals(other.latitude));
+            boolean sameLatitude = StringUtils.equals(latitude, other.latitude);
 
-            boolean sameLongitude = longitude == null && other.longitude == null ||
-                    (longitude != null && longitude.equals(other.longitude));
+            boolean sameLongitude = StringUtils.equals(longitude, other.longitude);
 
-            boolean sameDate = date == null && other.date == null ||
-                    (date != null && other.date != null &&
-                            date.getTimeInMillis() == other.date.getTimeInMillis());
+            boolean sameDate = DateUtils.isSameInstant(date, other.date);
 
             // Match everything.
-            return (sameName && sameMessage && sameLatitude && sameLongitude &&
-                    sameSequence && sameDate);
+            return (sameName && sameMessage && sameSequence && sameLatitude && sameLongitude && sameDate);
         }
         return o.equals(this);
     }

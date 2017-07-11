@@ -70,7 +70,7 @@ public abstract class AgencyUpdate {
             Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
             AgencyAlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
-            if (agencyModifications != null && agencyModifications.hasModifiedAlerts()) {
+            if (agencyModifications != null && agencyModifications.hasUpdatedRoutes()) {
                 // Save the agency in the datastore.
                 Logger.debug("Saving new or updated agency data.");
 
@@ -141,4 +141,5 @@ public abstract class AgencyUpdate {
             }
         }
     }
+
 }

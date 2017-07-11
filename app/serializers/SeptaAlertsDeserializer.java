@@ -41,18 +41,42 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
     }
 
+    private Date parse(String jsonDate) {
+        // The SEPTA alerts feed uses different date formats depending on the field
+        // last_updated 1 - Feb 20 2016 07:27:42:520PM
+
+        SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+
+        // last_updated 2 - 2017-03-14 15:56:57.090
+        SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+
+        // detour        - 1/14/2016   9:26 AM
+        SimpleDateFormat dateFormat3 = new SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.US);
+
+        dateFormat1.setLenient(true);
+        dateFormat2.setLenient(true);
+        dateFormat3.setLenient(true);
+
+        List<SimpleDateFormat> dateFormats = new ArrayList<>();
+        dateFormats.add(dateFormat1);
+        dateFormats.add(dateFormat2);
+        dateFormats.add(dateFormat3);
+
+        for (SimpleDateFormat formatter : dateFormats) {
+            try {
+                return formatter.parse(jsonDate);
+            }
+
+            catch (ParseException e) {
+
+            }
+        }
+        return new Date();
+    }
+
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         Logger.debug("Started parsing SEPTA alerts json body");
-
-        // The SEPTA alerts feed uses different date formats depending on the field
-        // last_updated - Feb 20 2016 07:27:42:520PM
-        SimpleDateFormat lastUpdatedDateFormat = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
-        lastUpdatedDateFormat.setLenient(true);
-
-        // detour_%     - 1/14/2016   9:26 AM
-        SimpleDateFormat detourDateFormat = new SimpleDateFormat("mm/dd/yyyy hh:mm a", Locale.US);
-        detourDateFormat.setLenient(true);
 
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
@@ -151,7 +175,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                         Calendar lastUpdateCalendar = Calendar.getInstance(timezone, Locale.US);
                         if (lastUpdated != null && !lastUpdated.isEmpty()) {
-                            lastUpdateCalendar.setTime(lastUpdatedDateFormat.parse(lastUpdated));
+                            lastUpdateCalendar.setTime(parse(lastUpdated));
                         }
 
                         // Parse the detour locations into the correct type.
@@ -162,7 +186,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             // Add the detour startup and end locations if they exist.
                             ArrayList<Location> detourLocations = new ArrayList<>();
                             if (detourMessage.isEmpty() && !detourStartDate.isEmpty()) {
-                                detourStartCalendar.setTime(detourDateFormat.parse(detourStartDate));
+                                detourStartCalendar.setTime(parse(detourStartDate));
 
                                 Location detourLocation = new Location();
                                 detourLocation.name = detourStartLocation;
@@ -173,7 +197,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             }
 
                             if (detourEndDate != null && !detourEndDate.isEmpty()) {
-                                detourEndCalendar.setTime(detourDateFormat.parse(detourEndDate));
+                                detourEndCalendar.setTime(parse(detourEndDate));
 
                                 Location detourLocation = new Location();
                                 detourLocation.date = detourEndCalendar;
@@ -250,9 +274,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
         } catch (IllegalStateException pe) {
             Logger.error("Error parsing json body into alert object", pe);
-
-        } catch (ParseException e) {
-            Logger.error("Error parsing json date(s) into alert object", e);
         }
 
         Collections.sort(mAgency.routes);

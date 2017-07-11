@@ -134,11 +134,11 @@ public class DeviceController extends Controller {
                     updateAlert.messageTitle = resendSubscriptionsName;
                     updateAlert.type = AlertType.TYPE_IN_APP;
                     updateAlert.messageBody = resendSubscriptionsName;
-                    updateAlert.route = route;
+
+                    route.alerts = Collections.singletonList(updateAlert);
 
                     AgencyAlertModifications alertUpdate = new AgencyAlertModifications(InAppMessageUpdate.AGENCY_ID);
-                    alertUpdate.addUpdatedAlerts(Collections.singletonList(updateAlert));
-
+                    alertUpdate.addUpdatedRoute(route);
 
                     // Send update using one of each platform.
                     for (PlatformAccount platformAccount : account.platformAccounts) {

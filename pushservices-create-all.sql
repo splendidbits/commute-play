@@ -16,10 +16,10 @@ create table pushservices.messages (
   task_id                       bigint,
   collapse_key                  varchar(255),
   priority                      varchar(6),
-  ttl_seconds                   integer,
-  delay_while_idle              boolean,
-  dry_run                       boolean,
-  maximum_retries               integer,
+  ttl_seconds                   integer not null,
+  delay_while_idle              boolean default false not null,
+  dry_run                       boolean default false not null,
+  maximum_retries               integer not null,
   sent_time                     timestamp without time zone,
   constraint ck_messages_priority check ( priority in ('normal','low','high')),
   constraint pk_messages primary key (id)
@@ -53,7 +53,7 @@ create table pushservices.recipients (
   message_id                    bigint,
   state                         varchar(13),
   time_added                    timestamp without time zone,
-  send_attempts                 integer,
+  send_attempts                 integer not null,
   previous_attempt              timestamp without time zone,
   next_attempt                  timestamp without time zone,
   constraint ck_recipients_state check ( state in ('WAITING_RETRY','COMPLETE','FAILED','IDLE','PROCESSING')),
@@ -64,7 +64,7 @@ create sequence recipient_id_seq increment by 1;
 create table pushservices.tasks (
   id                            bigint not null,
   name                          varchar(255),
-  priority                      integer,
+  priority                      integer not null,
   added_time                    timestamp without time zone,
   constraint pk_tasks primary key (id)
 );

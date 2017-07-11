@@ -16,5 +16,5 @@ public class Constants {
     // Controls if the DDL database scripts be generated on run.
     public static final boolean GENERATE_RUN_DLL_DATABASE = false;
 
-    public static final boolean IS_DEBUG = false;
+    public static final boolean IS_DEBUG = true;
 }

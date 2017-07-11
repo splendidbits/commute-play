@@ -45,42 +45,54 @@ public class PushMessageManager {
     /**
      * Notify Push subscribers of the agency alerts that have changed.
      *
-     * @param agencyUpdates Collection of modified route alerts.
+     * @param agencyMoifications Collection of modified route alerts.
      */
-    public void dispatchAlerts(@Nonnull AgencyAlertModifications agencyUpdates) {
+    public void dispatchAlerts(@Nonnull AgencyAlertModifications agencyMoifications) {
         List<Task> taskList = new ArrayList<>();
 
-        List<Route> updatedAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getUpdatedAlerts());
-        List<Route> staleAlertRoutes = AlertHelper.getSortedAlertRoutes(agencyUpdates.getStaleAlerts());
+        // Iterate through the stale (canceled) Alert Routes to send messages for.
+        for (Route staleRoute : agencyMoifications.getStaleRoutes()) {
+
+            // Check that the alert type has not already been deemed "updated"
+            boolean existsInUpdateRoutes = false;
+            for (Route updatedRoute : agencyMoifications.getStaleRoutes()) {
+                if (updatedRoute.routeId.equals(staleRoute.routeId)) {
+                    existsInUpdateRoutes = true;
+                }
+            }
+
+            if (!existsInUpdateRoutes) {
+                Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s", staleRoute.agency != null
+                        ? staleRoute.agency.id
+                        : -1, staleRoute.routeId));
+
+                staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
+                List<Message> messages = createAlertMessages(agencyMoifications.getAgencyId(), staleRoute, true);
+
+                if (!messages.isEmpty()) {
+                    staleRoutesTask.messages = new ArrayList<>();
+                    staleRoutesTask.messages.addAll(messages);
+                    taskList.add(staleRoutesTask);
+                }
+            }
+        }
 
         // Iterate through the updated (fresh) Alert Routes to send messages for.
-        for (Route updatedRoute : updatedAlertRoutes) {
+        for (Route updatedRoute : agencyMoifications.getUpdatedRoutes()) {
             Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
-                    ? updatedRoute.agency.id : -1, updatedRoute.routeId));
+                    ? updatedRoute.agency.id
+                    : -1, updatedRoute.routeId));
+
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRoutesTask.messages = createAlertMessages(agencyUpdates.getAgencyId(), updatedRoute, false);
+            updatedRoutesTask.messages = createAlertMessages(agencyMoifications.getAgencyId(), updatedRoute, false);
 
             if (!updatedRoutesTask.messages.isEmpty()) {
                 taskList.add(updatedRoutesTask);
             }
         }
 
-        // Iterate through the stale (canceled) Alert Routes to send messages for.
-        for (Route staleRoute : staleAlertRoutes) {
-            Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s",
-                    staleRoute.agency != null ? staleRoute.agency.id : -1, staleRoute.routeId));
-            staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            List<Message> messages = createAlertMessages(agencyUpdates.getAgencyId(), staleRoute, true);
-
-            if (!messages.isEmpty()) {
-                staleRoutesTask.messages = new ArrayList<>();
-                staleRoutesTask.messages.addAll(messages);
-                taskList.add(staleRoutesTask);
-            }
-        }
-
-        // Finally, if there are messages in each task, add them to the queue.
         try {
+            // Add each task to the queue.
             for (Task alertsTask : taskList) {
                 mTaskQueue.queueTask(alertsTask, new SendMessagePlatformQueueCallback());
             }

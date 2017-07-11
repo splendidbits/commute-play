@@ -2,6 +2,7 @@ package models.alerts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.AlertType;
+import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
 
@@ -47,7 +48,7 @@ public class Alert extends Model implements Comparable {
     @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     public List<Location> locations;
 
-    @Column(name  = "high_priority", nullable = false)
+    @Column(name = "high_priority", nullable = false)
     public Boolean highPriority = false;
 
     @Basic
@@ -60,30 +61,18 @@ public class Alert extends Model implements Comparable {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
 
-            boolean sameType = (type.equals(other.type));
+            boolean sameType = CompareUtils.areAllEquals(messageTitle, other.messageTitle);
 
-            boolean sameTitle = (messageTitle == null && other.messageTitle == null) ||
-                    (messageTitle != null && other.messageTitle != null && messageTitle.equals(other.messageTitle));
+            boolean sameTitle = CompareUtils.areAllEquals(messageTitle, other.messageTitle);
 
-            boolean sameSubtitle = (messageSubtitle == null && other.messageSubtitle == null) ||
-                    (messageSubtitle != null && other.messageSubtitle != null && messageSubtitle.equals(other.messageSubtitle));
+            boolean sameSubtitle = CompareUtils.areAllEquals(messageSubtitle, other.messageSubtitle);
 
-            boolean sameBody = (messageBody == null && other.messageBody == null) ||
-                    (messageBody != null && other.messageBody != null && messageBody.equals(other.messageBody));
+            boolean sameBody = CompareUtils.areAllEquals(messageBody, other.messageBody);
 
-            boolean sameUri = (externalUri == null && other.externalUri == null) ||
-                    (externalUri != null && other.externalUri != null && externalUri.equals(other.externalUri));
-
-            boolean samePriority = other.highPriority == highPriority;
-
-            boolean bothLocationsEmpty = locations == null && other.locations == null ||
-                    (locations != null && locations.isEmpty() && other.locations != null && other.locations.isEmpty());
-
-            boolean sameLocations = bothLocationsEmpty || locations != null && other.locations != null &&
-                            (locations.containsAll(other.locations) && other.locations.containsAll(locations));
+            boolean sameLocations = CompareUtils.areAllEquals(locations, other.locations);
 
             // Match everything.
-            return (sameType && sameTitle && sameSubtitle && sameBody && sameUri && sameLocations && samePriority);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations);
         }
 
         return obj.equals(this);
@@ -109,19 +98,9 @@ public class Alert extends Model implements Comparable {
                 ? messageBody.hashCode()
                 : hashCode;
 
-        hashCode += externalUri != null
-                ? externalUri.hashCode()
-                : hashCode;
-
         hashCode += locations != null
                 ? locations.hashCode()
                 : hashCode;
-
-        hashCode += lastUpdated != null
-                ? lastUpdated.hashCode()
-                : hashCode;
-
-        hashCode += highPriority ? 1 : 0;
 
         return hashCode.hashCode();
     }
