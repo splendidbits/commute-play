@@ -3,25 +3,25 @@
 # ~~~~
 
 # Home page
-GET         /                                        controllers.Application.index()
-GET         /robots.txt                              controllers.Application.robots()
+GET         /                                        @controllers.Application.index()
+GET         /robots.txt                              @controllers.Application.robots()
 
 # App API endpoints
-POST        /gcm/v1/register                         controllers.DeviceController.register()
-POST        /gcm/v1/subscribe                        controllers.SubscriptionController.subscribe()
+POST        /gcm/v1/register                         @controllers.DeviceController.register()
+POST        /gcm/v1/subscribe                        @controllers.SubscriptionController.subscribe()
 
 # Public API endpoints
-GET         /alerts/v1/agency/all                    controllers.AgencyAlertsController.getAgencies
-GET         /alerts/v1/agency/:aId                   controllers.AgencyAlertsController.getAgencyAlerts(aId: Int)
-GET         /alerts/v1/agency/:aId/raw               controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: Int)
-GET         /alerts/v1/agency/:aId/route/:rId        controllers.AgencyAlertsController.getRouteAlerts(aId: Int, rId: String)
+GET         /alerts/v1/agency/all                    @controllers.AgencyAlertsController.getAgencies
+GET         /alerts/v1/agency/:aId                   @controllers.AgencyAlertsController.getAgencyAlerts(aId: Int)
+GET         /alerts/v1/agency/:aId/raw               @controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: Int)
+GET         /alerts/v1/agency/:aId/route/:rId        @controllers.AgencyAlertsController.getRouteAlerts(aId: Int, rId: String)
 
 # Signup
-GET         /signup                                  controllers.SignupController.signup()
-POST        /signup/adduser                          controllers.SignupController.addUser()
+GET         /signup                                  @controllers.SignupController.signup()
+POST        /signup/adduser                          @controllers.SignupController.addUser()
 
 # debug endpoints.
-POST        /debug/alldeviceresubscribe              controllers.DeviceController.requestDeviceSubscriptionResend()
+POST        /debug/alldeviceresubscribe              @controllers.DeviceController.requestDeviceSubscriptionResend()
 ->          /debug/logs                              fluffylog.Routes
 
 # Map static resources from the /public folder to the /assets URL path

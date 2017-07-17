@@ -45,17 +45,17 @@ public class PushMessageManager {
     /**
      * Notify Push subscribers of the agency alerts that have changed.
      *
-     * @param agencyMoifications Collection of modified route alerts.
+     * @param agencyModifications Collection of modified route alerts.
      */
-    public void dispatchAlerts(@Nonnull AgencyAlertModifications agencyMoifications) {
+    public void dispatchAlerts(@Nonnull AgencyAlertModifications agencyModifications) {
         List<Task> taskList = new ArrayList<>();
 
         // Iterate through the stale (canceled) Alert Routes to send messages for.
-        for (Route staleRoute : agencyMoifications.getStaleRoutes()) {
+        for (Route staleRoute : agencyModifications.getStaleRoutes()) {
 
             // Check that the alert type has not already been deemed "updated"
             boolean existsInUpdateRoutes = false;
-            for (Route updatedRoute : agencyMoifications.getStaleRoutes()) {
+            for (Route updatedRoute : agencyModifications.getStaleRoutes()) {
                 if (updatedRoute.routeId.equals(staleRoute.routeId)) {
                     existsInUpdateRoutes = true;
                 }
@@ -67,7 +67,7 @@ public class PushMessageManager {
                         : -1, staleRoute.routeId));
 
                 staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-                List<Message> messages = createAlertMessages(agencyMoifications.getAgencyId(), staleRoute, true);
+                List<Message> messages = createAlertMessages(agencyModifications.getAgencyId(), staleRoute, true);
 
                 if (!messages.isEmpty()) {
                     staleRoutesTask.messages = new ArrayList<>();
@@ -78,13 +78,13 @@ public class PushMessageManager {
         }
 
         // Iterate through the updated (fresh) Alert Routes to send messages for.
-        for (Route updatedRoute : agencyMoifications.getUpdatedRoutes()) {
+        for (Route updatedRoute : agencyModifications.getUpdatedRoutes()) {
             Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
                     ? updatedRoute.agency.id
                     : -1, updatedRoute.routeId));
 
             updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRoutesTask.messages = createAlertMessages(agencyMoifications.getAgencyId(), updatedRoute, false);
+            updatedRoutesTask.messages = createAlertMessages(agencyModifications.getAgencyId(), updatedRoute, false);
 
             if (!updatedRoutesTask.messages.isEmpty()) {
                 taskList.add(updatedRoutesTask);
@@ -120,7 +120,7 @@ public class PushMessageManager {
         }
 
         List<Message> messages = new ArrayList<>();
-        List<Account> accounts = mAccountDao.getAccountDevices(PlatformType.SERVICE_GCM, agencyId, route.routeId);
+        List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, route.routeId);
         for (Account account : accounts) {
 
             // Build a new message for the platform task per API and then Platform account.

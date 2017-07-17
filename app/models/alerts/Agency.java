@@ -3,13 +3,14 @@ package models.alerts;
 import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
 import java.util.List;
 
 @Entity
 @Table(name = "agencies", schema = "agency_alerts")
-public class Agency extends Model implements Cloneable {
+public class Agency extends Model implements Cloneable, Comparable<Agency> {
     public static Finder<Integer, Agency> find = new Finder<>(Agency.class);
 
     @Id
@@ -105,5 +106,11 @@ public class Agency extends Model implements Cloneable {
         agency.markAsDirty();
 
         return agency;
+    }
+
+
+    @Override
+    public int compareTo(@NotNull Agency o) {
+        return equals(o) ? -1 : 0;
     }
 }

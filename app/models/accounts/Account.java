@@ -20,14 +20,14 @@ public class Account extends Model {
     @SequenceGenerator(name = "account_id_seq_gen", sequenceName = "account_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "account_id_seq_gen")
     @Column(name = "id")
-    protected Long id;
+    public Long id;
 
     @Nullable
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.EAGER)
     public List<PlatformAccount> platformAccounts;
 
     @Nullable
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "account", fetch = FetchType.LAZY)
     public List<Device> devices;
 
     @Column(name = "organisation_name")

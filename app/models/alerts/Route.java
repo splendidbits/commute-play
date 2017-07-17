@@ -3,6 +3,7 @@ package models.alerts;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import enums.RouteFlag;
 import enums.TransitType;
+import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
 import models.devices.Subscription;
@@ -69,30 +70,19 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
         if (obj instanceof Route) {
             Route other = (Route) obj;
 
-            boolean sameRouteId = routeId == null && other.routeId == null ||
-                    routeId != null && routeId.equals(other.routeId);
+            boolean sameRouteId = CompareUtils.areAllEquals(routeId, other.routeId);
 
-            boolean sameRouteName = routeName == null && other.routeName == null ||
-                    routeName != null && routeName.equals(other.routeName);
+            boolean sameRouteName = CompareUtils.areAllEquals(routeName, other.routeName);
 
-            boolean sameRouteFlag = routeFlag == null && other.routeFlag == null ||
-                    routeFlag != null && routeFlag.equals(other.routeFlag);
+            boolean sameRouteFlag = CompareUtils.areAllEquals(routeFlag, other.routeFlag);
 
-            boolean sameTransitType = transitType == null && other.transitType == null ||
-                    transitType != null && transitType.equals(other.transitType);
+            boolean sameTransitType =CompareUtils.areAllEquals(transitType, other.transitType);
 
-            boolean sameDefaults = isSticky == other.isSticky && isDefault == other.isDefault;
+            boolean sameDefaults = CompareUtils.areAllEquals(isDefault, other.isDefault);
 
-            boolean sameUri = externalUri == null && other.externalUri == null ||
-                    externalUri != null && externalUri.equals(other.externalUri);
+            boolean sameUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
 
-            boolean bothAlertsEmpty = alerts == null && other.alerts == null ||
-                    alerts == null && other.alerts.isEmpty() ||
-                    alerts.isEmpty() && other.alerts == null;
-
-            boolean sameAlerts = bothAlertsEmpty ||
-                    alerts != null && alerts != null && other.alerts != null &&
-                            (alerts.containsAll(other.alerts) && other.alerts.containsAll(alerts));
+            boolean sameAlerts = CompareUtils.areAllEquals(alerts, other.alerts);
 
             return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
         }
@@ -134,10 +124,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
 
     @Override
     public int compareTo(@NotNull Route other) {
-        if (routeId != null && other.routeId != null) {
-            return routeId.compareTo(other.routeId);
-        }
-        return 0;
+        return equals(other) ? -1 : 0;
     }
 
     @SuppressWarnings("unused")

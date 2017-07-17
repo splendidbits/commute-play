@@ -6,6 +6,7 @@
         <entry key="commutealerts">
           <value>
             <ProjectSettingsEntry>
+              <option name="sourceDir" value="$PROJECT_DIR$/app" />
               <option name="confDir" value="$PROJECT_DIR$/app" />
               <option name="playDistrPath" value="$USER_HOME$/.ivy2/cache/com.typesafe.play/play_2.11/jars/play_2.11-2.6.1.jar" />
               <option name="templateImports">
@@ -45,6 +46,7 @@
         <entry key="fluffylog">
           <value>
             <ProjectSettingsEntry>
+              <option name="sourceDir" value="$PROJECT_DIR$/modules/fluffylog/app" />
               <option name="confDir" value="$PROJECT_DIR$/modules/fluffylog/app" />
               <option name="templateImports">
                 <list>
@@ -83,6 +85,7 @@
         <entry key="pushservices">
           <value>
             <ProjectSettingsEntry>
+              <option name="sourceDir" value="$PROJECT_DIR$/modules/pushservices/app" />
               <option name="confDir" value="$PROJECT_DIR$/modules/pushservices/app" />
               <option name="templateImports">
                 <list>

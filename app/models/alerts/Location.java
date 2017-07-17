@@ -11,7 +11,7 @@ import java.util.Calendar;
 
 @Entity
 @Table(name = "locations", schema = "agency_alerts")
-public class Location extends Model implements Comparable {
+public class Location extends Model implements Comparable<Location> {
     public static Finder<Long, Location> find = new Finder<>(Location.class);
 
     @Id
@@ -97,28 +97,17 @@ public class Location extends Model implements Comparable {
                 ? sequence.hashCode()
                 : hashCode;
 
-        hashCode += date != null
-                ? date.hashCode()
-                : hashCode;
-
         return hashCode.hashCode();
     }
 
     @Override
-    public int compareTo(Object o) {
-        if (o instanceof Location) {
-            Location other = (Location) o;
-            if (name != null) {
-                return  name.equals(other.name) ? -1 : 0;
-            }
-        }
-        return 0;
+    public int compareTo(Location o) {
+        return equals(o) ? -1 : 0;
     }
 
     @Override
     public Object clone() throws CloneNotSupportedException {
         Location location = new Location();
-        location.id = id;
         location.name = name;
         location.message = message;
         location.latitude = latitude;

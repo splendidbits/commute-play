@@ -133,6 +133,40 @@ public class AlertHelper {
     }
 
     /**
+     * Deletes all model back-references and unique identifiers. This is useful for database
+     * transactions for when you do not want to keep a track of the state..
+     *
+     * @param agency agency to remove references for.
+     */
+    public static void removeInterReferences(Agency agency) {
+        if (agency == null || agency.routes == null) {
+            return;
+        }
+        for (Route route : agency.routes) {
+            route.id = null;
+            route.agency = null;
+
+            if (route.alerts == null) {
+                return;
+            }
+
+            for (Alert alert : route.alerts) {
+                alert.id = null;
+                alert.route = null;
+
+                if (alert.locations == null) {
+                    return;
+                }
+
+                for (Location location : alert.locations) {
+                    location.id = null;
+                    location.alert = null;
+                }
+            }
+        }
+    }
+
+    /**
      * Build a list of commute update (detour, advisory, etc), or route cancellation push messages
      * with a set of recipients for an updated route.
      *

@@ -1,13 +1,10 @@
+import dao.AccountDao;
 import dao.DeviceDao;
 import models.accounts.Account;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,50 +15,67 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class DeviceDaoTest extends CommuteTestApplication {
+public class DeviceTest extends CommuteTestApplication {
     private static String TEST_DEVICE_ID = "test_id_123456";
     private static String TEST_DEVICE_TOKEN = "test_token_123456";
+    private static String ACCOUNT_API_KEY  = "UfhV6Lt";
 
     private static DeviceDao mDeviceDao;
-    private Account mAccount;
+    private static Account mAccount;
 
     @BeforeClass
     public static void initialise() {
         mDeviceDao = application.injector().instanceOf(DeviceDao.class);
+
+        AccountDao mAccountDao = application.injector().instanceOf(AccountDao.class);
+        mAccount = mAccountDao.getAccountForKey(ACCOUNT_API_KEY);
     }
 
     @Before
-    public void startup() {
-        mDeviceDao.saveDevice(new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN));
+    public void beforeTest() {
 
-        mAccount = Mockito.mock(Account.class);
-        Mockito.when(mAccount.active).thenReturn(true);
-        Mockito.when(mAccount.apiKey).thenReturn("apiKey");
     }
 
     @After
-    public void teardown() {
-        mDeviceDao.removeDevice(TEST_DEVICE_ID);
+    public void afterTest() {
+        mDeviceDao.removeDevice(TEST_DEVICE_TOKEN);
     }
 
     @Test
-    public void testSaveDevice() {
+    public void testDatabaseDeviceInsert() {
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.timeRegistered = new Date();
         device.account = mAccount;
 
         assertTrue(mDeviceDao.saveDevice(device));
+        assertTrue(mDeviceDao.removeDevice(device.token));
     }
 
     @Test
-    public void testChangeDeviceToken() {
+    public void testDatabaseDeviceUpdate() {
+        assertTrue(mDeviceDao.saveDevice(new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN)));
+
+        Device existingDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        assertNotNull(existingDevice);
+
+        Date currentTime = new Date();
+        Device newDevice = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
+        newDevice.timeRegistered = currentTime;
+        newDevice.account = existingDevice.account;
+
+        assertTrue(mDeviceDao.saveDevice(newDevice));
+        Device savedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        assertNotNull(savedDevice);
+    }
+
+    @Test
+    public void testDatabaseDeviceTokenUpdate() {
         // Change device token to new token id.
         String newDeviceToken = "updated_test_token_123456";
         Device staleDevice = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        Device updatedDevice = new Device(TEST_DEVICE_ID, newDeviceToken);
-        staleDevice.account = mAccount;
-        updatedDevice.account = mAccount;
+        mDeviceDao.saveDevice(staleDevice);
 
+        Device updatedDevice = new Device(TEST_DEVICE_ID, newDeviceToken);
         assertTrue(mDeviceDao.saveUpdatedToken(staleDevice.token, updatedDevice.token));
 
         // Get the changed device.
@@ -74,7 +88,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
     }
 
     @Test
-    public void testRemoveDevice() {
+    public void testDatabaseDeviceRemove() {
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.account = mAccount;
 
@@ -82,11 +96,12 @@ public class DeviceDaoTest extends CommuteTestApplication {
         mDeviceDao.saveDevice(device);
 
         // Remove device.
-        assertTrue(mDeviceDao.removeDevice(device.deviceId));
+        assertTrue(mDeviceDao.removeDevice(device.token));
+        assertNull(mDeviceDao.getDevice(TEST_DEVICE_ID));
     }
 
     @Test
-    public void testSaveSubscriptions() {
+    public void testDatabaseSubscriptionSave() {
         List<Subscription> subscriptions = new ArrayList<>();
         Subscription route1 = new Subscription();
         Subscription route2 = new Subscription();
@@ -116,7 +131,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
     }
 
     @Test
-    public void testRemoveSubscriptions() {
+    public void testDatabaseSubscriptionRemove() {
         Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
         device.subscriptions = null;
         device.account = mAccount;

@@ -25,11 +25,6 @@ public class CompareUtils {
         for (int i = 0; i < objects.length; i++) {
 
             if (i != 0) {
-//                if ((objects[i] == null && objects[i-1] != null) ||
-//                        (objects[i] != null && objects[i-1] == null)) {
-//                    return false;
-//                }
-
                 if (objects[i] == null && objects[i-1] == null) {
                     continue;
                 }
@@ -46,7 +41,7 @@ public class CompareUtils {
                         return false;
                     }
 
-                    // List
+                // List
                 } else if (objects[i] instanceof Collection) {
                     Collection collection1 = (Collection) objects[i];
                     Collection collection2 = (Collection) objects[i-1];
@@ -61,7 +56,7 @@ public class CompareUtils {
                         return false;
                     }
 
-                    // Date
+                // Date
                 } else if (objects[i] instanceof Date) {
                     Date date1 = (Date) objects[i];
                     Date date2 = (Date) objects[i - 1];
@@ -70,12 +65,12 @@ public class CompareUtils {
                         return false;
                     }
 
-                    // All other types for now. Add each specialty type as needed.
+                // All other types for now. Add each specialty type as needed.
                 } else if (objects[i] != null && objects[i-1] != null &&
                         objects[i].hashCode() != objects[i-1].hashCode()) {
                     return false;
 
-                    // Finally, if one object is null and the other isn't
+                // Finally, if one object is null and the other isn't
                 } else if ((objects[i] == null && objects[i-1] != null) ||
                         (objects[i] != null && objects[i-1] == null)) {
                     return false;

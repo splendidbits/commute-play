@@ -2,7 +2,7 @@ package injection.providers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
+import com.typesafe.config.Config;
 import io.ebean.EbeanServer;
 import io.ebean.EbeanServerFactory;
 import io.ebean.config.ServerConfig;
@@ -17,7 +17,6 @@ import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
 import org.avaje.datasource.DataSourceConfig;
-import play.Configuration;
 
 import java.util.ArrayList;
 
@@ -26,14 +25,13 @@ import java.util.ArrayList;
  * (This means you can use it as you wish, host and share modifications.)
  * Copyright 4/2/16 Splendid Bits.
  */
-@Singleton
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
     private final static String DATABASE_SERVER_TYPE_NAME = "postgres";
     private final static String SERVER_CONFIG_PREFIX = "db." + Constants.DATABASE_SERVER_NAME + ".";
-    private Configuration mConfiguration;
+    private Config mConfiguration;
 
     @Inject
-    public CommuteEbeanServerProvider(Configuration configuration) {
+    public CommuteEbeanServerProvider(Config configuration) {
         mConfiguration = configuration;
     }
 
@@ -75,16 +73,16 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         models.add(Subscription.class);
 
         ServerConfig serverConfig = new ServerConfig();
-        serverConfig.setName(main.pushservices.Constants.DATABASE_SERVER_NAME);
+        serverConfig.setName(Constants.DATABASE_SERVER_NAME);
         serverConfig.setDataSourceConfig(dataSourceConfig);
         serverConfig.setDatabasePlatform(new PostgresPlatform());
         serverConfig.setDatabasePlatformName(DATABASE_SERVER_TYPE_NAME);
         serverConfig.setRegister(true);
         serverConfig.setDefaultServer(true);
-        serverConfig.setUpdatesDeleteMissingChildren(false);
         serverConfig.setClasses(models);
         serverConfig.setDdlGenerate(true);
-        serverConfig.setUpdateChangesOnly(false);
+        serverConfig.setUpdatesDeleteMissingChildren(false);
+        serverConfig.setUpdateChangesOnly(true);
 
         return EbeanServerFactory.create(serverConfig);
     }

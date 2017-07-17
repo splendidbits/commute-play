@@ -87,7 +87,7 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
                     route.isSticky = true;
                     route.isDefault = true;
 
-                    mAgency.routes = Collections.singletonList(route);
+                    mAgency.routes = Arrays.asList(route);
                 }
             }
 

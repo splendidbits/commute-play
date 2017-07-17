@@ -12,7 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "alerts", schema = "agency_alerts")
-public class Alert extends Model implements Comparable {
+public class Alert extends Model implements Comparable<Alert> {
     public static Finder<Long, Alert> find = new Finder<>(Alert.class);
 
     @Id
@@ -71,8 +71,12 @@ public class Alert extends Model implements Comparable {
 
             boolean sameLocations = CompareUtils.areAllEquals(locations, other.locations);
 
+            boolean sameExternalUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
+
+            boolean samePriority = CompareUtils.areAllEquals(highPriority, other.highPriority);
+
             // Match everything.
-            return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations && sameExternalUri && samePriority);
         }
 
         return obj.equals(this);
@@ -102,24 +106,25 @@ public class Alert extends Model implements Comparable {
                 ? locations.hashCode()
                 : hashCode;
 
+        hashCode += externalUri != null
+                ? externalUri.hashCode()
+                : hashCode;
+
+        hashCode += highPriority != null
+                ? highPriority.hashCode()
+                : hashCode;
+
         return hashCode.hashCode();
     }
 
     @Override
-    public int compareTo(Object o) {
-        if (o instanceof Alert) {
-            Alert other = (Alert) o;
-            if (messageBody != null) {
-                return messageBody.equals(other.messageBody) ? -1 : 0;
-            }
-        }
-        return 0;
+    public int compareTo(Alert o) {
+        return equals(o) ? -1 : 0;
     }
 
     @Override
     public Object clone() throws CloneNotSupportedException {
         Alert alert = new Alert();
-        alert.id = id;
         alert.route = route;
         alert.type = type;
         alert.messageTitle = messageTitle;

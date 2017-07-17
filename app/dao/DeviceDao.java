@@ -1,6 +1,8 @@
 package dao;
 
 import io.ebean.EbeanServer;
+import io.ebean.Junction;
+import models.accounts.Account;
 import models.devices.Device;
 import models.devices.Subscription;
 import services.fluffylog.Logger;
@@ -69,7 +71,10 @@ public class DeviceDao extends BaseDao {
             List<Device> devices = mEbeanServer.find(Device.class)
                     .setMaxRows(1)
                     .orderBy().desc("id")
+                    .fetch("account")
                     .fetch("subscriptions")
+                    .fetch("subscriptions.route")
+                    .fetch("subscriptions.route.agency")
                     .where()
                     .eq("deviceId", deviceId)
                     .query()
@@ -79,13 +84,15 @@ public class DeviceDao extends BaseDao {
                     ? String.format("Found device with deviceId %s", devices.get(0).deviceId)
                     : String.format("No device found deviceId %s", deviceId);
 
-            Logger.debug(logString);
-            return devices.get(0);
+            if (devices != null && !devices.isEmpty()) {
+                Logger.debug(logString);
+                return devices.get(0);
+            }
 
         } catch (Exception e) {
             Logger.error("Error persisting subscription", e);
-            return null;
         }
+        return null;
     }
 
     /**
@@ -97,37 +104,28 @@ public class DeviceDao extends BaseDao {
      */
     public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
         try {
-            List<Device> devices = mEbeanServer.find(Device.class)
+            Device device = mEbeanServer.find(Device.class)
+                    .fetch("account")
                     .setMaxRows(1)
                     .orderBy().desc("id")
                     .where()
                     .disjunction()
                     .eq("token", staleToken)
-                    .eq("token", newToken)
                     .endJunction()
-                    .findList();
+                    .findUnique();
 
-            Device device = null;
-
-            if (devices != null && !devices.isEmpty()) {
-                device = devices.get(0);
-                mEbeanServer.markAsDirty(device);
-
+            if (device != null && device.id != null) {
                 device.token = newToken;
-                mEbeanServer.save(device);
+                mEbeanServer.update(device);
                 return true;
             }
 
-            Logger.debug(devices != null && !devices.isEmpty()
-                    ? String.format("Found and updating device %1$s with new token %2$s", device.deviceId, newToken)
-                    : String.format("No device found for token %s", staleToken));
-
-            return false;
+            Logger.debug(String.format("No device found for token %s", staleToken));
 
         } catch (Exception e) {
             Logger.error("Error persisting updated Device Token", e);
-            return false;
         }
+        return false;
     }
 
     /**
@@ -146,6 +144,7 @@ public class DeviceDao extends BaseDao {
                     .delete();
 
             mEbeanServer.find(Device.class)
+                    .fetch("subscriptions")
                     .where()
                     .eq("token", deviceToken)
                     .delete();
@@ -155,8 +154,8 @@ public class DeviceDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
-            return false;
         }
+        return false;
     }
 
     /**
@@ -167,12 +166,32 @@ public class DeviceDao extends BaseDao {
      * @return success boolean.
      */
     public boolean saveDevice(@Nonnull Device device) {
-        mEbeanServer.markAsDirty(device);
 
         try {
+            if (device.account != null) {
+                Junction<Account> accountSearch = mEbeanServer.createQuery(Account.class)
+                        .where()
+                        .disjunction();
+
+                if (device.account.id != null) {
+                    accountSearch.eq("id", device.account.id);
+
+                } else if (device.account.apiKey != null) {
+                    accountSearch.eq("api_key", device.account.apiKey);
+                }
+
+                Account savedAccount = accountSearch
+                        .endJunction()
+                        .findUnique();
+
+                if (savedAccount == null) {
+                    mEbeanServer.save(device.account);
+                }
+            }
+
             // Build a query depending on if we have a token, and or device identifier.
             if (device.deviceId != null) {
-                List<Device> matchingDevices = mEbeanServer.createQuery(Device.class)
+                List<Device> matchingDevices = mEbeanServer.find(Device.class)
                         .orderBy().desc("id")
                         .setMaxRows(1)
                         .where()

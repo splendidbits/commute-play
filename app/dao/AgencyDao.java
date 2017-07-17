@@ -1,5 +1,6 @@
 package dao;
 
+import helpers.AlertHelper;
 import io.ebean.EbeanServer;
 import io.ebean.ExpressionList;
 import io.ebean.FetchConfig;
@@ -35,104 +36,82 @@ public class AgencyDao extends BaseDao {
      */
     public boolean saveAgency(@Nonnull Agency newAgency) {
         Logger.debug("Persisting agency routes in database.");
-
         Agency existingAgency = getAgency(newAgency.id);
-        mEbeanServer.markAsDirty(newAgency);
-        boolean modifiedData = false;
+
+        // Reset all the models
+        AlertHelper.removeInterReferences(newAgency);
 
         try {
             // Check a previous agency exists / or non-null list of routes for agency.
             if (existingAgency == null || existingAgency.routes == null) {
-
                 // Agency doesn't exist or Routes empty:
                 Logger.info(String.format("Agency %s does not exist. Saving all.", newAgency.name));
                 mEbeanServer.save(newAgency);
-                modifiedData = true;
 
             } else if (newAgency.routes != null) {
-
                 // Agency exists and contains Routes:
                 Logger.info(String.format("Agency %s already exists. Checking routes.", newAgency.name));
                 Collections.sort(newAgency.routes);
 
                 for (Route freshRoute : newAgency.routes) {
-
                     // Find an existing route deviceId that matches the updated route.
-                    Route existingRouteMatch = null;
+                    Route existingRoute = null;
                     for (Route route : existingAgency.routes) {
                         if (route.routeId.equals(freshRoute.routeId)) {
-                            existingRouteMatch = route;
+                            existingRoute = route;
                             break;
                         }
                     }
 
                     // Existing route_id does not exist:
-                    if (existingRouteMatch == null) {
+                    if (existingRoute == null) {
                         Logger.debug(String.format("Saving new route: %s.", freshRoute.routeName));
-                        freshRoute.agency = existingAgency;
-
                         mEbeanServer.insert(freshRoute);
-                        modifiedData = true;
 
-                        // Existing route_id exists and all children are stale:
-                    } else if ((freshRoute.alerts == null || freshRoute.alerts.isEmpty()) &&
-                            (existingRouteMatch.alerts != null && !existingRouteMatch.alerts.isEmpty())) {
+                    } else if (!existingRoute.equals(freshRoute)) {
+                        // Existing alert children are different from Fresh alerts.
+                        List<Alert> previousAlerts = mEbeanServer.find(Alert.class)
+                                .fetch("locations")
+                                .where()
+                                .eq("route.routeId", existingRoute.routeId)
+                                .findList();
 
                         Logger.debug(String.format("Deleting all alerts for route: %s.", freshRoute.routeName));
-                        List<Alert> previousAlerts = mEbeanServer.find(Alert.class)
-                                .where()
-                                .conjunction()
-                                .eq("route.routeId", existingRouteMatch.routeId)
-                                .eq("route.id", existingRouteMatch.id)
-                                .findList();
-
-                        mEbeanServer.deleteAll(previousAlerts);
-                        modifiedData = true;
-
-                        // Existing route_id exists and existing alert children are empty and different from Fresh alerts.
-                    } else if (!existingRouteMatch.equals(freshRoute) &&
-                            (existingRouteMatch.alerts == null || existingRouteMatch.alerts.isEmpty())) {
-
-                        Logger.debug(String.format("Saving alert-less route: %s.", freshRoute.routeName));
-                        freshRoute.id = existingRouteMatch.id;
-
-                        mEbeanServer.saveAll(freshRoute.alerts);
-                        modifiedData = true;
-
-                        // Existing route_id exists existing children have been updated:
-                    } else if (!existingRouteMatch.equals(freshRoute) && !existingRouteMatch.alerts.isEmpty()) {
-
-                        Logger.debug(String.format("Updating existing alerts for route: %s.", freshRoute.routeName));
-                        freshRoute.id = existingRouteMatch.id;
-
-                        List<Alert> previousAlerts = mEbeanServer.find(Alert.class)
-                                .where()
-                                .conjunction()
-                                .eq("route.routeId", existingRouteMatch.routeId)
-                                .eq("route.id", existingRouteMatch.id)
-                                .findList();
-
                         mEbeanServer.deleteAllPermanent(previousAlerts);
-                        mEbeanServer.saveAll(freshRoute.alerts);
-                        modifiedData = true;
+
+                        // If there are new alerts, save them
+                        if (freshRoute.alerts != null && !freshRoute.alerts.isEmpty()) {
+                            freshRoute.id = existingRoute.id;
+                            for (Alert freshAlert : freshRoute.alerts) {
+                                freshAlert.route = existingRoute;
+                            }
+                            mEbeanServer.saveAll(freshRoute.alerts);
+                        }
+
+                        // Update the main route attributes (this shouldn't effect the children)
+//                        mEbeanServer.update(existingRoute);
                     }
                 }
+
+                // Update the main agency attributes (this shouldn't effect the children)
+                mEbeanServer.update(newAgency);
             }
 
-            return modifiedData;
+            return true;
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency alerts model to database: %s.", e.getMessage()));
-            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
+            if (e.getMessage() != null &&
+                    e.getMessage().contains("does not exist") &&
                     e.getMessage().contains("Query threw SQLException:ERROR:")) {
                 createDatabase();
             }
-            return false;
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", newAgency.name), e);
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -187,10 +166,12 @@ public class AgencyDao extends BaseDao {
     public List<Route> getRoutes(@Nullable Integer agencyId) {
         try {
             ExpressionList<Route> routesQuery = mEbeanServer.createQuery(Route.class)
-                    .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency")
                     .fetch("alerts")
-                    .fetch("alerts.locations").where();
+                    .fetch("alerts.locations")
+                    .setOrder(new OrderBy<>("routeId"))
+                    .setUseCache(false)
+                    .where();
 
             if (agencyId != null) {
                 routesQuery.eq("agency.id", agencyId);
@@ -217,6 +198,7 @@ public class AgencyDao extends BaseDao {
     public Route getRoute(int agencyId, @Nonnull String routeId) {
         try {
             return mEbeanServer.find(Route.class)
+                    .setUseCache(false)
                     .fetch("agency")
                     .fetch("alerts")
                     .fetch("alerts.locations")
@@ -252,9 +234,10 @@ public class AgencyDao extends BaseDao {
     public Agency getAgency(int agencyId) {
         try {
             return mEbeanServer.find(Agency.class)
-                    .fetch("routes")
-                    .fetch("routes.alerts")
-                    .fetch("routes.alerts.locations")
+                    .setUseCache(false)
+                    .fetch("routes", new FetchConfig().query())
+                    .fetch("routes.alerts", new FetchConfig().query())
+                    .fetch("routes.alerts.locations", new FetchConfig().query())
                     .where()
                     .idEq(agencyId)
                     .query()
@@ -273,5 +256,34 @@ public class AgencyDao extends BaseDao {
             Logger.error("Error getting routes for agency.", e);
             return null;
         }
+    }
+
+    /**
+     * Remove an agency.
+     * @param agencyId of agency
+     *
+     * @return boolean of success.
+     */
+    public boolean removeAgency(long agencyId) {
+        try {
+            List<Agency> agencies = mEbeanServer.find(Agency.class)
+                    .fetch("routes")
+                    .fetch("routes.alerts")
+                    .fetch("routes.alerts.locations")
+                    .fetch("routes.subscriptions")
+                    .where()
+                    .idEq(agencyId)
+                    .findList();
+
+            if (agencies != null) {
+                mEbeanServer.deleteAllPermanent(agencies);
+            }
+            return true;
+
+        } catch (Exception e) {
+            Logger.error("Error deleting agency.", e);
+        }
+
+        return false;
     }
 }

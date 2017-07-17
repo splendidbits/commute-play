@@ -3,6 +3,7 @@ package dao;
 import enums.pushservices.PlatformType;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
+import io.ebean.Junction;
 import models.accounts.Account;
 import models.alerts.Route;
 import services.fluffylog.Logger;
@@ -36,7 +37,7 @@ public class AccountDao extends BaseDao {
      * @return List of API accounts.
      */
     @Nonnull
-    public List<Account> getAccountDevices(@Nonnull PlatformType platform, int agencyId, @Nonnull String routeId) {
+    public List<Account> getAccounts(@Nonnull PlatformType platform, int agencyId, @Nonnull String routeId) {
         List<Account> accounts = new ArrayList<>();
 
         try {
@@ -62,7 +63,7 @@ public class AccountDao extends BaseDao {
             Logger.debug(logString);
 
         } catch (Exception e) {
-            Logger.error("Error fetching device / subscription accounts.", e);
+            Logger.error("Error fetching account.", e);
         }
 
         return accounts != null ? accounts : new ArrayList<>();
@@ -90,5 +91,65 @@ public class AccountDao extends BaseDao {
             return account;
         }
         return null;
+    }
+
+    /**
+     * Save an account.
+     * @param account to save.
+     *
+     * @return boolean of success.
+     */
+    public boolean saveAccount(Account account) {
+        try {
+            Junction<Account> accountSearch = mEbeanServer.find(Account.class)
+                    .fetch("platformAccounts")
+                    .where()
+                    .disjunction();
+
+            if (account.id != null) {
+                accountSearch.idEq(account.id);
+
+            } else if (account.apiKey != null) {
+                accountSearch.eq("api_key", account.apiKey);
+            }
+
+            Account savedAccount = accountSearch.endJunction().findUnique();
+            if (savedAccount != null) {
+                account.id = savedAccount.id;
+                mEbeanServer.save(account);
+
+            } else {
+                mEbeanServer.insert(account);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            Logger.error("Error deleting agency.", e);
+        }
+        return false;
+    }
+
+    /**
+     * Remove an account.
+     * @param accountId accountId
+     *
+     * @return boolean of success.
+     */
+    public boolean removeAccount(long accountId) {
+        try {
+            List<Account> accounts = mEbeanServer.find(Account.class)
+                    .fetch("platformAccounts")
+                    .where()
+                    .idEq(accountId)
+                    .findList();
+
+            mEbeanServer.deleteAllPermanent(accounts);
+            return true;
+
+        } catch (Exception e) {
+            Logger.error("Error deleting agency.", e);
+        }
+        return false;
     }
 }

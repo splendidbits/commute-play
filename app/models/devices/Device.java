@@ -36,7 +36,7 @@ public class Device extends Model {
     public String userKey;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
@@ -44,7 +44,7 @@ public class Device extends Model {
     public Account account;
 
     @Nullable
-    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Subscription> subscriptions;
 
     @Basic
