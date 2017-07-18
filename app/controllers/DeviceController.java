@@ -135,7 +135,7 @@ public class DeviceController extends Controller {
                     updateAlert.type = AlertType.TYPE_IN_APP;
                     updateAlert.messageBody = resendSubscriptionsName;
 
-                    route.alerts = Arrays.asList(updateAlert);
+                    route.alerts = Collections.singletonList(updateAlert);
 
                     AgencyAlertModifications alertUpdate = new AgencyAlertModifications(InAppMessageUpdate.AGENCY_ID);
                     alertUpdate.addUpdatedRoute(route);

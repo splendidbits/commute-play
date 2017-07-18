@@ -10,7 +10,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "agencies", schema = "agency_alerts")
-public class Agency extends Model implements Cloneable, Comparable<Agency> {
+public class Agency extends Model implements Comparable<Agency> {
     public static Finder<Integer, Agency> find = new Finder<>(Agency.class);
 
     @Id
@@ -45,17 +45,17 @@ public class Agency extends Model implements Cloneable, Comparable<Agency> {
         if (obj instanceof Agency) {
             Agency other = (Agency) obj;
 
-            boolean sameId = CompareUtils.areAllEquals(id, other.id);
+            boolean sameId = CompareUtils.isEquals(id, other.id);
 
-            boolean sameName = CompareUtils.areAllEquals(name, other.name);
+            boolean sameName = CompareUtils.isEquals(name, other.name);
 
-            boolean samePhone = (CompareUtils.areAllEquals(phone, other.phone));
+            boolean samePhone = (CompareUtils.isEquals(phone, other.phone));
 
-            boolean sameUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
+            boolean sameUri = CompareUtils.isEquals(externalUri, other.externalUri);
 
-            boolean sameUtcOffset = CompareUtils.areAllEquals(utcOffset, other.utcOffset);
+            boolean sameUtcOffset = CompareUtils.isEquals(utcOffset, other.utcOffset);
 
-            boolean sameRoutes = CompareUtils.areAllEquals(routes, other.routes);
+            boolean sameRoutes = CompareUtils.isEquals(routes, other.routes);
 
             // Match everything.
             return (sameId && sameName && samePhone && sameUri && sameUtcOffset && sameRoutes);
@@ -94,20 +94,6 @@ public class Agency extends Model implements Cloneable, Comparable<Agency> {
 
         return hashCode.hashCode();
     }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        Agency agency = new Agency(id);
-        agency.name = name;
-        agency.phone = phone;
-        agency.externalUri = externalUri;
-        agency.utcOffset = utcOffset;
-        agency.routes = routes;
-        agency.markAsDirty();
-
-        return agency;
-    }
-
 
     @Override
     public int compareTo(@NotNull Agency o) {

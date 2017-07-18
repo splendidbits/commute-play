@@ -46,17 +46,9 @@ public class AgencyManager {
     public boolean saveAgency(Agency agency) {
         boolean agencySaved = false;
         if (agency != null) {
-            try {
-                Agency agencyToCache = (Agency) agency.clone();
-                // Cache the agency.
-                cacheAgency(agencyToCache);
+            cacheAgency(agency);
+            agencySaved = mAgencyDao.saveAgency(agency);
 
-                // Persist the agency
-                agencySaved = mAgencyDao.saveAgency(agencyToCache);
-
-            } catch (CloneNotSupportedException e) {
-                Logger.error(String.format("Error cloning agency %d.", agency.id));
-            }
         }
         return agencySaved;
     }
@@ -97,15 +89,13 @@ public class AgencyManager {
      */
     private void cacheAgency(@Nullable Agency agency) {
         if (agency != null && agency.id != null) {
-
             String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
 
             mCacheApi.set(agencyCacheKey, agency);
-            Logger.info(String.format("Saved agency %d to %s.", agency.id, agencyCacheKey));
+            Logger.info(String.format("Saved agency %d to cache %s.", agency.id, agencyCacheKey));
 
             // Iterate through the list of cached agencies and check it contains this one.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
-
             if (!cachedAgencies.isEmpty()) {
                 Iterator<Agency> cachedAgencyIterator = cachedAgencies.iterator();
 
@@ -133,8 +123,6 @@ public class AgencyManager {
             cachedAgencies.add(agency);
             mCacheApi.set(CACHE_ALL_KEY, cachedAgencies);
             Logger.info(String.format("Saved agency %d to %s.", agency.id, CACHE_ALL_KEY));
-
-
         }
     }
 
@@ -148,13 +136,11 @@ public class AgencyManager {
     public Agency getCachedAgency(int agencyId) {
         String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agencyId);
         Agency agency = mCacheApi.get(agencyCacheKey);
+        Logger.info(String.format("Cache $1%s for agency %d in $2%s. $3%s",
+                agency != null ? "hit" : "miss",
+                agencyId, agencyCacheKey,
+                agency != null ? ":-)" : ":-(("));
 
-        if (agency != null) {
-            Logger.info(String.format("Cache hit for agency %d in %s. :)", agencyId, agencyCacheKey));
-
-        } else {
-            Logger.warn(String.format("Cache miss for agency %d in %s. :(", agencyId, agencyCacheKey));
-        }
         return agency;
     }
 }

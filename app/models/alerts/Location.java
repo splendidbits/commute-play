@@ -85,16 +85,20 @@ public class Location extends Model implements Comparable<Location> {
                 ? message.hashCode()
                 : hashCode;
 
+        hashCode += sequence != null
+                ? sequence.hashCode()
+                : hashCode;
+
         hashCode += latitude != null
                 ? latitude.hashCode()
                 : hashCode;
 
-        hashCode += longitude != null
-                ? longitude.hashCode()
-                : hashCode;
-
         hashCode += sequence != null
                 ? sequence.hashCode()
+                : hashCode;
+
+        hashCode += date != null
+                ? date.hashCode()
                 : hashCode;
 
         return hashCode.hashCode();
@@ -103,20 +107,5 @@ public class Location extends Model implements Comparable<Location> {
     @Override
     public int compareTo(Location o) {
         return equals(o) ? -1 : 0;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        Location location = new Location();
-        location.name = name;
-        location.message = message;
-        location.latitude = latitude;
-        location.longitude = longitude;
-        location.sequence = sequence;
-        location.date = date;
-        location.alert = alert;
-        location.markAsDirty();
-
-        return location;
     }
 }

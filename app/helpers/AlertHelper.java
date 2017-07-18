@@ -361,7 +361,7 @@ public class AlertHelper {
      * @param truncateAmount amount to reduce the payload contents by.
      * @return true if the message could be fully trimmed to the length of lengthToTruncate;
      */
-    private static boolean truncateMessagePayload(@Nonnull Message message, int truncateAmount) {
+    private static void truncateMessagePayload(@Nonnull Message message, int truncateAmount) {
         List<PayloadElement> messagePayload = message.payloadData;
         if (messagePayload != null && isAlertMessage(message) && truncateAmount > 0) {
 
@@ -397,7 +397,6 @@ public class AlertHelper {
                 }
             }
         }
-        return truncateAmount < 1;
     }
 
     /**
@@ -447,7 +446,6 @@ public class AlertHelper {
      */
     @Nullable
     public static AgencyAlertModifications getAgencyModifications(@Nullable Agency existingAgency, @Nullable Agency agency) {
-
         // Both agencies do not exist. This is bad.
         if (existingAgency == null && agency == null) {
             Logger.warn("Both agencies for modifications calculation were null!");
@@ -456,11 +454,11 @@ public class AlertHelper {
 
         // Copy the routes.
         List<Route> existingRoutes = existingAgency != null
-                ? copyRoute(existingAgency.routes)
+                ? existingAgency.routes
                 : new ArrayList<>();
 
         List<Route> freshRoutes = agency != null
-                ? copyRoute(agency.routes)
+                ? agency.routes
                 : new ArrayList<>();
 
         int agencyId = agency != null
@@ -627,38 +625,5 @@ public class AlertHelper {
         boolean messageTypeNone = AlertType.TYPE_NONE.equals(alert.type);
 
         return (messageBodyEmpty || messageTitleEmpty) || messageTypeNone;
-    }
-
-    /**
-     * Deep copy a list of Routes including all of its children.
-     *
-     * @param routes {@link List<Route>} list to copy.
-     * @return copied {@link List<Route>}.
-     */
-    private static List<Route> copyRoute(List<Route> routes) {
-        List<Route> copiedRoutes = new ArrayList<>();
-        if (routes != null) {
-            for (Route route : routes) {
-                copiedRoutes.add(copyRoute(route));
-            }
-        }
-        return copiedRoutes;
-    }
-
-    /**
-     * Deep copy a route including all of its children. upward
-     * relationships such as subscriptions, agencies etc are not deep copied.
-     *
-     * @param route {@link Route} to copy.
-     * @return copied {@link Route}.
-     */
-    private static Route copyRoute(@Nonnull Route route) {
-        try {
-            return (Route) route.clone();
-
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }

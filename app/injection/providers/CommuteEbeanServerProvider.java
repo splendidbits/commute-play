@@ -82,7 +82,7 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setClasses(models);
         serverConfig.setDdlGenerate(true);
         serverConfig.setUpdatesDeleteMissingChildren(false);
-        serverConfig.setUpdateChangesOnly(true);
+        serverConfig.setUpdateChangesOnly(false);
 
         return EbeanServerFactory.create(serverConfig);
     }

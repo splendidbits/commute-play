@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
-public class Route extends Model implements Comparable<Route>, Cloneable {
+public class Route extends Model implements Comparable<Route> {
     public static Finder<String, Route> find = new Finder<>(Route.class);
 
     @Id
@@ -34,7 +34,7 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     public Agency agency;
 
     @Nullable
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     public List<Alert> alerts;
 
     @JsonIgnore
@@ -70,19 +70,19 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
         if (obj instanceof Route) {
             Route other = (Route) obj;
 
-            boolean sameRouteId = CompareUtils.areAllEquals(routeId, other.routeId);
+            boolean sameRouteId = CompareUtils.isEquals(routeId, other.routeId);
 
-            boolean sameRouteName = CompareUtils.areAllEquals(routeName, other.routeName);
+            boolean sameRouteName = CompareUtils.isEquals(routeName, other.routeName);
 
-            boolean sameRouteFlag = CompareUtils.areAllEquals(routeFlag, other.routeFlag);
+            boolean sameRouteFlag = CompareUtils.isEquals(routeFlag, other.routeFlag);
 
-            boolean sameTransitType =CompareUtils.areAllEquals(transitType, other.transitType);
+            boolean sameTransitType =CompareUtils.isEquals(transitType, other.transitType);
 
-            boolean sameDefaults = CompareUtils.areAllEquals(isDefault, other.isDefault);
+            boolean sameDefaults = isDefault == other.isDefault;
 
-            boolean sameUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
+            boolean sameUri = CompareUtils.isEquals(externalUri, other.externalUri);
 
-            boolean sameAlerts = CompareUtils.areAllEquals(alerts, other.alerts);
+            boolean sameAlerts = CompareUtils.isEquals(alerts, other.alerts);
 
             return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
         }
@@ -138,23 +138,5 @@ public class Route extends Model implements Comparable<Route>, Cloneable {
     public Route(@Nonnull String routeId, String routeName) {
         this.routeId = routeId;
         this.routeName = routeName;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        Route route = new Route();
-        route.id = id;
-        route.routeId = routeId;
-        route.routeName = routeName;
-        route.transitType = transitType;
-        route.isDefault = isDefault;
-        route.isSticky = isSticky;
-        route.externalUri = externalUri;
-        route.agency = agency;
-        route.alerts = alerts;
-        route.subscriptions = subscriptions;
-        route.markAsDirty();
-
-        return route;
     }
 }

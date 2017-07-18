@@ -5,6 +5,7 @@ import enums.AlertType;
 import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -61,19 +62,19 @@ public class Alert extends Model implements Comparable<Alert> {
         if (obj instanceof Alert) {
             Alert other = (Alert) obj;
 
-            boolean sameType = CompareUtils.areAllEquals(messageTitle, other.messageTitle);
+            boolean sameType = CompareUtils.isEquals(type, other.type);
 
-            boolean sameTitle = CompareUtils.areAllEquals(messageTitle, other.messageTitle);
+            boolean sameTitle = CompareUtils.isEquals(messageTitle, other.messageTitle);
 
-            boolean sameSubtitle = CompareUtils.areAllEquals(messageSubtitle, other.messageSubtitle);
+            boolean sameSubtitle = CompareUtils.isEquals(messageSubtitle, other.messageSubtitle);
 
-            boolean sameBody = CompareUtils.areAllEquals(messageBody, other.messageBody);
+            boolean sameBody = CompareUtils.isEquals(messageBody, other.messageBody);
 
-            boolean sameLocations = CompareUtils.areAllEquals(locations, other.locations);
+            boolean sameLocations = CompareUtils.isEquals(locations, other.locations);
 
-            boolean sameExternalUri = CompareUtils.areAllEquals(externalUri, other.externalUri);
+            boolean sameExternalUri = CompareUtils.isEquals(externalUri, other.externalUri);
 
-            boolean samePriority = CompareUtils.areAllEquals(highPriority, other.highPriority);
+            boolean samePriority = highPriority == other.highPriority;
 
             // Match everything.
             return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations && sameExternalUri && samePriority);
@@ -118,23 +119,7 @@ public class Alert extends Model implements Comparable<Alert> {
     }
 
     @Override
-    public int compareTo(Alert o) {
+    public int compareTo(@NotNull Alert o) {
         return equals(o) ? -1 : 0;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        Alert alert = new Alert();
-        alert.route = route;
-        alert.type = type;
-        alert.messageTitle = messageTitle;
-        alert.messageSubtitle = messageSubtitle;
-        alert.messageBody = messageBody;
-        alert.externalUri = externalUri;
-        alert.locations = locations;
-        alert.lastUpdated = lastUpdated;
-        alert.highPriority = highPriority;
-        alert.markAsDirty();
-        return alert;
     }
 }
