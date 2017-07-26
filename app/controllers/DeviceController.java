@@ -9,7 +9,7 @@ import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
 import helpers.AlertHelper;
 import interfaces.pushservices.TaskQueueCallback;
-import models.AgencyAlertModifications;
+import models.AlertModifications;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -137,7 +137,7 @@ public class DeviceController extends Controller {
 
                     route.alerts = Collections.singletonList(updateAlert);
 
-                    AgencyAlertModifications alertUpdate = new AgencyAlertModifications(InAppMessageUpdate.AGENCY_ID);
+                    AlertModifications alertUpdate = new AlertModifications(InAppMessageUpdate.AGENCY_ID);
                     alertUpdate.addUpdatedRoute(route);
 
                     // Send update using one of each platform.

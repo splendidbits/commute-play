@@ -8,7 +8,7 @@ import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
 import helpers.AlertHelper;
 import interfaces.pushservices.TaskQueueCallback;
-import models.AgencyAlertModifications;
+import models.AlertModifications;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Route;
@@ -47,7 +47,7 @@ public class PushMessageManager {
      *
      * @param agencyModifications Collection of modified route alerts.
      */
-    public void dispatchAlerts(@Nonnull AgencyAlertModifications agencyModifications) {
+    public void dispatchAlerts(@Nonnull AlertModifications agencyModifications) {
         List<Task> taskList = new ArrayList<>();
 
         // Iterate through the stale (canceled) Alert Routes to send messages for.

@@ -1,10 +1,9 @@
 package helpers;
 
-import enums.AlertType;
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
 import helpers.pushservices.MessageBuilder;
-import models.AgencyAlertModifications;
+import models.AlertModifications;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -14,7 +13,7 @@ import models.devices.Device;
 import models.pushservices.db.Credentials;
 import models.pushservices.db.Message;
 import models.pushservices.db.PayloadElement;
-import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
@@ -22,7 +21,10 @@ import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Used to easily create relevant push platform messages for different app alert types,
@@ -130,40 +132,6 @@ public class AlertHelper {
         input = input.trim();
 
         return input;
-    }
-
-    /**
-     * Deletes all model back-references and unique identifiers. This is useful for database
-     * transactions for when you do not want to keep a track of the state..
-     *
-     * @param agency agency to remove references for.
-     */
-    public static void removeInterReferences(Agency agency) {
-        if (agency == null || agency.routes == null) {
-            return;
-        }
-        for (Route route : agency.routes) {
-            route.id = null;
-            route.agency = null;
-
-            if (route.alerts == null) {
-                return;
-            }
-
-            for (Alert alert : route.alerts) {
-                alert.id = null;
-                alert.route = null;
-
-                if (alert.locations == null) {
-                    return;
-                }
-
-                for (Location location : alert.locations) {
-                    location.id = null;
-                    location.alert = null;
-                }
-            }
-        }
     }
 
     /**
@@ -301,7 +269,7 @@ public class AlertHelper {
      * @param platformAccount platform account for the alert message.
      * @return List of platform messages for route.
      */
-    @Nullable
+    @NotNull
     private static List<Message> buildAlertCancelMessage(@Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
         List<Message> messages = new ArrayList<>();
@@ -359,7 +327,6 @@ public class AlertHelper {
      *
      * @param message        message to truncate.
      * @param truncateAmount amount to reduce the payload contents by.
-     * @return true if the message could be fully trimmed to the length of lengthToTruncate;
      */
     private static void truncateMessagePayload(@Nonnull Message message, int truncateAmount) {
         List<PayloadElement> messagePayload = message.payloadData;
@@ -444,12 +411,12 @@ public class AlertHelper {
      * @param agency         the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
-    @Nullable
-    public static AgencyAlertModifications getAgencyModifications(@Nullable Agency existingAgency, @Nullable Agency agency) {
+    @Nonnull
+    public static AlertModifications getAgencyModifications(Agency existingAgency, Agency agency) {
         // Both agencies do not exist. This is bad.
         if (existingAgency == null && agency == null) {
             Logger.warn("Both agencies for modifications calculation were null!");
-            return null;
+            return new AlertModifications(-1);
         }
 
         // Copy the routes.
@@ -465,7 +432,7 @@ public class AlertHelper {
                 ? agency.id
                 : existingAgency.id;
 
-        AgencyAlertModifications alertModifications = new AgencyAlertModifications(agencyId);
+        AlertModifications alertModifications = new AlertModifications(agencyId);
 
         // Both existing and fresh routes are null.
         if (freshRoutes == null && existingRoutes == null) {
@@ -473,8 +440,9 @@ public class AlertHelper {
         }
 
         // Fresh agency routes exist while there are no Existing routes.
-        if (existingRoutes == null) {
-            Logger.info(String.format("Existing routes for agency %d missing. Marking all as updated.", agencyId));
+        if ((existingRoutes == null || existingRoutes.isEmpty()) &&
+                (freshRoutes != null && !freshRoutes.isEmpty())) {
+//            Logger.info(String.format("No existing routes for agency %d. Adding all routes as updated.", agencyId));
 
             for (Route freshRoute : freshRoutes) {
                 alertModifications.addUpdatedRoute(freshRoute);
@@ -483,8 +451,9 @@ public class AlertHelper {
         }
 
         // Existing agency routes exists and there are no Fresh routes.
-        if (freshRoutes == null) {
-            Logger.info(String.format("New routes for agency %d empty. Marking all as stale.", agencyId));
+        if ((freshRoutes == null || freshRoutes.isEmpty()) &&
+                (existingRoutes != null && !existingRoutes.isEmpty())) {
+//            Logger.info(String.format("No new fresh routes for agency %d. Marking all existing as stale.", agencyId));
 
             for (Route existingRoute : existingRoutes) {
                 alertModifications.addStaleRoute(existingRoute);
@@ -494,6 +463,7 @@ public class AlertHelper {
 
         // Iterate through the fresh and existing routes.
         for (Route freshRoute : freshRoutes) {
+
             boolean freshRouteExists = false;
             for (Route existingRoute : existingRoutes) {
 
@@ -517,29 +487,23 @@ public class AlertHelper {
             }
         }
 
-//        // Check if the existing route still exists in the fresh routes.
-//        for (Route existingRoute : existingRoutes) {
-//            boolean existingRouteExists = false;
-//
-//            for (Route freshRoute : freshRoutes) {
-//                if (freshRoute.routeId.equals(existingRoute.routeId)) {
-//                    existingRouteExists = true;
-//
-//                    List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts);
-//                    if (!staleAlerts.isEmpty()) {
-//                        existingRoute.alerts = staleAlerts;
-//                        alertModifications.addStaleRoute(existingRoute);
-//
-//                        // There was a route match so skip the inner loop.
-//                        break;
-//                    }
-//                }
-//            }
-//
-//            if (!existingRouteExists) {
-//                alertModifications.addStaleRoute(existingRoute);
-//            }
-//        }
+        // Check if the existing route still exists in the fresh routes.
+        for (Route existingRoute : existingRoutes) {
+
+            for (Route freshRoute : freshRoutes) {
+                if (freshRoute.routeId.equals(existingRoute.routeId)) {
+
+                    List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts);
+                    if (!staleAlerts.isEmpty()) {
+                        existingRoute.alerts = staleAlerts;
+                        alertModifications.addStaleRoute(existingRoute);
+
+                        // There was a route match so skip the inner loop.
+                        break;
+                    }
+                }
+            }
+        }
 
         return alertModifications;
     }
@@ -551,13 +515,12 @@ public class AlertHelper {
      * @param freshAlerts    The current fresh agency route alerts.
      * @return The list of new route alerts.
      */
-    @SuppressWarnings("Duplicates")
     @Nonnull
     private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts) {
         List<Alert> updatedAlerts = new ArrayList<>();
 
         // If there are no fresh alerts alerts, nothing can be updated.
-        if (freshAlerts == null || freshAlerts.isEmpty()) {
+        if ((freshAlerts == null) || freshAlerts.isEmpty()) {
             return new ArrayList<>();
         }
 
@@ -570,7 +533,6 @@ public class AlertHelper {
         // 1: The fresh alert does not exist in the existing alerts
         for (Alert freshAlert : freshAlerts) {
             if (!existingAlerts.contains(freshAlert)) {
-//                Logger.info(String.format("Alert in route %s is new."));
                 updatedAlerts.add(freshAlert);
             }
         }
@@ -586,44 +548,40 @@ public class AlertHelper {
      * @param freshAlerts    The current fresh agency route alerts.
      * @return The list of stale route alerts.
      */
-    @SuppressWarnings("Duplicates")
     @Nonnull
     private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts) {
         List<Alert> staleAlerts = new ArrayList<>();
 
-        // If there are no existing alerts, nothing can be stale.
-        if (existingAlerts == null || existingAlerts.isEmpty()) {
-            return new ArrayList<>();
-        }
-
         // If all fresh alerts are "empty" mark all existing as stale.
-        if (freshAlerts == null || freshAlerts.isEmpty()) {
+        if ((freshAlerts == null || freshAlerts.isEmpty()) &&
+                (existingAlerts != null && !existingAlerts.isEmpty())) {
             return existingAlerts;
         }
 
         // Iterate through each existing alert. Add it as stale if either of the following are true:
         // 1: The existing alert does not exist in the fresh alerts
-        for (Alert existingAlert : existingAlerts) {
-            if (!freshAlerts.contains(existingAlert)) {
-//                Logger.info(String.format("Alert in route %s became stale.", route.routeId));
-                staleAlerts.add(existingAlert);
+        if (existingAlerts != null && freshAlerts != null) {
+            for (Alert existingAlert : existingAlerts) {
+                if (!freshAlerts.contains(existingAlert)) {
+                    staleAlerts.add(existingAlert);
+                }
             }
         }
 
         return staleAlerts;
     }
 
-    /**
-     * Check if the Alert is "empty" (if there is no message, or type.
-     *
-     * @param alert the alert to check.
-     * @return true if the message is empty.
-     */
-    public static boolean isAlertEmpty(@Nonnull Alert alert) {
-        boolean messageBodyEmpty = StringUtils.isBlank(alert.messageBody);
-        boolean messageTitleEmpty = StringUtils.isBlank(alert.messageTitle);
-        boolean messageTypeNone = AlertType.TYPE_NONE.equals(alert.type);
-
-        return (messageBodyEmpty || messageTitleEmpty) || messageTypeNone;
-    }
+//    /**
+//     * Check if the Alert is "empty" (if there is no message, or type.
+//     *
+//     * @param alert the alert to check.
+//     * @return true if the message is empty.
+//     */
+//    public static boolean isAlertEmpty(@Nonnull Alert alert) {
+//        boolean messageBodyEmpty = StringUtils.isBlank(alert.messageBody);
+//        boolean messageTitleEmpty = StringUtils.isBlank(alert.messageTitle);
+//        boolean messageTypeNone = AlertType.TYPE_NONE.equals(alert.type);
+//
+//        return (messageBodyEmpty || messageTitleEmpty) || messageTypeNone;
+//    }
 }

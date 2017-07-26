@@ -48,7 +48,7 @@ dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "8.1.1"
 dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "8.1.1"
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
-//resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/local")
+resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/cache")
 
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.

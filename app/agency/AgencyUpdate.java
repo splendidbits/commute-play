@@ -1,7 +1,7 @@
 package agency;
 
 import helpers.AlertHelper;
-import models.AgencyAlertModifications;
+import models.AlertModifications;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
@@ -68,7 +68,7 @@ public abstract class AgencyUpdate {
 
             // Diff the new and existing agency data and form a modifications model.
             Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
-            AgencyAlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
+            AlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
             if (agencyModifications != null && agencyModifications.hasUpdatedRoutes()) {
                 // Save the agency in the datastore.

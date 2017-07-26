@@ -1,6 +1,7 @@
 package models;
 
 import models.alerts.Route;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import java.util.List;
 /**
  * Contains a list of new, uddated, or removed alerts for an {@link models.alerts.Agency}
  */
-public class AgencyAlertModifications {
+public class AlertModifications {
     private int mAgencyId;
     private List<Route> mUpdatedRoutes = new ArrayList<>();
     private List<Route> mStaleRoutes = new ArrayList<>();
@@ -19,7 +20,7 @@ public class AgencyAlertModifications {
      *
      * @param agencyId Identifier of agency for updated or stale alerts.
      */
-    public AgencyAlertModifications(int agencyId) {
+    public AlertModifications(int agencyId) {
         mAgencyId = agencyId;
     }
 
@@ -30,7 +31,7 @@ public class AgencyAlertModifications {
      * @return true if the agency has updated routes (either stale or new).
      */
     public boolean hasUpdatedRoutes() {
-        return !mUpdatedRoutes.isEmpty() || !mStaleRoutes.isEmpty();
+        return !(mUpdatedRoutes.isEmpty() && mStaleRoutes.isEmpty());
     }
 
     /**
@@ -39,7 +40,7 @@ public class AgencyAlertModifications {
      * @param route The route to flag as updated or new.
      */
     public void addUpdatedRoute(@Nonnull Route route) {
-        if (route != null && route.routeId != null && !route.routeId.isEmpty()) {
+        if (!StringUtils.isBlank(route.routeId)) {
             mUpdatedRoutes.add(route);
         }
     }
@@ -50,7 +51,7 @@ public class AgencyAlertModifications {
      * @param route The route which is deemed stale.
      */
     public void addStaleRoute(@Nonnull Route route) {
-        if (route != null && route.routeId != null && !route.routeId.isEmpty()) {
+        if (!StringUtils.isBlank(route.routeId)) {
             mStaleRoutes.add(route);
         }
     }

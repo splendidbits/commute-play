@@ -34,7 +34,7 @@ public class Route extends Model implements Comparable<Route> {
     public Agency agency;
 
     @Nullable
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Alert> alerts;
 
     @JsonIgnore

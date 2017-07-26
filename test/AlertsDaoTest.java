@@ -18,13 +18,12 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class AlertsTest extends CommuteTestApplication {
+public class AlertsDaoTest extends CommuteTestApplication {
     private static AgencyDao mAgencyDao;
 
     private final Calendar locationDate = Calendar.getInstance();
     private final static int AGENCY_ID = 999;
     private final static String ROUTE1_ID = "test_route_1";
-    private final static String ROUTE2_ID = "test_route_2";
 
     private Agency initialAgency;
     private Route initialRoute;
@@ -39,6 +38,7 @@ public class AlertsTest extends CommuteTestApplication {
     @Before
     public void beforeTest() {
         initialLocation = new Location();
+        initialLocation.id = null;
         initialLocation.latitude = "-75.1653533";
         initialLocation.longitude = "39.9517899";
         initialLocation.message = "Location Message";
@@ -47,33 +47,39 @@ public class AlertsTest extends CommuteTestApplication {
         initialLocation.date = locationDate;
 
         initialAlert = new Alert();
+        initialAlert.id = null;
         initialAlert.highPriority = false;
         initialAlert.messageTitle = "Alert Message Title";
         initialAlert.messageSubtitle = "Alert Message Subtitle";
         initialAlert.messageBody = "Alert Message Body";
         initialAlert.type = AlertType.TYPE_INFORMATION;
-        initialAlert.locations = Collections.singletonList(initialLocation);
         initialAlert.lastUpdated = locationDate;
+        initialAlert.locations = new ArrayList<>();
+        initialAlert.locations.add(initialLocation);
 
         initialRoute = new Route(ROUTE1_ID);
+        initialRoute.id = null;
         initialRoute.externalUri = "http://example.com";
         initialRoute.isSticky = false;
         initialRoute.routeFlag = RouteFlag.TYPE_PRIVATE;
         initialRoute.transitType = TransitType.TYPE_SPECIAL;
         initialRoute.routeName = "Route Name";
-        initialRoute.alerts = Collections.singletonList(initialAlert);
+        initialRoute.alerts = new ArrayList<>();
+        initialRoute.alerts.add(initialAlert);
 
         initialAgency = new Agency(AGENCY_ID);
+        initialAgency.id = AGENCY_ID;
         initialAgency.name = "Test Agency";
         initialAgency.externalUri = "http://example.com";
         initialAgency.phone = "123-123-1234";
         initialAgency.utcOffset = -5F;
-        initialAgency.routes = Collections.singletonList(initialRoute);
+        initialAgency.routes = new ArrayList<>();
+        initialAgency.routes.add(initialRoute);
     }
 
     @After
     public void afterTest() {
-        // Remove agency and test things are removed.
+        // Remove agency.
         mAgencyDao.removeAgency(AGENCY_ID);
     }
 
@@ -105,9 +111,6 @@ public class AlertsTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(initialAgency);
 
         // Get the agency
-        Agency savedAgency = mAgencyDao.getAgency(AGENCY_ID);
-        assertNotNull(savedAgency);
-
         Agency updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
         assertNotNull(updatedAgency);
 
@@ -120,20 +123,9 @@ public class AlertsTest extends CommuteTestApplication {
     }
 
     @Test
-    public void testDatabaseRouteUpdate() {
+    public void testDatabaseRouteAdd() {
+        final String ROUTE2_ID = "test_route_2";
         mAgencyDao.saveAgency(initialAgency);
-
-        // Get the agency
-        Agency savedAgency = mAgencyDao.getAgency(AGENCY_ID);
-        assertNotNull(savedAgency);
-
-        // Add the second route
-        Route addedRoute = new Route(ROUTE2_ID);
-        addedRoute.externalUri = "http://example.com";
-        addedRoute.isSticky = false;
-        addedRoute.routeFlag = RouteFlag.TYPE_PRIVATE;
-        addedRoute.transitType = TransitType.TYPE_SPECIAL;
-        addedRoute.routeName = "Route 2 Name";
 
         // Ensure the Agency was updated
         Agency updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
@@ -143,9 +135,15 @@ public class AlertsTest extends CommuteTestApplication {
         assertNotNull(updatedAgency.routes);
         assertEquals(updatedAgency.routes.size(), 1);
 
-        // Add the new route
-        updatedAgency.routes.add(addedRoute);
-        assertTrue(mAgencyDao.saveAgency(updatedAgency));
+        // Add the second route
+        Route addedRoute = new Route(ROUTE2_ID);
+        addedRoute.externalUri = "http://example.com";
+        addedRoute.isSticky = false;
+        addedRoute.routeFlag = RouteFlag.TYPE_PRIVATE;
+        addedRoute.transitType = TransitType.TYPE_SPECIAL;
+        addedRoute.routeName = "Route 2 Name";
+        initialAgency.routes.add(addedRoute);
+        assertTrue(mAgencyDao.saveAgency(initialAgency));
 
         // Check the new route is there.
         updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
@@ -158,12 +156,65 @@ public class AlertsTest extends CommuteTestApplication {
     }
 
     @Test
+    public void testDatabaseRouteUpdate() {
+        mAgencyDao.saveAgency(initialAgency);
+
+        // Ensure the Agency was updated
+        Agency updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        assertNotNull(updatedAgency);
+
+        // Check the agency has the route.
+        assertNotNull(updatedAgency.routes);
+        assertEquals(updatedAgency.routes.size(), 1);
+
+        // Modify the route
+        Route route = new Route(ROUTE1_ID);
+        route.externalUri = "http://example.com";
+        route.isSticky = false;
+        route.routeFlag = RouteFlag.TYPE_PRIVATE;
+        route.transitType = TransitType.TYPE_SPECIAL;
+        route.routeName = "Updated Name";
+        initialAgency.routes = Collections.singletonList(route);
+        assertTrue(mAgencyDao.saveAgency(initialAgency));
+
+        // Check the new route is there.
+        updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        assertNotNull(updatedAgency);
+        assertNotNull(updatedAgency.routes);
+        assertEquals(updatedAgency.routes.size(), 1);
+
+        // Check it contains the previous route
+        assertTrue(updatedAgency.routes.contains(route));
+        assertEquals(updatedAgency.routes.get(0).routeName, "Updated Name");
+    }
+
+    @Test
+    public void testDatabaseRouteRemove() {
+        mAgencyDao.saveAgency(initialAgency);
+
+        // Ensure the Agency was updated
+        Agency updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        assertNotNull(updatedAgency);
+
+        // Check the agency has the route.
+        assertNotNull(updatedAgency.routes);
+        assertEquals(updatedAgency.routes.size(), 1);
+
+        // Remove the route
+        updatedAgency.routes = null;
+        mAgencyDao.saveAgency(updatedAgency);
+
+        // Check the new route is not there.
+        updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        assertNotNull(updatedAgency);
+        assertTrue(updatedAgency.routes == null || updatedAgency.routes.isEmpty());
+    }
+
+    @Test
     public void testDatabaseAlertsAdd() {
         mAgencyDao.saveAgency(initialAgency);
 
         // Modify route1 to have one new alert with no locations, and the existing alert
-        List<Alert> alerts = new ArrayList<>();
-
         Alert newAlert1 = new Alert();
         newAlert1.highPriority = false;
         newAlert1.messageTitle = "New Alert Message Title";
@@ -171,11 +222,8 @@ public class AlertsTest extends CommuteTestApplication {
         newAlert1.messageBody = "New Alert Message Body";
         newAlert1.type = AlertType.TYPE_DETOUR;
         newAlert1.lastUpdated = Calendar.getInstance();
+        initialRoute.alerts.add(newAlert1);
 
-        alerts.add(initialAlert);
-        alerts.add(newAlert1);
-
-        initialRoute.alerts = alerts;
         initialAgency.routes = Collections.singletonList(initialRoute);
         assertTrue(mAgencyDao.saveAgency(initialAgency));
 
@@ -188,30 +236,25 @@ public class AlertsTest extends CommuteTestApplication {
         assertEquals(updatedAgency.routes.size(), 1);
 
         // Check that the alerts have persisted
-        List<Alert> newAlerts = updatedAgency.routes.get(0).alerts;
-        assertNotNull(newAlerts);
-        assertEquals(newAlerts.size(), 2);
-
-        // Check the agency has the Location.
-        for (Alert alert : newAlerts) {
-            if (alert.messageTitle.equals("Alert Message Title")) {
-                assertNotNull(alert.locations);
-                assertEquals(alert.locations.size(), 1);
+        List<Alert> allAlerts = new ArrayList<>();
+        for (Route updatedRoute : updatedAgency.routes) {
+            if (updatedRoute.alerts != null) {
+                allAlerts.addAll(updatedRoute.alerts);
             }
         }
 
-        assertTrue(newAlerts.contains(newAlert1));
-        assertTrue(newAlerts.contains(initialAlert));
-    }
+        // Check the agency has the new alert.
+        assertEquals(allAlerts.size(), 2);
 
-    @Test
-    public void testDatabaseRouteRemove() {
-        mAgencyDao.saveAgency(initialAgency);
+        // Check the alert has the same location.
+        List<Location> updatedLocations = new ArrayList<>();
+        for (Alert alert : allAlerts) {
+            if (alert.locations != null) {
+                updatedLocations.addAll(alert.locations);
+            }
+        }
 
-        assertTrue(mAgencyDao.removeAgency(AGENCY_ID));
-        assertNull(mAgencyDao.getAgency(AGENCY_ID));
-        assertNotNull(mAgencyDao.getRoutes(AGENCY_ID));
-        assertTrue(mAgencyDao.getRoutes(AGENCY_ID).isEmpty());
+        assertEquals(updatedLocations.size(), 1);
     }
 
     @Test
@@ -264,16 +307,4 @@ public class AlertsTest extends CommuteTestApplication {
         assertFalse(routes.get(0).alerts.get(0).locations.isEmpty());
         assertEquals(routes.get(0).alerts.get(0).locations.get(0).message, "new message");
     }
-
-    @Test
-    public void testModificationAlertUpdate() {
-        mAgencyDao.saveAgency(initialAgency);
-    }
-
-    @Test
-    public void testModificationAlertStale() {
-        mAgencyDao.saveAgency(initialAgency);
-
-    }
-
 }
