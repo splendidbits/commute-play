@@ -46,7 +46,6 @@ public class TestModelHelper {
     @Nonnull
     static Alert createTestAlert() {
         Alert alert = new Alert();
-        alert.id = 12345L;
         alert.highPriority = false;
         alert.messageTitle = "Alert Message Title";
         alert.messageSubtitle = "Alert Message Subtitle";

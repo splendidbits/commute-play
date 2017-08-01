@@ -496,7 +496,6 @@ public class AlertHelper {
                         }
                     }
                 }
-
             }
         }
 
@@ -511,7 +510,7 @@ public class AlertHelper {
                     if (freshRoute.routeId.equals(existingRoute.routeId)) {
                         freshRouteExists = true;
 
-                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts);
+                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts, alertModifications);
                         for (Alert staleAlert : staleAlerts) {
                             alertModifications.addStaleAlert(staleAlert);
                         }
@@ -576,7 +575,7 @@ public class AlertHelper {
      * @return The list of stale route alerts.
      */
     @Nonnull
-    private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts) {
+    private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, AlertModifications alertModifications) {
         List<Alert> staleAlerts = new ArrayList<>();
 
         if (existingAlerts == null && freshAlerts == null) {
@@ -589,30 +588,26 @@ public class AlertHelper {
             return existingAlerts;
         }
 
-        // Iterate through each existing alert. Add it as stale if either of the following are true:
-        // 1: The existing alert does not exist in the fresh alerts
+        // Ensure the AlertModifications *updates* don't contain any of the fresh alert types.
         if (existingAlerts != null && freshAlerts != null) {
             for (Alert existingAlert : existingAlerts) {
-                if (!freshAlerts.contains(existingAlert)) {
-                    staleAlerts.add(existingAlert);
+                boolean existingAlertsHasFreshAlertType = false;
+
+                for (Alert modificationUpdateAlert : alertModifications.getUpdatedAlerts()) {
+                    if (modificationUpdateAlert.type.equals(existingAlert.type)) {
+                        existingAlertsHasFreshAlertType = true;
+                        break;
+                    }
+                }
+
+                if (!existingAlertsHasFreshAlertType) {
+                    if (!freshAlerts.contains(existingAlert)) {
+                        staleAlerts.add(existingAlert);
+                    }
                 }
             }
         }
 
         return staleAlerts;
     }
-
-//    /**
-//     * Check if the Alert is "empty" (if there is no message, or type.
-//     *
-//     * @param alert the alert to check.
-//     * @return true if the message is empty.
-//     */
-//    public static boolean isAlertEmpty(@Nonnull Alert alert) {
-//        boolean messageBodyEmpty = StringUtils.isBlank(alert.messageBody);
-//        boolean messageTitleEmpty = StringUtils.isBlank(alert.messageTitle);
-//        boolean messageTypeNone = AlertType.TYPE_NONE.equals(alert.type);
-//
-//        return (messageBodyEmpty || messageTitleEmpty) || messageTypeNone;
-//    }
 }
