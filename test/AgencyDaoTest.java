@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class AlertsDaoTest extends CommuteTestApplication {
+public class AgencyDaoTest extends CommuteTestApplication {
     private static AgencyDao mAgencyDao;
 
     private final Calendar locationDate = Calendar.getInstance();

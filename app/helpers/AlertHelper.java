@@ -408,13 +408,13 @@ public class AlertHelper {
      * Creates a list of new and removed alerts for a given agency bundle.
      *
      * @param existingAgency the currently saved agency.
-     * @param agency         the agency which is to be updated.
+     * @param freshAgency    the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
     @Nonnull
-    public static AlertModifications getAgencyModifications(Agency existingAgency, Agency agency) {
+    public static AlertModifications getAgencyModifications(Agency existingAgency, Agency freshAgency) {
         // Both agencies do not exist. This is bad.
-        if (existingAgency == null && agency == null) {
+        if (existingAgency == null && freshAgency == null) {
             Logger.warn("Both agencies for modifications calculation were null!");
             return new AlertModifications(-1);
         }
@@ -424,12 +424,12 @@ public class AlertHelper {
                 ? existingAgency.routes
                 : new ArrayList<>();
 
-        List<Route> freshRoutes = agency != null
-                ? agency.routes
+        List<Route> freshRoutes = freshAgency != null
+                ? freshAgency.routes
                 : new ArrayList<>();
 
-        int agencyId = agency != null
-                ? agency.id
+        int agencyId = freshAgency != null
+                ? freshAgency.id
                 : existingAgency.id;
 
         AlertModifications alertModifications = new AlertModifications(agencyId);
@@ -462,44 +462,60 @@ public class AlertHelper {
         }
 
         // Iterate through the fresh and existing routes.
-        for (Route freshRoute : freshRoutes) {
+        if (freshRoutes != null) {
+            for (Route freshRoute : freshRoutes) {
 
-            boolean freshRouteExists = false;
-            for (Route existingRoute : existingRoutes) {
+                boolean freshRouteExists = false;
+                for (Route existingRoute : existingRoutes) {
 
-                // If the routes match.
-                if (freshRoute.routeId.equals(existingRoute.routeId)) {
-                    freshRouteExists = true;
+                    // If the routes match.
+                    if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                        freshRouteExists = true;
 
-                    List<Alert> updatedAlerts = getUpdatedAlerts(existingRoute.alerts, freshRoute.alerts);
-                    if (!updatedAlerts.isEmpty()) {
-                        freshRoute.alerts = updatedAlerts;
-                        alertModifications.addUpdatedRoute(freshRoute);
+                        List<Alert> updatedAlerts = getUpdatedAlerts(existingRoute.alerts, freshRoute.alerts);
+                        if (!updatedAlerts.isEmpty()) {
+                            try {
+                                Route clonedRoute = freshRoute.clone();
+                                clonedRoute.alerts = updatedAlerts;
+                                alertModifications.addUpdatedRoute(clonedRoute);
 
-                        // There was a route match so skip the inner loop.
-                        break;
+                            } catch (CloneNotSupportedException e) {
+                                e.printStackTrace();
+                            }
+
+                            // There was a route match so skip the inner loop.
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!freshRouteExists) {
-                alertModifications.addUpdatedRoute(freshRoute);
+                if (!freshRouteExists) {
+                    alertModifications.addUpdatedRoute(freshRoute);
+                }
             }
         }
 
         // Check if the existing route still exists in the fresh routes.
-        for (Route existingRoute : existingRoutes) {
+        if (existingRoutes != null) {
+            for (Route existingRoute : existingRoutes) {
 
-            for (Route freshRoute : freshRoutes) {
-                if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                for (Route freshRoute : freshRoutes) {
+                    if (freshRoute.routeId.equals(existingRoute.routeId)) {
 
-                    List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts);
-                    if (!staleAlerts.isEmpty()) {
-                        existingRoute.alerts = staleAlerts;
-                        alertModifications.addStaleRoute(existingRoute);
+                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts);
+                        if (!staleAlerts.isEmpty()) {
+                            try {
+                                Route clonedRoute = existingRoute.clone();
+                                clonedRoute.alerts = staleAlerts;
+                                alertModifications.addStaleRoute(clonedRoute);
 
-                        // There was a route match so skip the inner loop.
-                        break;
+                            } catch (CloneNotSupportedException e) {
+                                e.printStackTrace();
+                            }
+
+                            // There was a route match so skip the inner loop.
+                            break;
+                        }
                     }
                 }
             }

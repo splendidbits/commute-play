@@ -52,6 +52,9 @@ public class AlertModificationsTest {
         Agency existingAgency = createTestAgency();
         Agency updatedAgency = createTestAgency();
 
+        Route existingRoute = createTestRoute();
+        existingRoute.alerts = Collections.singletonList(createTestAlert());
+
         List<Alert> freshAlerts = new ArrayList<>();
         freshAlerts.add(createTestAlert());
 
@@ -61,8 +64,8 @@ public class AlertModificationsTest {
         newRoute.routeId = "updated_route";
         newRoute.alerts = freshAlerts;
 
+        newRoutes.add(existingRoute);
         newRoutes.add(newRoute);
-        newRoutes.add(createTestRoute());
 
         updatedAgency.routes = newRoutes;
 

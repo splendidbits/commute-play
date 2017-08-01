@@ -35,7 +35,7 @@ public class AlertModifications {
     }
 
     /**
-     * Add a new, or updated alert.
+     * Add a new, or updated route.
      *
      * @param route The route to flag as updated or new.
      */

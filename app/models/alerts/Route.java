@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
-public class Route extends Model implements Comparable<Route> {
+public class Route extends Model implements Comparable<Route>, Cloneable {
     public static Finder<String, Route> find = new Finder<>(Route.class);
 
     @Id
@@ -138,5 +138,10 @@ public class Route extends Model implements Comparable<Route> {
     public Route(@Nonnull String routeId, String routeName) {
         this.routeId = routeId;
         this.routeName = routeName;
+    }
+
+    @Override
+    public Route clone() throws CloneNotSupportedException {
+        return (Route) super.clone();
     }
 }
