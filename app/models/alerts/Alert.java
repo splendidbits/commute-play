@@ -13,7 +13,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "alerts", schema = "agency_alerts")
-public class Alert extends Model implements Comparable<Alert>, Cloneable {
+public class Alert extends Model implements Comparable<Alert> {
     public static Finder<Long, Alert> find = new Finder<>(Alert.class);
 
     @Id
@@ -121,10 +121,5 @@ public class Alert extends Model implements Comparable<Alert>, Cloneable {
     @Override
     public int compareTo(@NotNull Alert o) {
         return equals(o) ? -1 : 0;
-    }
-
-    @Override
-    public Alert clone() throws CloneNotSupportedException {
-        return (Alert) super.clone();
     }
 }

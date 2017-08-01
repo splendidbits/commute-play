@@ -11,6 +11,7 @@ import interfaces.pushservices.TaskQueueCallback;
 import models.AlertModifications;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
+import models.alerts.Alert;
 import models.alerts.Route;
 import models.devices.Device;
 import models.pushservices.app.FailedRecipient;
@@ -24,7 +25,9 @@ import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Intermediate Push Service manager for building and sending alert messages via
@@ -46,48 +49,75 @@ public class PushMessageManager {
      * Notify Push subscribers of the agency alerts that have changed.
      *
      * @param agencyModifications Collection of modified route alerts.
+     * @return boolean true if there were errors dispatching the modifications.
      */
-    public void dispatchAlerts(@Nonnull AlertModifications agencyModifications) {
+    public boolean dispatchAlerts(@Nonnull AlertModifications agencyModifications) {
         List<Task> taskList = new ArrayList<>();
 
-        // Iterate through the stale (canceled) Alert Routes to send messages for.
-        for (Route staleRoute : agencyModifications.getStaleRoutes()) {
-
-            // Check that the alert type has not already been deemed "updated"
-            boolean existsInUpdateRoutes = false;
-            for (Route updatedRoute : agencyModifications.getStaleRoutes()) {
-                if (updatedRoute.routeId.equals(staleRoute.routeId)) {
-                    existsInUpdateRoutes = true;
-                }
+        /*
+         * Iterate through each updated and stale alert and combine them into groups of
+         * their respective routes.
+         *
+         * For example, if 3 alerts have the route_id "bus_route_42", ensure the Route is added
+         * to the updated list, and that it has all 3 updated alerts. Do the same for stale alerts.
+         */
+        Map<String, Route> updatedRoutes = new HashMap<>();
+        for (Alert updatedAlert : agencyModifications.getUpdatedAlerts()) {
+            if (updatedAlert.route == null) {
+                throw new RuntimeException("Updated Alert must have routes attached.");
             }
 
-            if (!existsInUpdateRoutes) {
-                Task staleRoutesTask = new Task(String.format("agency-%d:cancelled-route:%s", staleRoute.agency != null
-                        ? staleRoute.agency.id
-                        : -1, staleRoute.routeId));
+            if (updatedAlert.route.alerts == null ||
+                    updatedAlert.route.alerts.size() != agencyModifications.getUpdatedAlerts().size()) {
+                throw new RuntimeException("Route for Updated Alert must have all Alert back-references.");
+            }
 
-                staleRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-                List<Message> messages = createAlertMessages(agencyModifications.getAgencyId(), staleRoute, true);
+            updatedRoutes.put(updatedAlert.route.routeId, updatedAlert.route);
+        }
 
-                if (!messages.isEmpty()) {
-                    staleRoutesTask.messages = new ArrayList<>();
-                    staleRoutesTask.messages.addAll(messages);
-                    taskList.add(staleRoutesTask);
-                }
+        Map<String, Route> staleRoutes = new HashMap<>();
+        for (Alert staleAlert : agencyModifications.getStaleAlerts()) {
+            if (staleAlert.route == null) {
+                throw new RuntimeException("Stale Alert must have routes attached.");
+            }
+
+            if (staleAlert.route.alerts == null ||
+                    staleAlert.route.alerts.size() != agencyModifications.getStaleAlerts().size()) {
+                throw new RuntimeException("Route for Stale Alert must have all Alert back-references.");
+            }
+
+            staleRoutes.put(staleAlert.route.routeId, staleAlert.route);
+        }
+
+        // Iterate through the updated (fresh) Alert Routes to send messages for.
+        for (Route updatedRoute : updatedRoutes.values()) {
+            Task updatedRouteTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
+                    ? updatedRoute.agency.id
+                    : -1, updatedRoute.routeId));
+
+            updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
+            updatedRouteTask.messages = createAlertMessages(agencyModifications.getAgencyId(), updatedRoute, false);
+
+            if (!updatedRouteTask.messages.isEmpty()) {
+                taskList.add(updatedRouteTask);
+            } else {
+                throw new RuntimeException("No messages were generated for updated route");
             }
         }
 
         // Iterate through the updated (fresh) Alert Routes to send messages for.
-        for (Route updatedRoute : agencyModifications.getUpdatedRoutes()) {
-            Task updatedRoutesTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
-                    ? updatedRoute.agency.id
-                    : -1, updatedRoute.routeId));
+        for (Route staleRoute : staleRoutes.values()) {
+            Task staleRouteTask = new Task(String.format("agency-%d:stale-route:%s", staleRoute.agency != null
+                    ? staleRoute.agency.id
+                    : -1, staleRoute.routeId));
 
-            updatedRoutesTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRoutesTask.messages = createAlertMessages(agencyModifications.getAgencyId(), updatedRoute, false);
+            staleRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
+            staleRouteTask.messages = createAlertMessages(agencyModifications.getAgencyId(), staleRoute, false);
 
-            if (!updatedRoutesTask.messages.isEmpty()) {
-                taskList.add(updatedRoutesTask);
+            if (!staleRouteTask.messages.isEmpty()) {
+                taskList.add(staleRouteTask);
+            } else {
+                throw new RuntimeException("No messages were generated for stale route");
             }
         }
 
@@ -99,7 +129,10 @@ public class PushMessageManager {
 
         } catch (TaskValidationException e) {
             Logger.error("Commute Task threw an exception.");
+            return false;
         }
+
+        return !taskList.isEmpty();
     }
 
     /**
@@ -147,19 +180,21 @@ public class PushMessageManager {
      * Used to send confirmations for successful client devices.
      * Completes the device <-> C2DM Loop.
      *
-     * @param device   registration for newly registered device.
-     * @param accounts list of the platform account owner.
+     * @param device  registration for newly registered device.
+     * @param account platform account to send message to.
+     * @return boolean true if there were errors dispatching the registration message.
      */
-    public void sendRegistrationConfirmMessage(@Nonnull Device device, @Nonnull PlatformAccount accounts) {
+    public boolean sendRegistrationConfirmMessage(@Nonnull Device device, @Nonnull PlatformAccount account) {
         Task messageTask = new Task("registration-response");
         messageTask.priority = Task.TASK_PRIORITY_HIGH;
-        Message message = AlertHelper.buildDeviceRegisteredMessage(device, accounts);
+        Message message = AlertHelper.buildDeviceRegisteredMessage(device, account);
 
         if (message != null) {
             messageTask.messages.add(message);
 
         } else {
             Logger.error("Could not build registration confirmation message.");
+            return false;
         }
 
         // Add the message task to the TaskQueue.
@@ -169,8 +204,11 @@ public class PushMessageManager {
 
             } catch (TaskValidationException e) {
                 Logger.error("Commute Task threw an exception.");
+                return false;
             }
         }
+
+        return messageTask.messages != null && !messageTask.messages.isEmpty();
     }
 
     /**

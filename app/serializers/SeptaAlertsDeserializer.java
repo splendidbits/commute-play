@@ -215,6 +215,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.messageSubtitle = detourReason;
                             alert.messageBody = detourMessage;
                             alert.locations = detourLocations;
+                            alert.route = route;
                             rowAlerts.add(alert);
                         }
 
@@ -227,6 +228,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.type = typeWeather;
                             alert.messageTitle = typeWeather.title;
                             alert.messageBody = currentMessage;
+                            alert.route = route;
                             rowAlerts.add(alert);
                         }
 
@@ -239,6 +241,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.type = typeInformation;
                             alert.messageTitle = typeInformation.title;
                             alert.messageBody = advisoryMessage;
+                            alert.route = route;
                             rowAlerts.add(alert);
                         }
 
@@ -251,6 +254,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.type = typeCurrent;
                             alert.messageTitle = typeCurrent.title;
                             alert.messageBody = currentMessage;
+                            alert.route = route;
                             rowAlerts.add(alert);
                         }
 

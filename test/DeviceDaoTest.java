@@ -4,7 +4,10 @@ import models.accounts.Account;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,56 +18,59 @@ import static org.junit.Assert.*;
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class DeviceTest extends CommuteTestApplication {
-    private static String TEST_DEVICE_ID = "test_id_123456";
-    private static String TEST_DEVICE_TOKEN = "test_token_123456";
-    private static String ACCOUNT_API_KEY  = "UfhV6Lt";
-
+public class DeviceDaoTest extends CommuteTestApplication {
     private static DeviceDao mDeviceDao;
     private static Account mAccount;
+    private static AccountDao mAccountDao;
+
+    private static Device initialDevice;
 
     @BeforeClass
     public static void initialise() {
         mDeviceDao = application.injector().instanceOf(DeviceDao.class);
+        mAccountDao = application.injector().instanceOf(AccountDao.class);
 
-        AccountDao mAccountDao = application.injector().instanceOf(AccountDao.class);
-        mAccount = mAccountDao.getAccountForKey(ACCOUNT_API_KEY);
+        // Save an account
+        Account newAccount = TestModelHelper.createTestAccount();
+        mAccountDao.saveAccount(newAccount);
+
+        mAccount = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
+        initialDevice = TestModelHelper.createTestDevice();
     }
 
-    @Before
-    public void beforeTest() {
-
+    @AfterClass
+    public static void shutdown() {
+        mAccountDao.removeAccount(mAccount.id);
     }
+
 
     @After
     public void afterTest() {
-        mDeviceDao.removeDevice(TEST_DEVICE_TOKEN);
+        assertTrue(mDeviceDao.removeDevice(initialDevice.token));
     }
 
     @Test
     public void testDatabaseDeviceInsert() {
-        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        device.timeRegistered = new Date();
-        device.account = mAccount;
+        initialDevice.account = mAccount;
 
-        assertTrue(mDeviceDao.saveDevice(device));
-        assertTrue(mDeviceDao.removeDevice(device.token));
+        assertTrue(mDeviceDao.saveDevice(initialDevice));
+        assertTrue(mDeviceDao.removeDevice(initialDevice.token));
     }
 
     @Test
     public void testDatabaseDeviceUpdate() {
-        assertTrue(mDeviceDao.saveDevice(new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN)));
+        assertTrue(mDeviceDao.saveDevice(initialDevice));
 
-        Device existingDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        Device existingDevice = mDeviceDao.getDevice(initialDevice.deviceId);
         assertNotNull(existingDevice);
 
         Date currentTime = new Date();
-        Device newDevice = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
+        Device newDevice = TestModelHelper.createTestDevice();
         newDevice.timeRegistered = currentTime;
         newDevice.account = existingDevice.account;
 
         assertTrue(mDeviceDao.saveDevice(newDevice));
-        Device savedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        Device savedDevice = mDeviceDao.getDevice(initialDevice.deviceId);
         assertNotNull(savedDevice);
     }
 
@@ -72,11 +78,10 @@ public class DeviceTest extends CommuteTestApplication {
     public void testDatabaseDeviceTokenUpdate() {
         // Change device token to new token id.
         String newDeviceToken = "updated_test_token_123456";
-        Device staleDevice = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        mDeviceDao.saveDevice(staleDevice);
+        mDeviceDao.saveDevice(initialDevice);
 
-        Device updatedDevice = new Device(TEST_DEVICE_ID, newDeviceToken);
-        assertTrue(mDeviceDao.saveUpdatedToken(staleDevice.token, updatedDevice.token));
+        Device updatedDevice = new Device(initialDevice.deviceId, newDeviceToken);
+        assertTrue(mDeviceDao.saveUpdatedToken(initialDevice.token, updatedDevice.token));
 
         // Get the changed device.
         Device fetchedDevice = mDeviceDao.getDevice(updatedDevice.deviceId);
@@ -84,20 +89,19 @@ public class DeviceTest extends CommuteTestApplication {
         assertEquals(fetchedDevice.token, newDeviceToken);
 
         // Change it back
-        assertTrue(mDeviceDao.saveUpdatedToken(newDeviceToken, TEST_DEVICE_TOKEN));
+        assertTrue(mDeviceDao.saveUpdatedToken(newDeviceToken, initialDevice.token));
     }
 
     @Test
     public void testDatabaseDeviceRemove() {
-        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        device.account = mAccount;
+        initialDevice.account = mAccount;
 
         // Add test device.
-        mDeviceDao.saveDevice(device);
+        mDeviceDao.saveDevice(initialDevice);
 
         // Remove device.
-        assertTrue(mDeviceDao.removeDevice(device.token));
-        assertNull(mDeviceDao.getDevice(TEST_DEVICE_ID));
+        assertTrue(mDeviceDao.removeDevice(initialDevice.token));
+        assertNull(mDeviceDao.getDevice(initialDevice.deviceId));
     }
 
     @Test
@@ -115,15 +119,14 @@ public class DeviceTest extends CommuteTestApplication {
         subscriptions.add(route2);
         subscriptions.add(route3);
 
-        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        device.subscriptions = subscriptions;
-        device.account = mAccount;
+        initialDevice.subscriptions = subscriptions;
+        initialDevice.account = mAccount;
 
         // Test saving the device.
-        assertTrue(mDeviceDao.saveDevice(device));
+        assertTrue(mDeviceDao.saveDevice(initialDevice));
 
         // Test retrieving the same device.
-        Device fetchedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        Device fetchedDevice = mDeviceDao.getDevice(initialDevice.deviceId);
         assertNotNull(fetchedDevice);
         assertNotNull(fetchedDevice.subscriptions);
         assertNotNull(fetchedDevice.account);
@@ -132,13 +135,12 @@ public class DeviceTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseSubscriptionRemove() {
-        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        device.subscriptions = null;
-        device.account = mAccount;
+        initialDevice.subscriptions = null;
+        initialDevice.account = mAccount;
 
-        assertTrue(mDeviceDao.saveDevice(device));
+        assertTrue(mDeviceDao.saveDevice(initialDevice));
 
-        Device fetchedDevice = mDeviceDao.getDevice(TEST_DEVICE_ID);
+        Device fetchedDevice = mDeviceDao.getDevice(initialDevice.deviceId);
 
         assertNotNull(fetchedDevice);
         assertNotNull(fetchedDevice.subscriptions);

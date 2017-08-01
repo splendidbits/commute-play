@@ -108,10 +108,10 @@ public class AccountDao extends BaseDao {
 
             if (account.id != null) {
                 accountSearch.idEq(account.id);
-
             } else if (account.apiKey != null) {
                 accountSearch.eq("api_key", account.apiKey);
             }
+            accountSearch.endJunction();
 
             Account savedAccount = accountSearch.endJunction().findUnique();
             if (savedAccount != null) {
@@ -126,8 +126,8 @@ public class AccountDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
+            return false;
         }
-        return false;
     }
 
     /**
@@ -149,7 +149,7 @@ public class AccountDao extends BaseDao {
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
+            return false;
         }
-        return false;
     }
 }

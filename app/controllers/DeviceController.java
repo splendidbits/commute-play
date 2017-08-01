@@ -134,11 +134,11 @@ public class DeviceController extends Controller {
                     updateAlert.messageTitle = resendSubscriptionsName;
                     updateAlert.type = AlertType.TYPE_IN_APP;
                     updateAlert.messageBody = resendSubscriptionsName;
-
+                    updateAlert.route = route;
                     route.alerts = Collections.singletonList(updateAlert);
 
                     AlertModifications alertUpdate = new AlertModifications(InAppMessageUpdate.AGENCY_ID);
-                    alertUpdate.addUpdatedRoute(route);
+                    alertUpdate.addUpdatedAlert(updateAlert);
 
                     // Send update using one of each platform.
                     for (PlatformAccount platformAccount : account.platformAccounts) {
@@ -146,7 +146,7 @@ public class DeviceController extends Controller {
 
                             // Create push services messages for the update.
                             List<Message> messages = AlertHelper.getAlertMessages(route, allDevices, platformAccount, true);
-                            if (messages != null && !messages.isEmpty()) {
+                            if (!messages.isEmpty()) {
                                 Task task = new Task(resendSubscriptionsName);
                                 task.messages = messages;
                                 task.priority = Task.TASK_PRIORITY_LOW;

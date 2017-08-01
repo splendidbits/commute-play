@@ -2,21 +2,15 @@ import dao.AccountDao;
 import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
 /**
  * Test core functions of the Device Data Access Layer.
  */
-public class AccountTest extends CommuteTestApplication {
+public class AccountDaoTest extends CommuteTestApplication {
     private static AccountDao mAccountDao;
 
     @BeforeClass
@@ -24,32 +18,13 @@ public class AccountTest extends CommuteTestApplication {
         mAccountDao = application.injector().instanceOf(AccountDao.class);
     }
 
-    @Before
-    public void beforeTest() {
-    }
-
-    @After
-    public void afterTest() {
-    }
-
     @Test
     public void testDatabaseAccountInsert() {
-        PlatformAccount platformAccount = new PlatformAccount();
-        platformAccount.authorisationKey = "test_auth_key";
-        platformAccount.platformType = PlatformType.SERVICE_GCM;
-
-        // Save the account
-        Account newAccount = new Account();
-        newAccount.apiKey = "test_api_key";
-        newAccount.orgName = "Test Organisation";
-        newAccount.active = false;
-        newAccount.email = "test@example.com";
-        newAccount.dailyEstLimit = 51200L;
-        newAccount.platformAccounts = Arrays.asList(platformAccount);
+        Account newAccount = TestModelHelper.createTestAccount();
         assertTrue(mAccountDao.saveAccount(newAccount));
 
         // Get the account
-        Account savedAccount = mAccountDao.getAccountForKey("test_api_key");
+        Account savedAccount = mAccountDao.getAccountForKey(newAccount.apiKey);
         assertNotNull(savedAccount);
         assertNotNull(savedAccount.platformAccounts);
         assertFalse(savedAccount.platformAccounts.isEmpty());
@@ -60,24 +35,11 @@ public class AccountTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseAccountUpdate() {
-        List<PlatformAccount> platformAccounts = new ArrayList<>();
-        PlatformAccount platformAccount = new PlatformAccount();
-        platformAccount.authorisationKey = "test_auth_key";
-        platformAccount.platformType = PlatformType.SERVICE_GCM;
-        platformAccounts.add(platformAccount);
-
-        // Save the account
-        Account newAccount = new Account();
-        newAccount.apiKey = "test_api_key";
-        newAccount.orgName = "Test Organisation";
-        newAccount.active = false;
-        newAccount.email = "test@example.com";
-        newAccount.dailyEstLimit = 51200L;
-        newAccount.platformAccounts = platformAccounts;
+        Account newAccount = TestModelHelper.createTestAccount();
         mAccountDao.saveAccount(newAccount);
 
         // Update the account.
-        Account savedAccount = mAccountDao.getAccountForKey("test_api_key");
+        Account savedAccount = mAccountDao.getAccountForKey(newAccount.apiKey);
         assertNotNull(savedAccount);
         assertNotNull(savedAccount.platformAccounts);
 
@@ -90,7 +52,7 @@ public class AccountTest extends CommuteTestApplication {
         assertTrue(mAccountDao.saveAccount(savedAccount));
 
         // Get the account
-        Account updatedAccount = mAccountDao.getAccountForKey("test_api_key");
+        Account updatedAccount = mAccountDao.getAccountForKey(newAccount.apiKey);
         assertNotNull(updatedAccount);
         assertNotNull(updatedAccount.platformAccounts);
         assertEquals(updatedAccount.email, "change@example.com");
