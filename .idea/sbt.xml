@@ -3,7 +3,6 @@
   <component name="ScalaSbtSettings">
     <option name="linkedExternalProjectsSettings">
       <SbtProjectSettings>
-        <option name="enableDebugSbtShell" value="false" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="jdk" value="1.8" />
         <option name="modules">
@@ -17,9 +16,6 @@
           </set>
         </option>
         <option name="sbtVersion" value="0.13.15" />
-        <option name="useAutoImport" value="true" />
-        <option name="useOurOwnAutoImport" value="true" />
-        <option name="useSbtShell" value="true" />
       </SbtProjectSettings>
     </option>
   </component>

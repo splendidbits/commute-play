@@ -15,7 +15,7 @@ lazy val pushservices = (project in file("modules/pushservices"))
 
 lazy val commutealerts = (project in file("."))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer, PlayAkkaHttpServer)
-//  .disablePlugins(PlayAkkaHttpServer)
+  .disablePlugins(PlayNettyServer)
   .dependsOn(fluffylog)
   .dependsOn(pushservices)
   .aggregate(fluffylog)
