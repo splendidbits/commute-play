@@ -23,7 +23,7 @@ public class Alert extends Model implements Comparable<Alert> {
     public Long id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "route_id",
             table = "agency_alerts.routes",

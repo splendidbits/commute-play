@@ -57,11 +57,8 @@ public abstract class AgencyUpdate {
      */
     protected void processAgencyUpdate(Agency updatedAgency) {
         if (updatedAgency != null) {
-            // Comment to disable load test.
-            // createLoadTestUpdates(updatedAgency);
-
-            // Add the parent route back into each alert model.
-            fillAlertsWithRoutes(updatedAgency);
+            // Add the parent back-references back into each model.
+            AlertHelper.populateBackReferences(updatedAgency);
 
             // Parse html and fix text formatting inconsistencies.
             AlertHelper.parseHtml(updatedAgency);
@@ -120,26 +117,4 @@ public abstract class AgencyUpdate {
             }
         }
     }
-
-    /**
-     * Iterate through all alerts in all routes, and add the route parent model to each
-     * alert -> route relation.
-     *
-     * @param agency The specified agency to fill alerts with routes.
-     */
-    private void fillAlertsWithRoutes(@Nonnull Agency agency) {
-        // Add the route model into each alert.
-        if (agency.routes != null) {
-            for (Route route : agency.routes) {
-                if (route.alerts != null) {
-                    for (Alert alert : route.alerts) {
-                        if (alert.route == null) {
-                            alert.route = route;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 }

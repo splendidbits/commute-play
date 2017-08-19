@@ -39,7 +39,7 @@ public class AlertModifications {
      * @param alert The alert to flag as updated or new.
      */
     public void addUpdatedAlert(@Nonnull Alert alert) {
-        if (!StringUtils.isBlank(alert.route.routeId)) {
+        if (alert.route != null && !StringUtils.isBlank(alert.route.routeId)) {
             mUpdatedAlerts.add(alert);
         }
     }
@@ -50,7 +50,7 @@ public class AlertModifications {
      * @param alert The alert which is deemed stale.
      */
     public void addStaleAlert(@Nonnull Alert alert) {
-        if (!StringUtils.isBlank(alert.route.routeId)) {
+        if (alert.route != null && !StringUtils.isBlank(alert.route.routeId)) {
             if (!mUpdatedAlerts.contains(alert)) {
                 mStaleAlerts.add(alert);
             }

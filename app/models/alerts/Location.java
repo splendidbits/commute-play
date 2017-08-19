@@ -21,7 +21,7 @@ public class Location extends Model implements Comparable<Location> {
     public Integer id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "alert_id",
             table = "agency_alerts.alerts",

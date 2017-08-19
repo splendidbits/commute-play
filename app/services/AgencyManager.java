@@ -105,9 +105,6 @@ public class AgencyManager {
 
                     // Find a matching Agency Identifier.
                     if (agency.id.equals(cachedAgency.id)) {
-
-                        // If the Id matches but the rest of the object does not, remove it.
-                        Logger.warn(String.format("Cache MISS for agency %d in %s :-(", agency.id, CACHE_ALL_KEY));
                         cachedAgencyIterator.remove();
                     }
                 }

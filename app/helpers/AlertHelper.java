@@ -71,6 +71,44 @@ public class AlertHelper {
     }
 
     /**
+     * Iterate through all alerts in all routes, and add the route parent model to each
+     * alert -> route relation.
+     *
+     * @param agency The specified agency to fill alerts with routes.
+     */
+    public static void populateBackReferences(Agency agency) {
+        if (agency != null && agency.routes != null) {
+            for (Route route : agency.routes) {
+                if (route.agency == null) {
+                    route.agency = agency;
+                    populateBackReferences(route);
+                }
+            }
+        }
+    }
+
+    public static void populateBackReferences(Route route) {
+        if (route != null && route.alerts != null) {
+            for (Alert alert : route.alerts) {
+                if (alert.route == null) {
+                    alert.route = route;
+                    populateBackReferences(alert);
+                }
+            }
+        }
+    }
+
+    public static void populateBackReferences(Alert alert) {
+        if (alert != null && alert.locations != null) {
+            for (Location location : alert.locations) {
+                if (location.alert == null) {
+                    location.alert = alert;
+                }
+            }
+        }
+    }
+
+    /**
      * Strip a string of HTML but preserve all kinds of line-breaks.
      *
      * @param agency agency to parse

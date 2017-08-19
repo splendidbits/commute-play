@@ -2,6 +2,7 @@ import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
 import enums.pushservices.PlatformType;
+import helpers.AlertHelper;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -52,6 +53,7 @@ public class TestModelHelper {
         alert.lastUpdated = Calendar.getInstance();
         alert.locations = Collections.singletonList(createTestLocation());
 
+        AlertHelper.populateBackReferences(alert);
         return alert;
     }
 
@@ -65,6 +67,7 @@ public class TestModelHelper {
         route.routeName = "Route Name";
         route.alerts = Collections.singletonList(createTestAlert());
 
+        AlertHelper.populateBackReferences(route);
         return route;
     }
 
@@ -77,6 +80,7 @@ public class TestModelHelper {
         agency.utcOffset = -5F;
         agency.routes = Collections.singletonList(createTestRoute());
 
+        AlertHelper.populateBackReferences(agency);
         return agency;
     }
 

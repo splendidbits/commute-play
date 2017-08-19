@@ -7,10 +7,7 @@ import models.alerts.Location;
 import models.alerts.Route;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -34,19 +31,17 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testModificationAlertAdd() {
         Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
-
         Alert originalAlert = TestModelHelper.createTestAlert();
-        originalAlert.route = TestModelHelper.createTestRoute();
 
         Alert newAlert = TestModelHelper.createTestAlert();
-        newAlert.route = TestModelHelper.createTestRoute();
-        newAlert.messageBody = "This is a new alert";
+        newAlert.messageBody = "This is a weather alert";
+        newAlert.type = AlertType.TYPE_WEATHER;
 
-        List<Alert> newAlerts = new ArrayList<>();
-        newAlerts.add(originalAlert);
-        newAlerts.add(newAlert);
-        newAgency.routes.get(0).alerts = newAlerts;
+        Agency newAgency = TestModelHelper.createTestAgency();
+        newAgency.routes.get(0).alerts = Arrays.asList(originalAlert, newAlert);
+
+        originalAlert.route = newAgency.routes.get(0);
+        newAlert.route = newAgency.routes.get(0);
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
@@ -55,8 +50,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications.getUpdatedAlerts().get(0));
         assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 2);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(originalAlert));
+        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
+        assertEquals(alertModifications.getStaleAlerts().size(), 0);
         assertTrue(alertModifications.getUpdatedAlerts().contains(newAlert));
     }
 
@@ -102,10 +97,35 @@ public class AlertModificationsTest extends CommuteTestApplication {
     }
 
     @Test
-    public void testModificationAlertRemove() {
+    public void testModificationAlertRemoveAll() {
         Agency existingAgency = TestModelHelper.createTestAgency();
         Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes = new ArrayList<>();
+
+        newAgency.routes.get(0).alerts = null;
+        AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
+
+        assertNotNull(alertModifications);
+        assertTrue(alertModifications.hasChangedAlerts());
+        assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
+        assertFalse(alertModifications.getStaleAlerts().isEmpty());
+        assertTrue(alertModifications.getStaleAlerts().contains(existingAgency.routes.get(0).alerts.get(0)));
+    }
+
+    @Test
+    public void testModificationAlertRemoveSingle() {
+        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency newAgency = TestModelHelper.createTestAgency();
+
+        Alert originalAlert = TestModelHelper.createTestAlert();
+        Alert additionalAlert = TestModelHelper.createTestAlert();
+        additionalAlert.messageTitle = "Additional weather alert";
+        additionalAlert.type = AlertType.TYPE_WEATHER;
+
+        Route originalRoute = existingAgency.routes.get(0);
+        originalRoute.alerts = Arrays.asList(originalAlert, additionalAlert);
+
+        originalAlert.route = originalRoute;
+        additionalAlert.route = originalRoute;
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
@@ -114,6 +134,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertFalse(alertModifications.getUpdatedAlerts().contains(TestModelHelper.createTestAlert()));
         assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
         assertFalse(alertModifications.getStaleAlerts().isEmpty());
+        assertTrue(alertModifications.getStaleAlerts().contains(additionalAlert));
     }
 
     @Test

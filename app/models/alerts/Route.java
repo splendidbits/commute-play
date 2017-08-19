@@ -26,7 +26,7 @@ public class Route extends Model implements Comparable<Route> {
     public String id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "agency_id",
             table = "agency_alerts.agencies",

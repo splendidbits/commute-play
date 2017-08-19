@@ -222,9 +222,10 @@ public class AgencyDao extends BaseDao {
         try {
             ExpressionList<Route> routesQuery = mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
-                    .fetch("agency")
-                    .fetch("alerts")
-                    .fetch("alerts.locations").where();
+                    .fetch("agency", new FetchConfig().query())
+                    .fetch("alerts", new FetchConfig().query())
+                    .fetch("alerts.locations", new FetchConfig().query())
+                    .where();
 
             if (agencyId != null) {
                 routesQuery.eq("agency.id", agencyId);
@@ -251,9 +252,10 @@ public class AgencyDao extends BaseDao {
     public Route getRoute(int agencyId, @Nonnull String routeId) {
         try {
             return mEbeanServer.find(Route.class)
-                    .fetch("agency")
-                    .fetch("alerts")
-                    .fetch("alerts.locations")
+                    .setOrder(new OrderBy<>("routeId"))
+                    .fetch("agency", new FetchConfig().query())
+                    .fetch("alerts", new FetchConfig().query())
+                    .fetch("alerts.locations", new FetchConfig().query())
                     .where()
                     .conjunction()
                     .eq("agency.id", agencyId)
@@ -287,10 +289,10 @@ public class AgencyDao extends BaseDao {
     public Agency getAgency(int agencyId) {
         try {
             return mEbeanServer.find(Agency.class)
-                    .fetch("routes")
-                    .fetch("routes.alerts")
-                    .fetch("routes.alerts.locations")
-                    .setOrderBy(new OrderBy<>("routes.routeId desc"))
+                    .setOrder(new OrderBy<>("routes.routeId desc"))
+                    .fetch("routes", new FetchConfig().query())
+                    .fetch("routes.alerts", new FetchConfig().query())
+                    .fetch("routes.alerts.locations", new FetchConfig().query())
                     .where()
                     .idEq(agencyId)
                     .query()
