@@ -29,7 +29,7 @@ public class Agency extends Model implements Comparable<Agency> {
     @Column(name = "utc_offset")
     public Float utcOffset;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
     public List<Route> routes;
 
     @SuppressWarnings("unused")

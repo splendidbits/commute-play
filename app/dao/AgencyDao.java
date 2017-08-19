@@ -6,7 +6,6 @@ import io.ebean.FetchConfig;
 import io.ebean.OrderBy;
 import models.alerts.Agency;
 import models.alerts.Alert;
-import models.alerts.Location;
 import models.alerts.Route;
 import services.fluffylog.Logger;
 
@@ -15,6 +14,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.persistence.PersistenceException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,6 +25,36 @@ public class AgencyDao extends BaseDao {
     @Inject
     public AgencyDao(EbeanServer ebeanServer) {
         super(ebeanServer);
+    }
+
+    private void insertAlerts(Route route) {
+        // Save each alert.
+        if (route.alerts != null) {
+            for (Alert freshAlert : route.alerts) {
+                freshAlert.route = route;
+                mEbeanServer.save(freshAlert);
+            }
+        }
+    }
+
+    private void insertAgency(Agency agency) {
+        if (agency != null) {
+            mEbeanServer.save(agency);
+            insertRoutes(agency, agency.routes);
+        }
+    }
+
+    private void insertRoutes(Agency agency, List<Route> routes) {
+        if (routes != null) {
+            for (Route route : routes) {
+                route.agency = agency;
+
+                // Save top level changes in the route.
+                mEbeanServer.save(route);
+
+                insertAlerts(route);
+            }
+        }
     }
 
     /**
@@ -39,87 +69,91 @@ public class AgencyDao extends BaseDao {
 
         try {
             if (existingAgency == null) {
-                mEbeanServer.insert(freshAgency);
+                insertAgency(freshAgency);
                 return true;
             }
 
-            // Find routes / alerts that need updated.
+            // Delete all routes if there are no fresh routes.
+            if (freshAgency.routes == null || freshAgency.routes.isEmpty()) {
+                mEbeanServer.deleteAllPermanent(existingAgency.routes);
+            }
+
             if (freshAgency.routes != null) {
+
+                // If there are no existing routes at all, just insert all.
+                if (existingAgency.routes == null || existingAgency.routes.isEmpty()) {
+                    insertRoutes(freshAgency, freshAgency.routes);
+                    return true;
+                }
+
+                // Find route matches.
                 for (Route freshRoute : freshAgency.routes) {
-                    boolean matchingRouteFound = false;
-                    freshRoute.agency = freshAgency;
+                    boolean foundExistingRouteMatch = false;
 
-                    // Find an existing <-> fresh routeId match.
                     for (Route existingRoute : existingAgency.routes) {
-                        matchingRouteFound = existingRoute.routeId.equals(freshRoute.routeId);
-                        boolean routeContentsMismatch = !existingRoute.equals(freshRoute);
 
-                        // Match found. copy the routeId.
-                        if (matchingRouteFound && routeContentsMismatch) {
-                            freshRoute.id = existingRoute.id;
+                        // If there's a route ID match.
+                        if (freshRoute.routeId.equals(existingRoute.routeId) && !foundExistingRouteMatch) {
 
-                            // Delete existing alerts
-                            if (existingRoute.alerts != null) {
-                                mEbeanServer.deleteAll(existingRoute.alerts);
-                            }
+                            // Existing and fresh routes have different contents.
+                            if (!freshRoute.equals(existingRoute)) {
+                                freshRoute.id = existingRoute.id;
 
-                            // Insert each alert.
-                            if (freshRoute.alerts != null) {
+                                // The alerts have changed.
+                                if (freshRoute.alerts != null) {
 
-                                for (Alert freshAlert : freshRoute.alerts) {
-                                    freshAlert.route = freshRoute;
-                                    mEbeanServer.insert(freshAlert);
+                                    if (!freshRoute.alerts.equals(existingRoute.alerts)) {
 
-                                    // Insert each location.
-                                    if (freshAlert.locations != null) {
-                                        for (Location freshLocation : freshAlert.locations) {
-                                            freshLocation.alert = freshAlert;
-                                            mEbeanServer.insert(freshLocation);
+                                        // Delete all existing alerts.
+                                        if (existingRoute.alerts != null) {
+                                            mEbeanServer.deleteAllPermanent(existingRoute.alerts);
+
+                                            // Delete all existing locations.
+                                            for (Alert existingAlert : existingRoute.alerts) {
+                                                mEbeanServer.deleteAllPermanent(existingAlert.locations);
+                                            }
                                         }
+
+                                        // Save the new alerts.
+                                        insertAlerts(freshRoute);
                                     }
                                 }
                             }
 
-                            // Save any other changes in the route.
-                            mEbeanServer.update(freshRoute);
+                            // Update the base properties of a route.
+                            mEbeanServer.update(Route.class)
+                                    .set("routeName", freshRoute.routeName)
+                                    .set("transitType", freshRoute.transitType)
+                                    .set("routeFlag", freshRoute.routeFlag)
+                                    .set("isDefault", freshRoute.isDefault)
+                                    .set("isSticky", freshRoute.isSticky)
+                                    .where()
+                                    .conjunction()
+                                    .eq("routeId", freshRoute.routeId)
+                                    .eq("agency.id", freshAgency.id)
+                                    .update();
 
-                            // A match was found so go to the next freshRoute.
-                            break;
+                            // Mark that we have found a route match.
+                            foundExistingRouteMatch = true;
                         }
                     }
-                    // If no matching route was found, insert it.
-                    if (!matchingRouteFound) {
-                        mEbeanServer.insert(freshRoute);
+
+                    if (!foundExistingRouteMatch) {
+                        insertRoutes(freshAgency, Collections.singletonList(freshRoute));
                     }
                 }
+
+                // Update the base properties of an Agency
+                mEbeanServer.update(Agency.class)
+                        .set("name", freshAgency.name)
+                        .set("phone", freshAgency.phone)
+                        .set("externalUri", freshAgency.externalUri)
+                        .set("utcOffset", freshAgency.utcOffset)
+                        .where()
+                        .idEq(freshAgency.id)
+                        .update();
             }
 
-            // Find stale route alerts that need deleted.
-            if (existingAgency.routes != null) {
-                for (Route existingRoute : existingAgency.routes) {
-                    boolean matchingRouteFound = false;
-
-                    if (freshAgency.routes != null) {
-                        for (Route freshRoute : freshAgency.routes) {
-                            if (freshRoute.routeId.equals(existingRoute.routeId)) {
-                                matchingRouteFound = true;
-                                break;
-                            }
-                        }
-                    }
-                    // No new route was found that matches the existing routeId. Delete just the alerts.
-                    if (!matchingRouteFound) {
-                        mEbeanServer.delete(existingRoute);
-                    }
-                }
-            }
-
-            if (freshAgency.routes == null || freshAgency.routes.isEmpty()) {
-                mEbeanServer.deleteAll(existingAgency.routes);
-            }
-
-            // Save any changes in the agency.
-            mEbeanServer.update(freshAgency);
             return true;
 
         } catch (PersistenceException e) {
@@ -253,10 +287,9 @@ public class AgencyDao extends BaseDao {
     public Agency getAgency(int agencyId) {
         try {
             return mEbeanServer.find(Agency.class)
-                    .setUseCache(false)
-                    .fetch("routes", new FetchConfig().query())
-                    .fetch("routes.alerts", new FetchConfig().query())
-                    .fetch("routes.alerts.locations", new FetchConfig().query())
+                    .fetch("routes")
+                    .fetch("routes.alerts")
+                    .fetch("routes.alerts.locations")
                     .setOrderBy(new OrderBy<>("routes.routeId desc"))
                     .where()
                     .idEq(agencyId)
@@ -283,6 +316,7 @@ public class AgencyDao extends BaseDao {
      * @param agencyId of agency
      * @return boolean of success.
      */
+
     public boolean removeAgency(long agencyId) {
         try {
             List<Agency> agencies = mEbeanServer.find(Agency.class)
@@ -294,7 +328,7 @@ public class AgencyDao extends BaseDao {
                     .findList();
 
             if (agencies != null) {
-                mEbeanServer.deleteAllPermanent(agencies);
+                mEbeanServer.deleteAll(agencies);
                 return true;
             }
 

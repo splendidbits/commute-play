@@ -83,7 +83,6 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseRouteAdd() {
-        final String ROUTE2_ID = "test_route_2";
         Agency initialAgency = TestModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
@@ -98,7 +97,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         Route existingRoute = TestModelHelper.createTestRoute();
 
         // Add the second route
-        Route newRoute = new Route(ROUTE2_ID);
+        Route newRoute = new Route("test_route_2");
         newRoute.externalUri = "http://example.com";
         newRoute.isSticky = false;
         newRoute.routeFlag = RouteFlag.TYPE_PRIVATE;

@@ -11,7 +11,6 @@ import models.alerts.Route;
 import models.devices.Device;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -32,7 +31,6 @@ public class TestModelHelper {
     @Nonnull
     static Location createTestLocation() {
         Location location = new Location();
-        location.id = null;
         location.latitude = "-75.1653533";
         location.longitude = "39.9517899";
         location.message = "Location Test";
@@ -52,7 +50,7 @@ public class TestModelHelper {
         alert.messageBody = "Alert Message Body";
         alert.type = AlertType.TYPE_INFORMATION;
         alert.lastUpdated = Calendar.getInstance();
-        alert.locations = new ArrayList<>();
+        alert.locations = Collections.singletonList(createTestLocation());
 
         return alert;
     }
@@ -60,31 +58,24 @@ public class TestModelHelper {
     @Nonnull
     static Route createTestRoute() {
         Route route = new Route(ROUTE_ID);
-        route.id = "test_route_1";
         route.externalUri = "http://example.com";
         route.isSticky = false;
         route.routeFlag = RouteFlag.TYPE_PRIVATE;
         route.transitType = TransitType.TYPE_SPECIAL;
         route.routeName = "Route Name";
-        route.alerts = new ArrayList<>();
+        route.alerts = Collections.singletonList(createTestAlert());
 
         return route;
     }
 
     @Nonnull
     static Agency createTestAgency() {
-        Alert alert = createTestAlert();
-        alert.locations = Collections.singletonList(createTestLocation());
-        Route route = createTestRoute();
-        alert.route = route;
-        route.alerts = Collections.singletonList(alert);
-
         Agency agency = new Agency(AGENCY_ID);
         agency.name = "Test Agency";
         agency.externalUri = "http://example.com";
         agency.phone = "123-123-1234";
         agency.utcOffset = -5F;
-        agency.routes = Collections.singletonList(route);
+        agency.routes = Collections.singletonList(createTestRoute());
 
         return agency;
     }
