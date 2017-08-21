@@ -48,10 +48,10 @@ public class PushMessageManager {
     /**
      * Notify Push subscribers of the agency alerts that have changed.
      *
-     * @param agencyModifications Collection of modified route alerts.
+     * @param alertModifications Collection of modified route alerts.
      * @return boolean true if there were errors dispatching the modifications.
      */
-    public boolean dispatchAlerts(@Nonnull AlertModifications agencyModifications) {
+    public boolean dispatchAlerts(@Nonnull AlertModifications alertModifications) {
         List<Task> taskList = new ArrayList<>();
 
         /*
@@ -62,62 +62,65 @@ public class PushMessageManager {
          * to the updated list, and that it has all 3 updated alerts. Do the same for stale alerts.
          */
         Map<String, Route> updatedRoutes = new HashMap<>();
-        for (Alert updatedAlert : agencyModifications.getUpdatedAlerts()) {
+        for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
             if (updatedAlert.route == null) {
-                throw new RuntimeException("Updated Alert must have routes attached.");
+                Logger.error("Updated Alert must have routes attached.");
+                return false;
             }
 
-            if (updatedAlert.route.alerts == null ||
-                    updatedAlert.route.alerts.size() != agencyModifications.getUpdatedAlerts().size()) {
-                throw new RuntimeException("Route for Updated Alert must have all Alert back-references.");
+            if (updatedAlert.route.alerts == null) {
+                Logger.error("Route for Updated Alert must have all Alert back-references.");
+                return false;
             }
 
             updatedRoutes.put(updatedAlert.route.routeId, updatedAlert.route);
         }
 
         Map<String, Route> staleRoutes = new HashMap<>();
-        for (Alert staleAlert : agencyModifications.getStaleAlerts()) {
+        for (Alert staleAlert : alertModifications.getStaleAlerts()) {
             if (staleAlert.route == null) {
-                throw new RuntimeException("Stale Alert must have routes attached.");
+                Logger.error("Stale Alert must have routes attached.");
             }
 
-            if (staleAlert.route.alerts == null ||
-                    staleAlert.route.alerts.size() != agencyModifications.getStaleAlerts().size()) {
-                throw new RuntimeException("Route for Stale Alert must have all Alert back-references.");
+            if (staleAlert.route.alerts == null) {
+                Logger.error("Route for Stale Alert must have all Alert back-references.");
+                return false;
             }
 
             staleRoutes.put(staleAlert.route.routeId, staleAlert.route);
         }
 
-        // Iterate through the updated (fresh) Alert Routes to send messages for.
+        // Iterate through the updated (fresh) Alerts to send messages for.
         for (Route updatedRoute : updatedRoutes.values()) {
             Task updatedRouteTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
                     ? updatedRoute.agency.id
                     : -1, updatedRoute.routeId));
 
             updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRouteTask.messages = createAlertMessages(agencyModifications.getAgencyId(), updatedRoute, false);
+            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), updatedRoute, true);
 
             if (!updatedRouteTask.messages.isEmpty()) {
                 taskList.add(updatedRouteTask);
             } else {
-                throw new RuntimeException("No messages were generated for updated route");
+                Logger.error("No messages were generated for updated route");
+                return false;
             }
         }
 
-        // Iterate through the updated (fresh) Alert Routes to send messages for.
+        // Iterate through the stale (expunged) Alerts to send messages for.
         for (Route staleRoute : staleRoutes.values()) {
             Task staleRouteTask = new Task(String.format("agency-%d:stale-route:%s", staleRoute.agency != null
                     ? staleRoute.agency.id
                     : -1, staleRoute.routeId));
 
             staleRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            staleRouteTask.messages = createAlertMessages(agencyModifications.getAgencyId(), staleRoute, false);
+            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), staleRoute, false);
 
             if (!staleRouteTask.messages.isEmpty()) {
                 taskList.add(staleRouteTask);
             } else {
-                throw new RuntimeException("No messages were generated for stale route");
+                Logger.error("No messages were generated for stale route");
+                return false;
             }
         }
 
@@ -154,9 +157,9 @@ public class PushMessageManager {
 
         List<Message> messages = new ArrayList<>();
         List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, route.routeId);
-        for (Account account : accounts) {
 
-            // Build a new message for the platform task per API and then Platform account.
+        // Build a new message for the platform task per API and then Platform account.
+        for (Account account : accounts) {
             if (account.devices != null
                     && account.platformAccounts != null
                     && !account.devices.isEmpty()

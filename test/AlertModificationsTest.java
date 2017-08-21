@@ -1,11 +1,20 @@
+import dao.AccountDao;
+import dao.AgencyDao;
+import dao.DeviceDao;
 import enums.AlertType;
 import helpers.AlertHelper;
 import models.AlertModifications;
+import models.accounts.Account;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
+import models.devices.Device;
+import models.devices.Subscription;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import services.PushMessageManager;
 
 import java.util.*;
 
@@ -15,6 +24,51 @@ import static org.junit.Assert.*;
  * Test core functions of the Device Data Access Layer.
  */
 public class AlertModificationsTest extends CommuteTestApplication {
+    private static PushMessageManager mPushMessageManager;
+    private static DeviceDao mDeviceDao;
+    private static AccountDao mAccountDao;
+    private static AgencyDao mAgencyDao;
+
+    @BeforeClass
+    public static void setup() {
+        mPushMessageManager = application.injector().instanceOf(PushMessageManager.class);
+        mDeviceDao = application.injector().instanceOf(DeviceDao.class);
+        mAccountDao = application.injector().instanceOf(AccountDao.class);
+        mAgencyDao = application.injector().instanceOf(AgencyDao.class);
+
+        // Save an account
+        Account testAccount = TestModelHelper.createTestAccount();
+        mAccountDao.saveAccount(testAccount);
+
+        Agency testAgency = TestModelHelper.createTestAgency();
+        mAgencyDao.saveAgency(testAgency);
+
+        Route testRoute = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
+        Device testDevice = TestModelHelper.createTestDevice();
+
+        Subscription testSubscription = new Subscription();
+        testSubscription.route = testRoute;
+        testSubscription.device = testDevice;
+
+        testDevice.account = testAccount;
+        testDevice.subscriptions = Collections.singletonList(testSubscription);
+        mDeviceDao.saveDevice(testDevice);
+    }
+
+    @AfterClass
+    public static void teardown() {
+        // Delete test Device.
+        Device testDevice = mDeviceDao.getDevice(TestModelHelper.TEST_DEVICE_ID);
+        mDeviceDao.removeDevice(testDevice.token);
+
+        // Delete test Agency.
+        Agency testAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
+        mAgencyDao.removeAgency(testAgency.id);
+
+        // Delete test Account.
+        Account testAccount = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
+        mAccountDao.removeAccount(testAccount.id);
+    }
 
     @Test
     public void testModificationUnchanged() {
@@ -24,8 +78,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications);
         assertFalse(alertModifications.hasChangedAlerts());
-        assertNotNull(alertModifications.getUpdatedAlerts());
         assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
+        assertTrue(alertModifications.getStaleAlerts().isEmpty());
+
+        assertFalse(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -53,6 +109,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
         assertTrue(alertModifications.getUpdatedAlerts().contains(newAlert));
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -73,6 +131,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertTrue(alertModifications.getUpdatedAlerts().contains(updatedAlert));
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -94,6 +154,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
         assertTrue(alertModifications.getUpdatedAlerts().contains(updatedAlert));
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -109,6 +171,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
         assertFalse(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getStaleAlerts().contains(existingAgency.routes.get(0).alerts.get(0)));
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -135,6 +199,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
         assertFalse(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getStaleAlerts().contains(additionalAlert));
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -173,6 +239,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 2);
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -201,6 +269,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 1);
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 
     @Test
@@ -225,5 +295,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getUpdatedAlerts().get(0).locations.isEmpty());
+
+        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
     }
 }

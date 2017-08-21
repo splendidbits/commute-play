@@ -138,13 +138,13 @@ public class AccountDao extends BaseDao {
      */
     public boolean removeAccount(long accountId) {
         try {
-            List<Account> accounts = mEbeanServer.find(Account.class)
+            Account account = mEbeanServer.find(Account.class)
                     .fetch("platformAccounts")
                     .where()
                     .idEq(accountId)
-                    .findList();
+                    .findOne();
 
-            mEbeanServer.deleteAllPermanent(accounts);
+            mEbeanServer.deletePermanent(account);
             return true;
 
         } catch (Exception e) {
