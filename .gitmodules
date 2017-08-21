@@ -1,9 +1,9 @@
 [submodule "modules/pushservices"]
 	path = modules/pushservices
-	url = https://splendidbits@github.com/splendidbits/play-pushservices.git
-	branch = internal-snapshot
+	url=https://github.com/splendidbits/play-pushservices
+	branch = private
 
 [submodule "modules/fluffylog"]
 	path = modules/fluffylog
 	url = https://splendidbits@github.com/splendidbits/play-fluffylog.git
-	branch = master
+	branch = private
