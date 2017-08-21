@@ -18,3 +18,4 @@ logs/
 bin/
 .sbtserver
 out/
+passwords.txt
