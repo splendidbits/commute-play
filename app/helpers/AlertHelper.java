@@ -33,6 +33,8 @@ import java.util.Set;
 public class AlertHelper {
     private static final int MAX_MESSAGE_PAYLOAD_LENGTH = 1500;
     private static final int ALERT_BODY_MINIMUM_LENGTH = 12;
+    private static final int ALERT_UPDATE_TTL = 60 * 60 * 6; // 6 hours
+    private static final int ALERT_CANCELLATION_TTL = 60 * 60 * 48; // 48 hours;
 
     /**
      * Different types of commute push message types.
@@ -252,33 +254,39 @@ public class AlertHelper {
                     MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                             .setCollapseKey(route.routeId)
                             .setPlatformCredentials(credentials)
-                            .setMessagePriority(alert.highPriority ? MessagePriority.PRIORITY_HIGH : MessagePriority.PRIORITY_NORMAL)
+                            .setTimeToLiveSeconds(ALERT_UPDATE_TTL)
                             .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                             .putData(AlertMessageKey.KEY_ROUTE_NAME.key, route.routeName)
                             .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.key, alert.messageBody);
 
                     switch (alert.type) {
                         case TYPE_DETOUR:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
                             break;
 
                         case TYPE_INFORMATION:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
                             break;
 
                         case TYPE_DISRUPTION:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
                             break;
 
                         case TYPE_WEATHER:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
                             break;
 
                         case TYPE_IN_APP:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
                             break;
 
                         case TYPE_MAINTENANCE:
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
                             break;
                     }
@@ -317,6 +325,7 @@ public class AlertHelper {
             if (credentials != null) {
                 MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
+                        .setTimeToLiveSeconds(ALERT_CANCELLATION_TTL)
                         .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setPlatformCredentials(credentials)
                         .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
