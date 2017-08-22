@@ -9,20 +9,15 @@ lazy val fluffylog = (project in file("modules/fluffylog"))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .settings(buildSettings: _*)
 
-lazy val pushservices = (project in file("modules/pushservices"))
-  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
-  .settings(buildSettings: _*)
-
 lazy val commutealerts = (project in file("."))
   .enablePlugins(PlayJava, PlayEbean, PlayEnhancer, PlayAkkaHttpServer)
   .disablePlugins(PlayNettyServer)
   .dependsOn(fluffylog)
-  .dependsOn(pushservices)
   .aggregate(fluffylog)
-  .aggregate(pushservices)
   .settings(buildSettings: _*)
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
+resolvers += "Splendid Bits repository" at "http://dl.bintray.com/splendidbits/play-pushservices/pushservices"
 
 libraryDependencies ++= Seq(
   javaCore,
@@ -32,6 +27,7 @@ libraryDependencies ++= Seq(
   javaJpa,
   javaWs,
   guice,
+  "com.splendidbits" % "play-pushservices" % "1.0.1",
   "com.typesafe.play" %% "play-ahc-ws-standalone" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",

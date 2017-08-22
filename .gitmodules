@@ -1,8 +1,3 @@
-[submodule "modules/pushservices"]
-	path = modules/pushservices
-	url=https://github.com/splendidbits/play-pushservices
-	branch = master
-
 [submodule "modules/fluffylog"]
 	path = modules/fluffylog
 	url = https://splendidbits@github.com/splendidbits/play-fluffylog.git

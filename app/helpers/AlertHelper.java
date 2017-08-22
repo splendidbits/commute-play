@@ -2,6 +2,7 @@ package helpers;
 
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
+import exceptions.pushservices.TaskValidationException;
 import helpers.pushservices.MessageBuilder;
 import models.AlertModifications;
 import models.accounts.PlatformAccount;
@@ -221,13 +222,18 @@ public class AlertHelper {
             Set<String> tokens = new HashSet<>();
             tokens.add(device.token);
 
-            return new MessageBuilder.Builder()
-                    .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
-                    .setMessagePriority(MessagePriority.PRIORITY_HIGH)
-                    .setPlatformCredentials(credentials)
-                    .setDeviceTokens(tokens)
-                    .putData(MessageType.TYPE_REGISTRATION.key, MessageType.TYPE_REGISTRATION.value)
-                    .build();
+            try {
+                return new MessageBuilder.Builder()
+                        .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
+                        .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                        .setPlatformCredentials(credentials)
+                        .setDeviceTokens(tokens)
+                        .putData(MessageType.TYPE_REGISTRATION.key, MessageType.TYPE_REGISTRATION.value)
+                        .build();
+
+            } catch (TaskValidationException e) {
+                Logger.error("Exception building the device_registration message.");
+            }
         }
         return null;
     }
@@ -297,8 +303,11 @@ public class AlertHelper {
                     }
 
                     messageBuilder.setDeviceTokens(tokenSet);
-                    messages.add(messageBuilder.build());
-
+                    try {
+                        messages.add(messageBuilder.build());
+                    } catch (TaskValidationException e) {
+                        Logger.error("Exception building the alert update message.");
+                    }
                 } else {
                     Logger.error("No Credentials model found for update message.");
                 }
@@ -337,7 +346,12 @@ public class AlertHelper {
                 }
 
                 messageBuilder.setDeviceTokens(tokenSet);
-                messages.add(messageBuilder.build());
+
+                try {
+                    messages.add(messageBuilder.build());
+                } catch (TaskValidationException e) {
+                    Logger.error("Exception building the alert cancellation message.");
+                }
 
             } else {
                 Logger.error("No Credentials model found for cancel message.");
