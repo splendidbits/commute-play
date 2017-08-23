@@ -97,7 +97,7 @@ public class PushMessageManager {
                     : -1, updatedRoute.routeId));
 
             updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), updatedRoute, true);
+            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), updatedRoute, false);
 
             if (!updatedRouteTask.messages.isEmpty()) {
                 taskList.add(updatedRouteTask);
@@ -114,7 +114,7 @@ public class PushMessageManager {
                     : -1, staleRoute.routeId));
 
             staleRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), staleRoute, false);
+            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), staleRoute, true);
 
             if (!staleRouteTask.messages.isEmpty()) {
                 taskList.add(staleRouteTask);
