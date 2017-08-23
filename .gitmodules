@@ -1,4 +1,10 @@
+[remote "origin"]
+        url = https://splendidbits@github.com/splendidbits/commute-alerts.git
 [submodule "modules/fluffylog"]
-	path = modules/fluffylog
-	url = https://splendidbits@github.com/splendidbits/play-fluffylog.git
-	branch = master
+        url = https://splendidbits@github.com/splendidbits/play-fluffylog.git
+[branch "master"]
+        remote = origin
+        merge = refs/heads/master
+[branch "master"]
+        remote = origin
+        merge = refs/heads/master
