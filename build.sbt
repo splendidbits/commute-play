@@ -17,7 +17,7 @@ lazy val commutealerts = (project in file("."))
   .settings(buildSettings: _*)
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
-resolvers += "Splendid Bits repository" at "http://dl.bintray.com/splendidbits/play-pushservices"
+resolvers += "Bintray jCenter" at "http://jcenter.bintray.com"
 
 libraryDependencies ++= Seq(
   javaCore,

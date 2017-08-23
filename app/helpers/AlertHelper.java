@@ -40,7 +40,7 @@ public class AlertHelper {
      * messages with a longer TTL will be de-prioritised (throttled) but they will expunged
      * after a certain period of time.
      */
-    private static final int ALERT_SHORT_TTL = 60 * 15; // 15 minutes
+    private static final int ALERT_SHORT_TTL = 60 * 60 * 1; // 1 hour
     private static final int ALERT_LONG_TTL = 60 * 60 * 48; // 48 hours
 
     /**
@@ -231,7 +231,7 @@ public class AlertHelper {
             try {
                 return new MessageBuilder.Builder()
                         .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
-                        .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setTimeToLiveSeconds(ALERT_LONG_TTL)
                         .setPlatformCredentials(credentials)
                         .setDeviceTokens(tokens)
@@ -273,7 +273,7 @@ public class AlertHelper {
 
                     switch (alert.type) {
                         case TYPE_DETOUR:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
                             messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
                             break;
@@ -286,7 +286,7 @@ public class AlertHelper {
                             break;
 
                         case TYPE_DISRUPTION:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_HIGH);
+                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
                             messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
                             messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
                             break;
@@ -348,7 +348,7 @@ public class AlertHelper {
                 MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                         .setCollapseKey(route.routeId)
                         .setTimeToLiveSeconds(ALERT_LONG_TTL)
-                        .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setPlatformCredentials(credentials)
                         .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
                         .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
