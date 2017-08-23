@@ -27,7 +27,7 @@ libraryDependencies ++= Seq(
   javaJpa,
   javaWs,
   guice,
-  "com.splendidbits" % "play-pushservices" % "1.0.1",
+  "com.splendidbits" % "play-pushservices" % "1.0.2",
   "com.typesafe.play" %% "play-ahc-ws-standalone" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",

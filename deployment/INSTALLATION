@@ -3,6 +3,6 @@ sudo rm -r commutealerts-0.2/
 git clone -b master https://github.com/splendidbits/commute-alerts commutealerts-0.2
 cd commutealerts-0.2
 git submodule update --init --recursive
-git pull --recurse-submodules
+git pull --all --recurse-submodules
 
 ./activator clean compile stage dist
