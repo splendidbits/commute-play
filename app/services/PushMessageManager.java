@@ -17,18 +17,12 @@ import models.alerts.Route;
 import models.devices.Device;
 import models.pushservices.app.FailedRecipient;
 import models.pushservices.app.UpdatedRecipient;
-import models.pushservices.db.Message;
-import models.pushservices.db.PlatformFailure;
-import models.pushservices.db.Recipient;
-import models.pushservices.db.Task;
+import models.pushservices.db.*;
 import services.fluffylog.Logger;
 import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Intermediate Push Service manager for building and sending alert messages via
@@ -176,6 +170,16 @@ public class PushMessageManager {
                             account.devices,
                             platformAccount,
                             isCancellation);
+
+                    // Cancellation notification sanity.
+                    for (Message message : alertMessages) {
+                        if (isCancellation) {
+                            PayloadElement routeIdElement = new PayloadElement("route_id", route.routeId);
+                            PayloadElement cancellationElement = new PayloadElement("cancel_message", "true");
+                            message.payloadData = Arrays.asList(routeIdElement, cancellationElement);
+                        }
+                    }
+
                     messages.addAll(alertMessages);
                 }
             }
