@@ -3,6 +3,7 @@ package services;
 import com.google.inject.Inject;
 import dao.AccountDao;
 import dao.DeviceDao;
+import enums.AlertType;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
@@ -73,7 +74,10 @@ public class PushMessageManager {
                 return false;
             }
 
-            updatedRoutes.put(updatedAlert.route.routeId, updatedAlert.route);
+            // HACK - DO NOT SEND ADVISORIES UNTIL WE FIGURE THIS OUT
+            if (!updatedAlert.type.equals(AlertType.TYPE_INFORMATION)) {
+                updatedRoutes.put(updatedAlert.route.routeId, updatedAlert.route);
+            }
         }
 
         Map<String, Route> staleRoutes = new HashMap<>();
