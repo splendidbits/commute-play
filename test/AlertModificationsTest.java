@@ -3,6 +3,7 @@ import dao.AgencyDao;
 import dao.DeviceDao;
 import enums.AlertType;
 import helpers.AlertHelper;
+import javafx.util.Pair;
 import models.AlertModifications;
 import models.accounts.Account;
 import models.alerts.Agency;
@@ -11,6 +12,7 @@ import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
+import models.pushservices.db.Message;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -81,7 +83,9 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
 
-        assertFalse(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertTrue(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
     }
 
     @Test
@@ -110,7 +114,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
         assertTrue(alertModifications.getUpdatedAlerts().contains(newAlert));
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
     }
 
     @Test
@@ -132,7 +139,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertTrue(alertModifications.getUpdatedAlerts().contains(updatedAlert));
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
     }
 
     @Test
@@ -155,7 +165,11 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
         assertTrue(alertModifications.getUpdatedAlerts().contains(updatedAlert));
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertFalse(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
+        assertEquals(dispatchedMessages.getValue().size(), 1);
     }
 
     @Test
@@ -172,7 +186,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertFalse(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getStaleAlerts().contains(existingAgency.routes.get(0).alerts.get(0)));
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertTrue(dispatchedMessages.getKey().isEmpty());
+        assertFalse(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getValue().size(), 1);
     }
 
     @Test
@@ -200,7 +217,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertFalse(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getStaleAlerts().contains(additionalAlert));
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertTrue(dispatchedMessages.getKey().isEmpty());
+        assertFalse(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getValue().size(), 1);
     }
 
     @Test
@@ -240,7 +260,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 2);
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
     }
 
     @Test
@@ -270,7 +293,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 1);
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
     }
 
     @Test
@@ -296,6 +322,9 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getStaleAlerts().isEmpty());
         assertTrue(alertModifications.getUpdatedAlerts().get(0).locations.isEmpty());
 
-        assertTrue(mPushMessageManager.dispatchAlerts(alertModifications));
+        Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
+        assertFalse(dispatchedMessages.getKey().isEmpty());
+        assertTrue(dispatchedMessages.getValue().isEmpty());
+        assertEquals(dispatchedMessages.getKey().size(), 1);
     }
 }

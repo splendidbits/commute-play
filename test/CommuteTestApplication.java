@@ -1,4 +1,5 @@
 import injection.modules.DatabaseModule;
+import injection.pushservices.modules.PushServicesModule;
 import main.fluffylog.FluffyLogModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,8 +37,8 @@ public abstract class CommuteTestApplication {
 
         application = new GuiceApplicationBuilder()
                 .in(Mode.TEST)
-//                .disable(PushServicesModule.class)
                 .overrides(routesBindingOverride)
+                .bindings(new PushServicesModule())
                 .bindings(new DatabaseModule())
                 .bindings(new FluffyLogModule())
                 .build();

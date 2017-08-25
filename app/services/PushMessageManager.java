@@ -9,6 +9,7 @@ import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
 import helpers.AlertHelper;
 import interfaces.pushservices.TaskQueueCallback;
+import javafx.util.Pair;
 import models.AlertModifications;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -44,10 +45,12 @@ public class PushMessageManager {
      * Notify Push subscribers of the agency alerts that have changed.
      *
      * @param alertModifications Collection of modified route alerts.
-     * @return boolean true if there were errors dispatching the modifications.
+     * @return updated and cancelled alerts messages.
      */
-    public boolean dispatchAlerts(@Nonnull AlertModifications alertModifications) {
+    public Pair<Set<Message>, Set<Message>> dispatchAlerts(@Nonnull AlertModifications alertModifications) {
         List<Task> taskList = new ArrayList<>();
+        Set<Message> updatedAlertMessages = new HashSet<>();
+        Set<Message> staleAlertMessages = new HashSet<>();
 
         /*
          * Iterate through each updated and stale alert and combine them into groups of
@@ -60,12 +63,12 @@ public class PushMessageManager {
         for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
             if (updatedAlert.route == null) {
                 Logger.error("Updated Alert must have routes attached.");
-                return false;
+                return null;
             }
 
             if (updatedAlert.route.alerts == null) {
                 Logger.error("Route for Updated Alert must have all Alert back-references.");
-                return false;
+                return null;
             }
 
             // HACK - DO NOT SEND ADVISORIES UNTIL WE FIGURE THIS OUT
@@ -82,7 +85,7 @@ public class PushMessageManager {
 
             if (staleAlert.route.alerts == null) {
                 Logger.error("Route for Stale Alert must have all Alert back-references.");
-                return false;
+                return null;
             }
 
             staleRoutes.put(staleAlert.route.routeId, staleAlert.route);
@@ -96,12 +99,13 @@ public class PushMessageManager {
 
             updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
             updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), updatedRoute, false);
+            updatedAlertMessages.addAll(updatedRouteTask.messages);
 
             if (!updatedRouteTask.messages.isEmpty()) {
                 taskList.add(updatedRouteTask);
             } else {
                 Logger.error("No messages were generated for updated route");
-                return false;
+                return null;
             }
         }
 
@@ -113,12 +117,13 @@ public class PushMessageManager {
 
             staleRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
             staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), staleRoute, true);
+            updatedAlertMessages.addAll(staleRouteTask.messages);
 
             if (!staleRouteTask.messages.isEmpty()) {
                 taskList.add(staleRouteTask);
             } else {
                 Logger.error("No messages were generated for stale route");
-                return false;
+                return null;
             }
         }
 
@@ -130,10 +135,10 @@ public class PushMessageManager {
 
         } catch (TaskValidationException e) {
             Logger.error("Commute Task threw an exception.");
-            return false;
+            return null;
         }
 
-        return !taskList.isEmpty();
+        return new Pair<>(updatedAlertMessages, staleAlertMessages);
     }
 
     /**
