@@ -5,4 +5,4 @@ cd commutealerts-0.2
 git submodule update --init --recursive
 git pull --all --recurse-submodules
 
-./activator clean compile stage dist
+./activator clean compile stage dist run

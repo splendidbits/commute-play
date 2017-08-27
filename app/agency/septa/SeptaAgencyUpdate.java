@@ -39,14 +39,14 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
     @Override
     public void startAgencyUpdate() {
         String hostname = Constants.IS_DEBUG ? Constants.DEBUG_API_SERVER_HOST  : Constants.PROD_API_SERVER_HOST;
-        String appAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
+        String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
 
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");
 
             // Proxy pass-through to http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all
             CompletionStage<WSResponse> downloadStage = mWsClient
-                    .url(appAlertUrl)
+                    .url(septaAlertUrl)
                     .setRequestTimeout(AGENCY_DOWNLOAD_TIMEOUT_MS)
                     .setFollowRedirects(true)
                     .get();
@@ -54,7 +54,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
             downloadStage.thenApply(new ParseAgencyFunction());
 
         } catch (Exception exception) {
-            Logger.error("Error downloading agency data from " + appAlertUrl, exception);
+            Logger.error("Error downloading agency data from " + septaAlertUrl, exception);
         }
     }
 

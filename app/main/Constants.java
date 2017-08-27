@@ -5,9 +5,8 @@ package main;
  */
 public class Constants {
     public static final String PROD_API_SERVER_HOST = "https://api.commuteapp.io";
-    public static final String DEBUG_API_SERVER_HOST = "https://localhost:4343";
+    public static final String DEBUG_API_SERVER_HOST = "http://localhost:9000";
     public static final String DATABASE_SERVER_NAME = "commutealerts";
-    public static final String DATABASE_TYPE = "postgres";
 
     // Timeout for Agency alerts download requests in MS.
     public static final int AGENCY_UPDATE_INITIAL_DELAY_SECONDS = 10;

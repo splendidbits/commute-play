@@ -63,20 +63,19 @@ public abstract class AgencyUpdate {
             // Parse html and fix text formatting inconsistencies.
             AlertHelper.parseHtml(updatedAgency);
 
-            // Diff the new and existing agency data and form a modifications model.
+            // Get existing alerts for the agency.
             Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
+
+            // Save the agency in the datastore.
+            mAgencyManager.saveAgency(updatedAgency);
+            Logger.debug("Saving new or updated agency data.");
+
+            // Diff the new and existing agency data and form a modifications model.
             AlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
             if (agencyModifications.hasChangedAlerts()) {
-                // Save the agency in the datastore.
-                Logger.debug("Saving new or updated agency data.");
-
-                // Don't send notifications to clients with alerts if there's an issue with database persistence.
-                boolean alertsPersisted = mAgencyManager.saveAgency(updatedAgency);
-                if (alertsPersisted) {
-                    Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
-                    mPushMessageManager.dispatchAlerts(agencyModifications);
-                }
+                Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
+                mPushMessageManager.dispatchAlerts(agencyModifications);
 
             } else {
                 Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
