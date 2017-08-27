@@ -3,7 +3,6 @@ package services;
 import com.google.inject.Inject;
 import dao.AccountDao;
 import dao.DeviceDao;
-import enums.AlertType;
 import enums.pushservices.Failure;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
@@ -18,7 +17,10 @@ import models.alerts.Route;
 import models.devices.Device;
 import models.pushservices.app.FailedRecipient;
 import models.pushservices.app.UpdatedRecipient;
-import models.pushservices.db.*;
+import models.pushservices.db.Message;
+import models.pushservices.db.PlatformFailure;
+import models.pushservices.db.Recipient;
+import models.pushservices.db.Task;
 import services.fluffylog.Logger;
 import services.pushservices.TaskQueue;
 
@@ -49,81 +51,92 @@ public class PushMessageManager {
      */
     public Pair<Set<Message>, Set<Message>> dispatchAlerts(@Nonnull AlertModifications alertModifications) {
         List<Task> taskList = new ArrayList<>();
+
+        // Map of routeIds and all updated AlertTypes.
         Set<Message> updatedAlertMessages = new HashSet<>();
         Set<Message> staleAlertMessages = new HashSet<>();
 
+        Map<String, List<Alert>> updatedRouteAlerts = new HashMap<>();
+        Map<String, List<Alert>> staleRouteAlerts = new HashMap<>();
+
         /*
-         * Iterate through each updated and stale alert and combine them into groups of
-         * their respective routes.
-         *
-         * For example, if 3 alerts have the route_id "bus_route_42", ensure the Route is added
-         * to the updated list, and that it has all 3 updated alerts. Do the same for stale alerts.
+         * Iterate through each updated alert and add it to a map with its corresponding
+         * Route object.
          */
-        Map<String, Route> updatedRoutes = new HashMap<>();
         for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
-            if (updatedAlert.route == null) {
-                Logger.error("Updated Alert must have routes attached.");
+            if (updatedAlert.route == null || updatedAlert.route.routeId == null) {
+                Logger.error("Updated Alert must have routes with routeIds.");
                 return null;
             }
 
-            if (updatedAlert.route.alerts == null) {
-                Logger.error("Route for Updated Alert must have all Alert back-references.");
-                return null;
-            }
+            Route route = updatedAlert.route;
+            String routeId = route.routeId;
 
-            // HACK - DO NOT SEND ADVISORIES UNTIL WE FIGURE THIS OUT
-            if (!updatedAlert.type.equals(AlertType.TYPE_INFORMATION)) {
-                updatedRoutes.put(updatedAlert.route.routeId, updatedAlert.route);
-            }
+            // Add the alert to the list of updated alerts for the route.
+            List<Alert> alerts = updatedRouteAlerts.containsKey(routeId)
+                    ? updatedRouteAlerts.get(routeId)
+                    : new ArrayList<>();
+
+            alerts.add(updatedAlert);
+            updatedRouteAlerts.put(routeId, alerts);
         }
 
-        Map<String, Route> staleRoutes = new HashMap<>();
+        /*
+         * Iterate through each stale alert and add it to a list if the alert
+         * type was not already added for that update route alerts..
+        */
         for (Alert staleAlert : alertModifications.getStaleAlerts()) {
-            if (staleAlert.route == null) {
-                Logger.error("Stale Alert must have routes attached.");
-            }
-
-            if (staleAlert.route.alerts == null) {
-                Logger.error("Route for Stale Alert must have all Alert back-references.");
+            if (staleAlert.route == null || staleAlert.route.routeId == null) {
+                Logger.error("Updated Alert must have routes with routeIds.");
                 return null;
             }
 
-            staleRoutes.put(staleAlert.route.routeId, staleAlert.route);
+            Route route = staleAlert.route;
+            String routeId = route.routeId;
+
+            /*
+             * If the updates alerts do not contain the same alert type, send a cancellation,
+             * and add the alert to the list of updated alerts for the route.
+            */
+            List<Alert> alerts = staleRouteAlerts.containsKey(routeId)
+                    ? staleRouteAlerts.get(routeId)
+                    : new ArrayList<>();
+
+            alerts.add(staleAlert);
+            staleRouteAlerts.put(routeId, alerts);
         }
 
         // Iterate through the updated (fresh) Alerts to send messages for.
-        for (Route updatedRoute : updatedRoutes.values()) {
-            Task updatedRouteTask = new Task(String.format("agency-%d:updated-route:%s", updatedRoute.agency != null
-                    ? updatedRoute.agency.id
-                    : -1, updatedRoute.routeId));
+        for (Map.Entry<String, List<Alert>> routeAlertEntry : updatedRouteAlerts.entrySet()) {
+            String routeId = routeAlertEntry.getKey();
+            List<Alert> alerts = routeAlertEntry.getValue();
 
+            Task updatedRouteTask = new Task(String.format("agency-%d:updated-route:%s", alertModifications.getAgencyId(), routeId));
             updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), updatedRoute, false);
+            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, false);
             updatedAlertMessages.addAll(updatedRouteTask.messages);
 
             if (!updatedRouteTask.messages.isEmpty()) {
                 taskList.add(updatedRouteTask);
             } else {
-                Logger.error("No messages were generated for updated route");
-                return null;
+                Logger.warn("No messages were generated for updated route");
             }
         }
 
-        // Iterate through the stale (expunged) Alerts to send messages for.
-        for (Route staleRoute : staleRoutes.values()) {
-            Task staleRouteTask = new Task(String.format("agency-%d:stale-route:%s", staleRoute.agency != null
-                    ? staleRoute.agency.id
-                    : -1, staleRoute.routeId));
+        // Iterate through the updated (fresh) Alerts to send messages for.
+        for (Map.Entry<String, List<Alert>> staleAlertEntry : staleRouteAlerts.entrySet()) {
+            String routeId = staleAlertEntry.getKey();
+            List<Alert> alerts = staleAlertEntry.getValue();
 
-            staleRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), staleRoute, true);
-            updatedAlertMessages.addAll(staleRouteTask.messages);
+            Task staleRouteTask = new Task(String.format("agency-%d:stale-route:%s", alertModifications.getAgencyId(), routeId));
+            staleRouteTask.priority = Task.TASK_PRIORITY_HIGH;
+            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, true);
+            staleAlertMessages.addAll(staleRouteTask.messages);
 
             if (!staleRouteTask.messages.isEmpty()) {
                 taskList.add(staleRouteTask);
             } else {
-                Logger.error("No messages were generated for stale route");
-                return null;
+                Logger.warn("No messages were generated for updated route");
             }
         }
 
@@ -148,18 +161,15 @@ public class PushMessageManager {
      * Creates a list of separate messages for every {@link PlatformAccount} in every {@link Account}.
      *
      * @param agencyId       The agencyId for the route.
-     * @param route          Route with messages to send.
+     * @param routeId        Route ID to fetch sending accounts for.
+     * @param alerts         Alert with Route for messages to send.
      * @param isCancellation set whether the alert message is an update or cancellation (clear).
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertMessages(int agencyId, @Nonnull Route route, boolean isCancellation) {
-        if (route.alerts == null) {
-            throw new RuntimeException("Route does not contain any alerts.");
-        }
-
+    private List<Message> createAlertMessages(int agencyId, @Nonnull String routeId, @Nonnull List<Alert> alerts, boolean isCancellation) {
         List<Message> messages = new ArrayList<>();
-        List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, route.routeId);
+        List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, routeId);
 
         // Build a new message for the platform task per API and then Platform account.
         for (Account account : accounts) {
@@ -170,22 +180,10 @@ public class PushMessageManager {
 
                 // Create a message for each new alert in the route.
                 for (PlatformAccount platformAccount : account.platformAccounts) {
-                    List<Message> alertMessages = AlertHelper.getAlertMessages(
-                            route,
-                            account.devices,
-                            platformAccount,
-                            isCancellation);
-
-                    // Cancellation notification sanity.
-                    for (Message message : alertMessages) {
-                        if (isCancellation) {
-                            PayloadElement routeIdElement = new PayloadElement("route_id", route.routeId);
-                            PayloadElement cancellationElement = new PayloadElement("cancel_message", "true");
-                            message.payloadData = Arrays.asList(routeIdElement, cancellationElement);
-                        }
+                    for (Alert alert : alerts) {
+                        List<Message> alertMessages = AlertHelper.getAlertMessages(alert, account.devices, platformAccount, isCancellation);
+                        messages.addAll(alertMessages);
                     }
-
-                    messages.addAll(alertMessages);
                 }
             }
         }

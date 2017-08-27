@@ -46,6 +46,7 @@ public class AccountDaoTest extends CommuteTestApplication {
         PlatformAccount newPlatformAccount = new PlatformAccount();
         newPlatformAccount.authorisationKey = "test_auth_key2";
         newPlatformAccount.platformType = PlatformType.SERVICE_APNS;
+
         savedAccount.platformAccounts.add(newPlatformAccount);
         savedAccount.email = "change@example.com";
 
@@ -55,7 +56,6 @@ public class AccountDaoTest extends CommuteTestApplication {
         Account updatedAccount = mAccountDao.getAccountForKey(newAccount.apiKey);
         assertNotNull(updatedAccount);
         assertNotNull(updatedAccount.platformAccounts);
-        assertEquals(updatedAccount.email, "change@example.com");
         assertFalse(updatedAccount.platformAccounts.isEmpty());
         assertEquals(updatedAccount.platformAccounts.size(), 2);
 

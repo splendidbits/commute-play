@@ -23,10 +23,6 @@ import static org.junit.Assert.*;
 public class AgencyDaoTest extends CommuteTestApplication {
     private static AgencyDao mAgencyDao;
 
-    private final Calendar locationDate = Calendar.getInstance();
-    private final static int AGENCY_ID = 999;
-    private final static String ROUTE1_ID = "test_route_1";
-
     @BeforeClass
     public static void initialise() {
         mAgencyDao = application.injector().instanceOf(AgencyDao.class);
@@ -35,7 +31,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
     @After
     public void afterTest() {
         // Remove agency.
-        mAgencyDao.removeAgency(AGENCY_ID);
+        mAgencyDao.removeAgency(TestModelHelper.AGENCY_ID);
     }
 
     @Test
@@ -45,7 +41,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertTrue(mAgencyDao.saveAgency(initialAgency));
 
         // Get the agency, check everything is still there.
-        Agency updatedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency updatedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(updatedAgency);
 
         // Check the agency has the route.
@@ -68,7 +64,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(initialAgency);
 
         // Get the agency
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
         Agency updatedAgency = TestModelHelper.createTestAgency();
@@ -76,7 +72,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
-        fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
         assertEquals(fetchedAgency.name, "Updated Name");
     }
@@ -87,7 +83,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
         // Check the agency has the route.
@@ -110,7 +106,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         // Check the new route is there.
-        fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
         assertNotNull(fetchedAgency.routes);
         assertEquals(fetchedAgency.routes.size(), 2);
@@ -126,7 +122,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
         // Check the agency has the route.
@@ -142,7 +138,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         // Check the new route is there.
-        fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
         assertNotNull(fetchedAgency.routes);
         assertEquals(fetchedAgency.routes.size(), 1);
@@ -158,7 +154,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
         // Check the agency has the route.
@@ -171,7 +167,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         mAgencyDao.saveAgency(updatedAgency);
 
         // Check the new route is not there.
-        fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
         assertTrue(fetchedAgency.routes == null || fetchedAgency.routes.isEmpty());
     }
@@ -199,7 +195,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
         // Check the routes are correct.
@@ -225,7 +221,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
         initialAgency.routes = Collections.singletonList(initialRoute);
 
         mAgencyDao.saveAgency(initialAgency);
-        List<Route> routes = mAgencyDao.getRoutes(AGENCY_ID);
+        List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
 
         assertNotNull(routes);
         assertEquals(routes.size(), 1);
@@ -236,7 +232,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
     public void testDatabaseLocationRemove() {
         Agency initialAgency = TestModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
-        Route routes = mAgencyDao.getRoute(AGENCY_ID, TestModelHelper.ROUTE_ID);
+        Route routes = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
 
         assertNotNull(routes);
         assertNotNull(routes.alerts);
@@ -247,10 +243,10 @@ public class AgencyDaoTest extends CommuteTestApplication {
         updatedAgency.routes.get(0).alerts.get(0).locations = null;
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
-        Route updatedRoute = mAgencyDao.getRoute(AGENCY_ID, TestModelHelper.ROUTE_ID);
+        Route updatedRoute = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
         assertEquals(updatedRoute.alerts.get(0).locations.size(), 0);
 
-        Agency fetchedAgency = mAgencyDao.getAgency(AGENCY_ID);
+        Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertEquals(fetchedAgency.routes.get(0).alerts.get(0).locations.size(), 0);
     }
 
@@ -268,7 +264,7 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
-        List<Route> routes = mAgencyDao.getRoutes(AGENCY_ID);
+        List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
         assertNotNull(routes);
         assertEquals(routes.size(), 1);
 

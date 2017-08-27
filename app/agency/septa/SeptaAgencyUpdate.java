@@ -68,6 +68,12 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
             if (response != null && response.getStatus() == 200) {
                 Logger.debug("Downloaded SEPTA alerts");
 
+                // SEPTA alerts were empty.
+                if (response.getBody() == null || response.getBody().isEmpty()) {
+                    Logger.error("SEPTA JSON alerts body was empty");
+                    return null;
+                }
+
                 // Create gson serializer
                 final Gson gson = new GsonBuilder()
                         .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))

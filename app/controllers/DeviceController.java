@@ -145,7 +145,7 @@ public class DeviceController extends Controller {
                         if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
 
                             // Create push services messages for the update.
-                            List<Message> messages = AlertHelper.getAlertMessages(route, allDevices, platformAccount, true);
+                            List<Message> messages = AlertHelper.getAlertMessages(updateAlert, allDevices, platformAccount, true);
                             if (!messages.isEmpty()) {
                                 Task task = new Task(resendSubscriptionsName);
                                 task.messages = messages;

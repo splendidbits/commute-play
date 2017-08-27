@@ -22,7 +22,7 @@ import java.util.*;
  * the commute GCM agency alerts bundle models.
  */
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
-    private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
+    private static final TimeZone timezone = TimeZone.getTimeZone("EST");
     private Agency mAgency;
 
     public SeptaAlertsDeserializer(@Nullable Agency partialAgency) {
@@ -41,37 +41,36 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
     }
 
-    private Date parse(String jsonDate) {
-        // The SEPTA alerts feed uses different date formats depending on the field
-        // last_updated 1 - Feb 20 2016 07:27:42:520PM
+    public static Calendar getParsedDate(String jsonDate, boolean isDetourDate) {
+        if (jsonDate != null) {
+            SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+            dateFormat1.setLenient(true);
+            dateFormat1.setTimeZone(TimeZone.getTimeZone("EST"));
 
-        SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+            // last_updated 2 - 2017-03-14 15:56:57.090
+            SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+            dateFormat2.setLenient(true);
+            dateFormat2.setTimeZone(TimeZone.getTimeZone("EST"));
 
-        // last_updated 2 - 2017-03-14 15:56:57.090
-        SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+            // detour        - 07/14/2016   9:26 AM
+            SimpleDateFormat dateFormat3 = new SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.US);
+            dateFormat3.setLenient(true);
+            dateFormat3.setTimeZone(TimeZone.getTimeZone("EST"));
 
-        // detour        - 1/14/2016   9:26 AM
-        SimpleDateFormat dateFormat3 = new SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.US);
+            List<SimpleDateFormat> dateFormatters = Arrays.asList(dateFormat1, dateFormat2, dateFormat3);
+            for (SimpleDateFormat formatter : dateFormatters) {
+                try {
+                    Calendar calendar = Calendar.getInstance(timezone, Locale.US);
+                    calendar.setTime(formatter.parse(jsonDate));
+                    return calendar;
 
-        dateFormat1.setLenient(true);
-        dateFormat2.setLenient(true);
-        dateFormat3.setLenient(true);
-
-        List<SimpleDateFormat> dateFormats = new ArrayList<>();
-        dateFormats.add(dateFormat1);
-        dateFormats.add(dateFormat2);
-        dateFormats.add(dateFormat3);
-
-        for (SimpleDateFormat formatter : dateFormats) {
-            try {
-                return formatter.parse(jsonDate);
-            }
-
-            catch (ParseException e) {
-
+                } catch (ParseException e) {
+                }
             }
         }
-        return new Date();
+
+        Logger.error(String.format("Error Parsing date %s. Using current time.", jsonDate));
+        return isDetourDate ? null : Calendar.getInstance(timezone, Locale.US);
     }
 
     @Override
@@ -173,51 +172,45 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          */
                         List<Alert> rowAlerts = new ArrayList<>();
 
-                        Calendar lastUpdateCalendar = Calendar.getInstance(timezone, Locale.US);
-                        if (lastUpdated != null && !lastUpdated.isEmpty()) {
-                            lastUpdateCalendar.setTime(parse(lastUpdated));
-                        }
-
                         // Parse the detour locations into the correct type.
                         if (!detourMessage.isEmpty()) {
-                            Calendar detourStartCalendar = Calendar.getInstance(timezone, Locale.US);
-                            Calendar detourEndCalendar = Calendar.getInstance(timezone, Locale.US);
-
-                            // Add the detour startup and end locations if they exist.
-                            ArrayList<Location> detourLocations = new ArrayList<>();
-                            if (detourMessage.isEmpty() && !detourStartDate.isEmpty()) {
-                                detourStartCalendar.setTime(parse(detourStartDate));
-
-                                Location detourLocation = new Location();
-                                detourLocation.name = detourStartLocation;
-                                detourLocation.date = detourStartCalendar;
-                                detourLocation.sequence = 0;
-                                detourLocation.message = detourReason;
-                                detourLocations.add(detourLocation);
-                            }
-
-                            if (detourEndDate != null && !detourEndDate.isEmpty()) {
-                                detourEndCalendar.setTime(parse(detourEndDate));
-
-                                Location detourLocation = new Location();
-                                detourLocation.date = detourEndCalendar;
-                                detourLocation.sequence = -1;
-                                detourLocation.message = detourReason;
-                                detourLocations.add(detourLocation);
-                            }
-
                             AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
                             alert.highPriority = true;
-                            alert.lastUpdated = lastUpdateCalendar;
+                            alert.lastUpdated = getParsedDate(lastUpdated, false);
                             alert.type = type;
                             alert.messageTitle = type.title;
                             alert.messageSubtitle = detourReason;
                             alert.messageBody = detourMessage;
-                            alert.locations = detourLocations;
                             alert.route = route;
+
+                            // Add the detour startup and end locations if they exist.
+                            ArrayList<Location> detourLocations = new ArrayList<>();
+                            if (!detourStartDate.isEmpty()) {
+                                Location startLocation = new Location();
+                                startLocation.name = detourStartLocation;
+                                startLocation.date = getParsedDate(detourStartDate, true);
+                                startLocation.sequence = 0;
+                                startLocation.message = detourReason;
+                                startLocation.alert = alert;
+                                detourLocations.add(startLocation);
+                            }
+
+                            if (!detourEndDate.isEmpty()) {
+                                Location endLocation = new Location();
+                                endLocation.name = detourStartLocation;
+                                endLocation.date = getParsedDate(detourEndDate, true);
+                                endLocation.sequence = -1;
+                                endLocation.message = detourReason;
+                                endLocation.alert = alert;
+                                detourLocations.add(endLocation);
+                            }
+
+                            alert.locations = detourLocations;
                             rowAlerts.add(alert);
                         }
+
+                        Calendar lastUpdateCalendar = getParsedDate(lastUpdated, false);
 
                         // Snow Alerts
                         if (isSnow.toLowerCase().equals("y")) {

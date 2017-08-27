@@ -1,5 +1,6 @@
 package helpers;
 
+import enums.AlertType;
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
@@ -22,10 +23,7 @@ import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Used to easily create relevant push platform messages for different app alert types,
@@ -70,6 +68,7 @@ public class AlertHelper {
     private enum AlertMessageKey {
         KEY_ROUTE_ID("route_id"),
         KEY_ROUTE_NAME("route_name"),
+        KEY_ALERT_CATEGORY("alert_category"),
         KEY_ROUTE_MESSAGE("message");
 
         private String key;
@@ -185,21 +184,20 @@ public class AlertHelper {
      * Build a list of commute update (detour, advisory, etc), or route cancellation push messages
      * with a set of recipients for an updated route.
      *
-     * @param route           route which has been updated.
+     * @param alert           route which has been updated.
      * @param platformAccount platform account for the alert message.
      * @param isCancellation  set whether the alert message is an update or cancellation (clear).
      * @return List of platform messages for route.
      */
-    public static List<Message> getAlertMessages(@Nonnull Route route, @Nonnull List<Device> devices,
+    public static List<Message> getAlertMessages(@Nonnull Alert alert, @Nonnull List<Device> devices,
                                                  @Nonnull PlatformAccount platformAccount, boolean isCancellation) {
 
         // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
         if (!isCancellation) {
-            List<Message> messages = buildAlertUpdateMessage(route, devices, platformAccount);
+            List<Message> messages = buildAlertUpdateMessage(alert, devices, platformAccount);
 
             for (Message message : messages) {
                 int payloadLength = messagePayloadCount(message);
-
                 if (payloadLength >= MAX_MESSAGE_PAYLOAD_LENGTH) {
                     int truncateAmount = payloadLength - MAX_MESSAGE_PAYLOAD_LENGTH;
                     truncateMessagePayload(message, truncateAmount);
@@ -209,7 +207,7 @@ public class AlertHelper {
 
         } else {
             // If the alerts list is empty or null, this route is cancelled.
-            return buildAlertCancelMessage(route, devices, platformAccount);
+            return buildAlertCancelMessage(alert, devices, platformAccount);
         }
     }
 
@@ -249,26 +247,24 @@ public class AlertHelper {
      * Build a list of commute update (detour, advisory, etc) with a set of recipients
      * for an updated route.
      *
-     * @param route           route which has been updated.
+     * @param alert           alert which has been updated.
      * @param platformAccount platform account for the alert message.
      * @return List of platform messages for route.
      */
     @Nonnull
-    private static List<Message> buildAlertUpdateMessage(@Nonnull Route route, @Nonnull List<Device> devices,
+    private static List<Message> buildAlertUpdateMessage(@Nonnull Alert alert, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
         List<Message> messages = new ArrayList<>();
 
-        if (route.alerts != null && route.routeId != null) {
-            for (Alert alert : route.alerts) {
-
+        if (alert.route != null) {
                 Credentials credentials = getMessageCredentials(platformAccount);
 
                 if (credentials != null) {
                     MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                            .setCollapseKey(route.routeId)
+                            .setCollapseKey(alert.route.routeId)
                             .setPlatformCredentials(credentials)
-                            .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
-                            .putData(AlertMessageKey.KEY_ROUTE_NAME.key, route.routeName)
+                            .putData(AlertMessageKey.KEY_ROUTE_ID.key, alert.route.routeId)
+                            .putData(AlertMessageKey.KEY_ROUTE_NAME.key, alert.route.routeName)
                             .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.key, alert.messageBody);
 
                     switch (alert.type) {
@@ -325,7 +321,6 @@ public class AlertHelper {
                     Logger.error("No Credentials model found for update message.");
                 }
             }
-        }
         return messages;
     }
 
@@ -333,42 +328,42 @@ public class AlertHelper {
      * Build a list of commute cancel messages with a set of recipients for an
      * updated route.
      *
-     * @param route           route which has been updated.
+     * @param alert           alert which has been cancelled.
      * @param platformAccount platform account for the alert message.
      * @return List of platform messages for route.
      */
     @NotNull
-    private static List<Message> buildAlertCancelMessage(@Nonnull Route route, @Nonnull List<Device> devices,
+    private static List<Message> buildAlertCancelMessage(@Nonnull Alert alert,
+                                                         @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
         List<Message> messages = new ArrayList<>();
-        if (route.routeId != null) {
-            Credentials credentials = getMessageCredentials(platformAccount);
+        Credentials credentials = getMessageCredentials(platformAccount);
 
-            if (credentials != null) {
-                MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                        .setCollapseKey(route.routeId)
-                        .setTimeToLiveSeconds(ALERT_LONG_TTL)
-                        .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
-                        .setPlatformCredentials(credentials)
-                        .putData(AlertMessageKey.KEY_ROUTE_ID.key, route.routeId)
-                        .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
+        if (credentials != null) {
+            MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                    .setCollapseKey(alert.route.routeId)
+                    .setTimeToLiveSeconds(ALERT_LONG_TTL)
+                    .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
+                    .setPlatformCredentials(credentials)
+                    .putData(AlertMessageKey.KEY_ALERT_CATEGORY.key, alert.type.name())
+                    .putData(AlertMessageKey.KEY_ROUTE_ID.key, alert.route.routeId)
+                    .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
 
-                Set<String> tokenSet = new HashSet<>();
-                for (Device device : devices) {
-                    tokenSet.add(device.token);
-                }
-
-                messageBuilder.setDeviceTokens(tokenSet);
-
-                try {
-                    messages.add(messageBuilder.build());
-                } catch (TaskValidationException e) {
-                    Logger.error("Exception building the alert cancellation message.");
-                }
-
-            } else {
-                Logger.error("No Credentials model found for cancel message.");
+            Set<String> tokenSet = new HashSet<>();
+            for (Device device : devices) {
+                tokenSet.add(device.token);
             }
+
+            messageBuilder.setDeviceTokens(tokenSet);
+
+            try {
+                messages.add(messageBuilder.build());
+            } catch (TaskValidationException e) {
+                Logger.error("Exception building the alert cancellation message.");
+            }
+
+        } else {
+            Logger.error("No Credentials model found for cancel message.");
         }
         return messages;
     }
@@ -487,6 +482,9 @@ public class AlertHelper {
      */
     @Nonnull
     public static AlertModifications getAgencyModifications(Agency existingAgency, Agency freshAgency) {
+        Map<String, Set<AlertType>> routeIdAlertTypes = new HashMap<>();
+        Set<Alert> ignoredAlerts = new HashSet<>();
+
         // Both agencies do not exist. This is bad.
         if (existingAgency == null && freshAgency == null) {
             Logger.warn("Both agencies for modifications calculation were null!");
@@ -550,11 +548,22 @@ public class AlertHelper {
 
                     // If the routes match.
                     if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                        String routeId = freshRoute.routeId;
                         existingRouteExists = true;
 
-                        List<Alert> updatedAlerts = getUpdatedAlerts(existingRoute.alerts, freshRoute.alerts);
+                        List<Alert> updatedAlerts = getUpdatedAlerts(existingRoute.alerts, freshRoute.alerts, ignoredAlerts);
                         for (Alert updatedAlert : updatedAlerts) {
+
+                            // Add the alert as an update.
                             alertModifications.addUpdatedAlert(updatedAlert);
+
+                            // Add the alert type to the route alert update types list.
+                            Set<AlertType> updateRoutedAlertTypes = routeIdAlertTypes.containsKey(routeId)
+                                    ? routeIdAlertTypes.get(routeId)
+                                    : new HashSet<>();
+
+                            updateRoutedAlertTypes.add(updatedAlert.type);
+                            routeIdAlertTypes.put(routeId, updateRoutedAlertTypes);
                         }
 
                         // There was a route match so skip the inner loop.
@@ -582,11 +591,20 @@ public class AlertHelper {
 
                     // If the routes match.
                     if (freshRoute.routeId.equals(existingRoute.routeId)) {
+                        String routeId = freshRoute.routeId;
                         freshRouteExists = true;
 
-                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts, alertModifications);
+                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.alerts, freshRoute.alerts, ignoredAlerts);
                         for (Alert staleAlert : staleAlerts) {
-                            alertModifications.addStaleAlert(staleAlert);
+
+                            // Only add the stale alert if the same alert type has not been marked as updated.
+                            Set<AlertType> updatedAlertTypes = routeIdAlertTypes.containsKey(routeId)
+                                    ? routeIdAlertTypes.get(routeId)
+                                    : new HashSet<>();
+
+                            if (!updatedAlertTypes.contains(staleAlert.type)) {
+                                alertModifications.addStaleAlert(staleAlert);
+                            }
                         }
 
                         // There was a route match so skip the inner loop.
@@ -608,19 +626,21 @@ public class AlertHelper {
         return alertModifications;
     }
 
+
+
     /**
-     * Get a list of fresh (new) alerts (not including stale) for a route.
+     * Get a list of fresh (new) alerts for a route.
      *
      * @param existingAlerts The previous stored agency route alerts.
      * @param freshAlerts    The current fresh agency route alerts.
      * @return The list of new route alerts.
      */
     @Nonnull
-    private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts) {
+    private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
         List<Alert> updatedAlerts = new ArrayList<>();
 
         // If there are no fresh alerts alerts, nothing can be updated.
-        if ((freshAlerts == null) || freshAlerts.isEmpty()) {
+        if (freshAlerts == null || freshAlerts.isEmpty()) {
             return new ArrayList<>();
         }
 
@@ -629,10 +649,30 @@ public class AlertHelper {
             return freshAlerts;
         }
 
-        // Iterate through each fresh alert. Add it as updated if either of the following are true:
-        // 1: The fresh alert does not exist in the existing alerts
+        // Iterate through and add each updated alert that did not already exist before.
         for (Alert freshAlert : freshAlerts) {
-            if (!existingAlerts.contains(freshAlert)) {
+
+            // If everything matches in the alerts, but the locations have been
+            // deleted, do not treat as an update, but rather skip the alert altogether.
+            for (Alert existingAlert : existingAlerts) {
+
+                Alert existingAlertNoLocations = new Alert();
+                existingAlertNoLocations.locations = new ArrayList<>();
+                existingAlertNoLocations.messageTitle = existingAlert.messageTitle;
+                existingAlertNoLocations.messageSubtitle = existingAlert.messageSubtitle;
+                existingAlertNoLocations.messageBody = existingAlert.messageBody;
+                existingAlertNoLocations.type = existingAlert.type;
+                existingAlertNoLocations.route = existingAlert.route;
+                existingAlertNoLocations.externalUri = existingAlert.externalUri;
+                existingAlertNoLocations.highPriority = existingAlert.highPriority;
+                existingAlertNoLocations.lastUpdated = existingAlert.lastUpdated;
+
+                if (freshAlert.equals(existingAlertNoLocations)) {
+                    ignoredAlerts.add(freshAlert);
+                }
+            }
+
+            if (!existingAlerts.contains(freshAlert) && !ignoredAlerts.contains(freshAlert)) {
                 updatedAlerts.add(freshAlert);
             }
         }
@@ -641,44 +681,36 @@ public class AlertHelper {
     }
 
     /**
-     * An stale alert is defined as an existing {@link enums.AlertType} for the route which no longer
-     * exists in the fresh route alert types.
+     * Get a list of stale (cancelled) alerts for a route.
      *
      * @param existingAlerts The previous stored agency route alerts.
      * @param freshAlerts    The current fresh agency route alerts.
      * @return The list of stale route alerts.
      */
     @Nonnull
-    private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, AlertModifications alertModifications) {
+    private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
         List<Alert> staleAlerts = new ArrayList<>();
 
-        if (existingAlerts == null && freshAlerts == null) {
-            return new ArrayList<>();
-        }
-
-        // If all fresh alerts are "empty" mark all existing as stale.
-        if ((freshAlerts == null || freshAlerts.isEmpty()) &&
-                (existingAlerts != null && !existingAlerts.isEmpty())) {
+        // If there are no fresh alerts, mark all existing as stale.
+        if (freshAlerts == null  || freshAlerts.isEmpty()) {
             return existingAlerts;
         }
 
-        // Ensure the AlertModifications *updates* don't contain any of the fresh alert types.
-        if (existingAlerts != null && freshAlerts != null) {
-            for (Alert existingAlert : existingAlerts) {
-                boolean existingAlertsHasFreshAlertType = false;
+        // Iterate through and add each staleAlert.
+        for (Alert existingAlert : existingAlerts) {
+            Alert existingAlertNoLocations = new Alert();
+            existingAlertNoLocations.locations = new ArrayList<>();
+            existingAlertNoLocations.messageTitle = existingAlert.messageTitle;
+            existingAlertNoLocations.messageSubtitle = existingAlert.messageSubtitle;
+            existingAlertNoLocations.messageBody = existingAlert.messageBody;
+            existingAlertNoLocations.type = existingAlert.type;
+            existingAlertNoLocations.route = existingAlert.route;
+            existingAlertNoLocations.externalUri = existingAlert.externalUri;
+            existingAlertNoLocations.highPriority = existingAlert.highPriority;
+            existingAlertNoLocations.lastUpdated = existingAlert.lastUpdated;
 
-                for (Alert modificationUpdateAlert : alertModifications.getUpdatedAlerts()) {
-                    if (modificationUpdateAlert.type.equals(existingAlert.type)) {
-                        existingAlertsHasFreshAlertType = true;
-                        break;
-                    }
-                }
-
-                if (!existingAlertsHasFreshAlertType) {
-                    if (!freshAlerts.contains(existingAlert)) {
-                        staleAlerts.add(existingAlert);
-                    }
-                }
+            if (!freshAlerts.contains(existingAlert) && !ignoredAlerts.contains(existingAlertNoLocations)) {
+                staleAlerts.add(existingAlert);
             }
         }
 
