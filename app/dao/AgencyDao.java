@@ -1,7 +1,6 @@
 package dao;
 
 import io.ebean.EbeanServer;
-import io.ebean.ExpressionList;
 import io.ebean.FetchConfig;
 import io.ebean.OrderBy;
 import models.alerts.Agency;
@@ -218,20 +217,16 @@ public class AgencyDao extends BaseDao {
      * @return list of alerts for agency. Can be null.
      */
     @Nullable
-    public List<Route> getRoutes(@Nullable Integer agencyId) {
+    public List<Route> getRoutes(int agencyId) {
         try {
-            ExpressionList<Route> routesQuery = mEbeanServer.createQuery(Route.class)
+            return mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency", new FetchConfig().query())
                     .fetch("alerts", new FetchConfig().query())
                     .fetch("alerts.locations", new FetchConfig().query())
-                    .where();
-
-            if (agencyId != null) {
-                routesQuery.eq("agency.id", agencyId);
-            }
-
-            return mEbeanServer.find(Route.class).findList();
+                    .where()
+                    .eq("agency.id", agencyId)
+                    .findList();
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));

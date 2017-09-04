@@ -1,3 +1,6 @@
+import dao.AccountDao;
+import dao.AgencyDao;
+import dao.DeviceDao;
 import injection.modules.DatabaseModule;
 import injection.pushservices.modules.PushServicesModule;
 import main.fluffylog.FluffyLogModule;
@@ -12,7 +15,6 @@ import play.api.inject.guice.GuiceableModule$;
 import play.api.routing.Router;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.routing.RoutingDsl;
-import play.test.Helpers;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -23,30 +25,40 @@ import javax.inject.Provider;
  * Copyright 28/12/2016 Splendid Bits.
  */
 public abstract class CommuteTestApplication {
-    static Application application;
+    static Application application = null;
+    static AccountDao mAccountDao = null;
+    static DeviceDao mDeviceDao = null;
+    static AgencyDao mAgencyDao = null;
+
 
     @BeforeClass
     public static void startApplicationTest() {
         // Mock the router binding.
-        Binding<Router> routesBindingOverride = new BindingKey<>(Router.class)
-                .toProvider(MockRouterProvider.class)
-                .eagerly();
+        if (application == null) {
+            Binding<Router> routesBindingOverride = new BindingKey<>(Router.class)
+                    .toProvider(MockRouterProvider.class)
+                    .eagerly();
 
-        // Create a module from a single binding.
-        GuiceableModule module = GuiceableModule$.MODULE$.fromPlayBinding(routesBindingOverride);
+            // Create a module from a single binding.
+            GuiceableModule module = GuiceableModule$.MODULE$.fromPlayBinding(routesBindingOverride);
 
-        application = new GuiceApplicationBuilder()
-                .in(Mode.TEST)
-                .overrides(routesBindingOverride)
-                .bindings(new PushServicesModule())
-                .bindings(new DatabaseModule())
-                .bindings(new FluffyLogModule())
-                .build();
+            application = new GuiceApplicationBuilder()
+                    .in(Mode.TEST)
+                    .overrides(routesBindingOverride)
+                    .bindings(new PushServicesModule())
+                    .bindings(new DatabaseModule())
+                    .bindings(new FluffyLogModule())
+                    .build();
+
+            mAccountDao = application.injector().instanceOf(AccountDao.class);
+            mDeviceDao = application.injector().instanceOf(DeviceDao.class);
+            mAgencyDao = application.injector().instanceOf(AgencyDao.class);
+        }
     }
 
     @AfterClass
     public static void stopApplicationTest() {
-        Helpers.stop(application);
+
     }
 
     /**

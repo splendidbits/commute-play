@@ -1,4 +1,3 @@
-import dao.AgencyDao;
 import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
@@ -21,11 +20,9 @@ import static org.junit.Assert.*;
  * Test core functions of the Device Data Access Layer.
  */
 public class AgencyDaoTest extends CommuteTestApplication {
-    private static AgencyDao mAgencyDao;
 
     @BeforeClass
     public static void initialise() {
-        mAgencyDao = application.injector().instanceOf(AgencyDao.class);
     }
 
     @After
@@ -224,7 +221,6 @@ public class AgencyDaoTest extends CommuteTestApplication {
         List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
 
         assertNotNull(routes);
-        assertEquals(routes.size(), 1);
         assertTrue(routes.get(0).alerts == null || routes.get(0).alerts.isEmpty());
     }
 
@@ -255,19 +251,25 @@ public class AgencyDaoTest extends CommuteTestApplication {
         Agency initialAgency = TestModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
+        Route updatedRoute = TestModelHelper.createTestRoute();
+
         // Update the location
         Location updatedLocation = TestModelHelper.createTestLocation();
         updatedLocation.message = "new message";
 
+        Alert updatedAlert = TestModelHelper.createTestAlert();
+        updatedAlert.locations = Collections.singletonList(updatedLocation);
+        updatedAlert.route = updatedRoute;
+        updatedRoute.alerts = Collections.singletonList(updatedAlert);
+
         Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.routes.get(0).alerts.get(0).locations = Collections.singletonList(updatedLocation);
+        updatedRoute.agency = updatedAgency;
+        updatedAgency.routes = Collections.singletonList(updatedRoute);
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
         assertNotNull(routes);
-        assertEquals(routes.size(), 1);
-
         assertNotNull(routes.get(0).alerts);
         assertEquals(routes.get(0).alerts.size(), 1);
 

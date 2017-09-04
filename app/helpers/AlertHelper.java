@@ -1,6 +1,5 @@
 package helpers;
 
-import enums.AlertType;
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
 import exceptions.pushservices.TaskValidationException;
@@ -44,20 +43,17 @@ public class AlertHelper {
     /**
      * Different types of commute push message types.
      */
-    private enum MessageType {
-        TYPE_CURRENT_MESSAGE("alert_type", "current_message"),
-        TYPE_DETOUR_MESSAGE("alert_type", "detour_message"),
-        TYPE_ADVISORY_MESSAGE("alert_type", "advisory_message"),
-        TYPE_APP_MESSAGE("alert_type", "app_message"),
-        TYPE_ALERT_CANCEL("alert_type", "cancel_message"),
-        TYPE_REGISTRATION("alert_type", "registered_on_network"),
-        TYPE_RESEND_SUBSCRIPTIONS("alert_type", "resend_subscriptions");
+    private static final String MESSAGE_TYPE_KEY = "message_type";
 
-        private String key;
+    private enum MessageType {
+        TYPE_MESSAGE_NOTIFY("message_notify"),
+        TYPE_MESSAGE_CANCEL("message_cancel"),
+        TYPE_REGISTRATION_COMPLETE("registered_on_network"),
+        TYPE_RESEND_SUBSCRIPTIONS("resend_subscriptions");
+
         private String value;
 
-        MessageType(String key, String value) {
-            this.key = key;
+        MessageType(String value) {
             this.value = value;
         }
     }
@@ -66,15 +62,15 @@ public class AlertHelper {
      * Message payload data keys for Alert message.
      */
     private enum AlertMessageKey {
-        KEY_ROUTE_ID("route_id"),
-        KEY_ROUTE_NAME("route_name"),
+        KEY_ALERT_ROUTE_ID("route_id"),
+        KEY_ALERT_ROUTE_NAME("route_name"),
         KEY_ALERT_CATEGORY("alert_category"),
-        KEY_ROUTE_MESSAGE("message");
+        KEY_ALERT_MESSAGE("alert_message");
 
-        private String key;
+        private String value;
 
-        AlertMessageKey(String key) {
-            this.key = key;
+        AlertMessageKey(String value) {
+            this.value = value;
         }
     }
 
@@ -193,22 +189,34 @@ public class AlertHelper {
                                                  @Nonnull PlatformAccount platformAccount, boolean isCancellation) {
 
         // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
+        List<Message> messages;
         if (!isCancellation) {
-            List<Message> messages = buildAlertUpdateMessage(alert, devices, platformAccount);
-
-            for (Message message : messages) {
-                int payloadLength = messagePayloadCount(message);
-                if (payloadLength >= MAX_MESSAGE_PAYLOAD_LENGTH) {
-                    int truncateAmount = payloadLength - MAX_MESSAGE_PAYLOAD_LENGTH;
-                    truncateMessagePayload(message, truncateAmount);
-                }
-            }
-            return messages;
+            messages = buildAlertUpdateMessage(alert, devices, platformAccount);
 
         } else {
             // If the alerts list is empty or null, this route is cancelled.
-            return buildAlertCancelMessage(alert, devices, platformAccount);
+            messages = buildAlertCancelMessage(alert, devices, platformAccount);
         }
+
+        for (Message message : messages) {
+            int payloadLength = messagePayloadCount(message);
+            if (payloadLength >= MAX_MESSAGE_PAYLOAD_LENGTH) {
+                int truncateAmount = payloadLength - MAX_MESSAGE_PAYLOAD_LENGTH;
+                truncateMessagePayload(message, truncateAmount);
+            }
+        }
+        return messages;
+    }
+
+    /**
+     * Build a set of messages which tells clients to re-subscribe. (re-register and resend subscriptions).
+     *
+     * @param devices         list of devices.
+     * @param platformAccount platform account.
+     * @return list of messages to send.
+     */
+    public static List<Message> getResubscribeMessages(@Nonnull List<Device> devices, @Nonnull PlatformAccount platformAccount) {
+        return buildResubscribeMessage(devices, platformAccount);
     }
 
     /**
@@ -228,12 +236,11 @@ public class AlertHelper {
 
             try {
                 return new MessageBuilder.Builder()
-                        .setCollapseKey(MessageType.TYPE_REGISTRATION.value)
                         .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setTimeToLiveSeconds(ALERT_LONG_TTL)
                         .setPlatformCredentials(credentials)
                         .setDeviceTokens(tokens)
-                        .putData(MessageType.TYPE_REGISTRATION.key, MessageType.TYPE_REGISTRATION.value)
+                        .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_REGISTRATION_COMPLETE.value)
                         .build();
 
             } catch (TaskValidationException e) {
@@ -257,70 +264,65 @@ public class AlertHelper {
         List<Message> messages = new ArrayList<>();
 
         if (alert.route != null) {
-                Credentials credentials = getMessageCredentials(platformAccount);
+            Credentials credentials = getMessageCredentials(platformAccount);
 
-                if (credentials != null) {
-                    MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                            .setCollapseKey(alert.route.routeId)
-                            .setPlatformCredentials(credentials)
-                            .putData(AlertMessageKey.KEY_ROUTE_ID.key, alert.route.routeId)
-                            .putData(AlertMessageKey.KEY_ROUTE_NAME.key, alert.route.routeName)
-                            .putData(AlertMessageKey.KEY_ROUTE_MESSAGE.key, alert.messageBody);
+            if (credentials != null) {
+                MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                        .setCollapseKey(alert.route.routeId + alert.type.name())
+                        .setPlatformCredentials(credentials)
+                        .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
+                        .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
+                        .putData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, alert.route.routeName)
+                        .putData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name())
+                        .putData(AlertMessageKey.KEY_ALERT_MESSAGE.value, alert.messageBody);
 
-                    switch (alert.type) {
-                        case TYPE_DETOUR:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                            messageBuilder.putData(MessageType.TYPE_DETOUR_MESSAGE.key, MessageType.TYPE_DETOUR_MESSAGE.value);
-                            break;
+                switch (alert.type) {
+                    case TYPE_DETOUR:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                        break;
 
-                        case TYPE_INFORMATION:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                            messageBuilder.putData(MessageType.TYPE_ADVISORY_MESSAGE.key, MessageType.TYPE_ADVISORY_MESSAGE.value);
-                            break;
+                    case TYPE_INFORMATION:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                        break;
 
-                        case TYPE_DISRUPTION:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            break;
+                    case TYPE_DISRUPTION:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                        break;
 
-                        case TYPE_WEATHER:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            break;
+                    case TYPE_WEATHER:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                        break;
 
-                        case TYPE_IN_APP:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                            messageBuilder.putData(MessageType.TYPE_APP_MESSAGE.key, MessageType.TYPE_APP_MESSAGE.value);
-                            break;
+                    case TYPE_IN_APP:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                        break;
 
-                        case TYPE_MAINTENANCE:
-                            messageBuilder.setMessagePriority(MessagePriority.PRIORITY_LOW);
-                            messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                            messageBuilder.putData(MessageType.TYPE_CURRENT_MESSAGE.key, MessageType.TYPE_CURRENT_MESSAGE.value);
-                            break;
-                    }
-
-                    Set<String> tokenSet = new HashSet<>();
-                    for (Device device : devices) {
-                        tokenSet.add(device.token);
-                    }
-
-                    messageBuilder.setDeviceTokens(tokenSet);
-                    try {
-                        messages.add(messageBuilder.build());
-                    } catch (TaskValidationException e) {
-                        Logger.error("Exception building the alert update message.");
-                    }
-                } else {
-                    Logger.error("No Credentials model found for update message.");
+                    case TYPE_MAINTENANCE:
+                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                        break;
                 }
+
+                Set<String> tokenSet = new HashSet<>();
+                for (Device device : devices) {
+                    tokenSet.add(device.token);
+                }
+
+                messageBuilder.setDeviceTokens(tokenSet);
+                try {
+                    messages.add(messageBuilder.build());
+                } catch (TaskValidationException e) {
+                    Logger.error("Exception building the alert update message.");
+                }
+            } else {
+                Logger.error("No Credentials model found for update message.");
             }
+        }
         return messages;
     }
 
@@ -341,13 +343,43 @@ public class AlertHelper {
 
         if (credentials != null) {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                    .setCollapseKey(alert.route.routeId)
-                    .setTimeToLiveSeconds(ALERT_LONG_TTL)
-                    .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
+                    .setCollapseKey(alert.route.routeId + alert.type.name())
                     .setPlatformCredentials(credentials)
-                    .putData(AlertMessageKey.KEY_ALERT_CATEGORY.key, alert.type.name())
-                    .putData(AlertMessageKey.KEY_ROUTE_ID.key, alert.route.routeId)
-                    .putData(MessageType.TYPE_ALERT_CANCEL.key, MessageType.TYPE_ALERT_CANCEL.value);
+                    .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
+                    .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
+                    .putData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name());
+
+            Set<String> tokenSet = new HashSet<>();
+            for (Device device : devices) {
+                tokenSet.add(device.token);
+            }
+
+            messageBuilder.setDeviceTokens(tokenSet);
+
+            try {
+                messages.add(messageBuilder.build());
+            } catch (TaskValidationException e) {
+                Logger.error("Exception building the alert cancellation message.");
+            }
+
+        } else {
+            Logger.error("No Credentials model found for cancel message.");
+        }
+        return messages;
+    }
+
+    @NotNull
+    private static List<Message> buildResubscribeMessage(@Nonnull List<Device> devices, @Nonnull PlatformAccount platformAccount) {
+        List<Message> messages = new ArrayList<>();
+        Credentials credentials = getMessageCredentials(platformAccount);
+
+        if (credentials != null) {
+            MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                    .setPlatformCredentials(credentials)
+                    .setMessagePriority(MessagePriority.PRIORITY_HIGH)
+                    .setTimeToLiveSeconds(ALERT_LONG_TTL)
+                    .putData("alert_type", MessageType.TYPE_RESEND_SUBSCRIPTIONS.value)
+                    .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value);
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
@@ -405,7 +437,7 @@ public class AlertHelper {
                 String messageBody = element.value;
 
                 // First, try to trim the alert message itself as much as possible.
-                if (element.key.equals(AlertMessageKey.KEY_ROUTE_MESSAGE.key) && !messageBody.isEmpty()) {
+                if (element.equals(AlertMessageKey.KEY_ALERT_MESSAGE) && !messageBody.isEmpty()) {
 
                     /*
                      * The payload message can't just be truncated by amount sent, as this may
@@ -445,9 +477,7 @@ public class AlertHelper {
         List<PayloadElement> messagePayload = message.payloadData;
         if (messagePayload != null) {
             for (PayloadElement element : messagePayload) {
-                if (element.key.equals(MessageType.TYPE_CURRENT_MESSAGE.key) ||
-                        element.key.equals(MessageType.TYPE_DETOUR_MESSAGE.key) ||
-                        element.key.equals(MessageType.TYPE_ADVISORY_MESSAGE.key)) {
+                if (element.equals(MessageType.TYPE_MESSAGE_NOTIFY)) {
                     return true;
                 }
             }
@@ -482,7 +512,7 @@ public class AlertHelper {
      */
     @Nonnull
     public static AlertModifications getAgencyModifications(Agency existingAgency, Agency freshAgency) {
-        Map<String, Set<AlertType>> routeIdAlertTypes = new HashMap<>();
+        Map<String, Set<enums.AlertType>> routeIdAlertTypes = new HashMap<>();
         Set<Alert> ignoredAlerts = new HashSet<>();
 
         // Both agencies do not exist. This is bad.
@@ -558,7 +588,7 @@ public class AlertHelper {
                             alertModifications.addUpdatedAlert(updatedAlert);
 
                             // Add the alert type to the route alert update types list.
-                            Set<AlertType> updateRoutedAlertTypes = routeIdAlertTypes.containsKey(routeId)
+                            Set<enums.AlertType> updateRoutedAlertTypes = routeIdAlertTypes.containsKey(routeId)
                                     ? routeIdAlertTypes.get(routeId)
                                     : new HashSet<>();
 
@@ -598,7 +628,7 @@ public class AlertHelper {
                         for (Alert staleAlert : staleAlerts) {
 
                             // Only add the stale alert if the same alert type has not been marked as updated.
-                            Set<AlertType> updatedAlertTypes = routeIdAlertTypes.containsKey(routeId)
+                            Set<enums.AlertType> updatedAlertTypes = routeIdAlertTypes.containsKey(routeId)
                                     ? routeIdAlertTypes.get(routeId)
                                     : new HashSet<>();
 
@@ -625,8 +655,6 @@ public class AlertHelper {
 
         return alertModifications;
     }
-
-
 
     /**
      * Get a list of fresh (new) alerts for a route.
@@ -655,7 +683,6 @@ public class AlertHelper {
             // If everything matches in the alerts, but the locations have been
             // deleted, do not treat as an update, but rather skip the alert altogether.
             for (Alert existingAlert : existingAlerts) {
-
                 Alert existingAlertNoLocations = new Alert();
                 existingAlertNoLocations.locations = new ArrayList<>();
                 existingAlertNoLocations.messageTitle = existingAlert.messageTitle;
@@ -692,7 +719,7 @@ public class AlertHelper {
         List<Alert> staleAlerts = new ArrayList<>();
 
         // If there are no fresh alerts, mark all existing as stale.
-        if (freshAlerts == null  || freshAlerts.isEmpty()) {
+        if (freshAlerts == null || freshAlerts.isEmpty()) {
             return existingAlerts;
         }
 

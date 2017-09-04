@@ -21,7 +21,7 @@ GET         /signup                                  @controllers.SignupControll
 POST        /signup/adduser                          @controllers.SignupController.addUser()
 
 # debug endpoints.
-POST        /debug/alldeviceresubscribe              @controllers.DeviceController.requestDeviceSubscriptionResend()
+GET         /debug/alldeviceresubscribe/apikey/:key  @controllers.DeviceController.requestDeviceSubscriptionResend(key: String)
 ->          /debug/logs                              fluffylog.Routes
 
 # Map static resources from the /public folder to the /assets URL path

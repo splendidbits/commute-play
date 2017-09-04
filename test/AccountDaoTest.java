@@ -1,4 +1,3 @@
-import dao.AccountDao;
 import enums.pushservices.PlatformType;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
@@ -11,11 +10,9 @@ import static org.junit.Assert.*;
  * Test core functions of the Device Data Access Layer.
  */
 public class AccountDaoTest extends CommuteTestApplication {
-    private static AccountDao mAccountDao;
 
     @BeforeClass
     public static void initialise() {
-        mAccountDao = application.injector().instanceOf(AccountDao.class);
     }
 
     @Test

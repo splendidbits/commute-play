@@ -1,6 +1,3 @@
-import dao.AccountDao;
-import dao.AgencyDao;
-import dao.DeviceDao;
 import enums.AlertType;
 import helpers.AlertHelper;
 import javafx.util.Pair;
@@ -27,16 +24,10 @@ import static org.junit.Assert.*;
  */
 public class AlertModificationsTest extends CommuteTestApplication {
     private static PushMessageManager mPushMessageManager;
-    private static DeviceDao mDeviceDao;
-    private static AccountDao mAccountDao;
-    private static AgencyDao mAgencyDao;
 
     @BeforeClass
     public static void setup() {
         mPushMessageManager = application.injector().instanceOf(PushMessageManager.class);
-        mDeviceDao = application.injector().instanceOf(DeviceDao.class);
-        mAccountDao = application.injector().instanceOf(AccountDao.class);
-        mAgencyDao = application.injector().instanceOf(AgencyDao.class);
 
         // Save an account
         Account testAccount = TestModelHelper.createTestAccount();
