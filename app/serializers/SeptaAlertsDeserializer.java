@@ -43,12 +43,12 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
     public static Calendar getParsedDate(String jsonDate, boolean isDetourDate) {
         if (jsonDate != null) {
-            SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss:SSSa", Locale.US);
+            SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSSa", Locale.US);
             dateFormat1.setLenient(true);
             dateFormat1.setTimeZone(TimeZone.getTimeZone("EST"));
 
             // last_updated 2 - 2017-03-14 15:56:57.090
-            SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
+            SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US);
             dateFormat2.setLenient(true);
             dateFormat2.setTimeZone(TimeZone.getTimeZone("EST"));
 
