@@ -132,27 +132,6 @@ public class DeviceController extends Controller {
     }
 
     /**
-     * Get the API account for the web request.
-     *
-     * @return Account for apiKey if found.
-     */
-    @Nullable
-    private Account getRequestApiAccount() {
-        final Set<Map.Entry<String, String[]>> entries = request().queryString().entrySet();
-        String foundApiKey = null;
-
-        for (Map.Entry<String, String[]> entry : entries) {
-            final String key = entry.getKey();
-            final String value = Arrays.deepToString(entry.getValue());
-
-            if (key.toLowerCase().equals("apikey") && !value.isEmpty()) {
-                foundApiKey = value.substring(1, value.length() - 1);
-            }
-        }
-        return mAccountDao.getAccountForKey(foundApiKey);
-    }
-
-    /**
      * Perform registration action for new device.
      *
      * @return CompletionStage<RegistrationResult> result of registration action.

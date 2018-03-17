@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -49,10 +50,20 @@ public class DeviceDaoTest extends CommuteTestApplication {
     public void testDatabaseDeviceInsert() {
         Device initialDevice = TestModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
-
         assertTrue(mDeviceDao.saveDevice(initialDevice));
+
         Device existingDevice = mDeviceDao.getDevice(initialDevice.deviceId);
         assertNotNull(existingDevice);
+
+        Device secondDevice = TestModelHelper.createTestDevice();
+        secondDevice.deviceId = "new_id";
+        secondDevice.token = "new_token";
+        secondDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
+        assertTrue(mDeviceDao.saveDevice(secondDevice));
+
+        List<Device> devices = mDeviceDao.getAccountDevices(TestModelHelper.ACCOUNT_API_KEY, 1);
+        assertNotNull(devices);
+        assertEquals(2, devices.size());
     }
 
     @Test

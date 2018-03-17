@@ -88,6 +88,7 @@ public class TestModelHelper {
     static Account createTestAccount() {
         PlatformAccount platformAccount = new PlatformAccount();
         platformAccount.authorisationKey = "test_auth_key";
+        platformAccount.packageUri = "com.staticfish.commute.test";
         platformAccount.platformType = PlatformType.SERVICE_GCM;
 
         // Save the account
