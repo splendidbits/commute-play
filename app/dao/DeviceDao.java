@@ -172,14 +172,17 @@ public class DeviceDao extends BaseDao {
                         .fetch("subscriptions.route")
                         .fetch("subscriptions.route.agency")
                         .where()
+                        .disjunction()
                         .eq("deviceId", device.deviceId)
+                        .eq("token", device.token)
+                        .endJunction()
                         .query()
                         .findList();
 
                 if (matchingDevices != null) {
                     for (Device matchingDevice : matchingDevices) {
                         if (matchingDevice.subscriptions != null) {
-                            mEbeanServer.deleteAllPermanent(matchingDevice.subscriptions);
+                            mEbeanServer.deleteAll(matchingDevice.subscriptions);
                         }
                         mEbeanServer.deletePermanent(matchingDevice);
                     }

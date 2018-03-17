@@ -38,8 +38,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
 
     @Override
     public void startAgencyUpdate() {
-        String hostname = Constants.IS_DEBUG ? Constants.DEBUG_API_SERVER_HOST  : Constants.PROD_API_SERVER_HOST;
-        String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", hostname, AGENCY_ID);
+        String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
             Logger.debug("Starting download of SEPTA agency alert data.");

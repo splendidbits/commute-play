@@ -1,13 +1,13 @@
 package controllers;
 
+import dao.AgencyDao;
+import dao.DeviceDao;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import dao.AgencyDao;
-import dao.DeviceDao;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 /**
  * The public API endpoint controller that handles devices subscribing to agency routes
@@ -29,11 +28,14 @@ public class SubscriptionController extends Controller {
     private static final String ROUTE_LIST_KEY = "route_list";
     private static final String AGENCY_NAME_KEY = "agency_id";
 
-    @Inject
     private AgencyDao mAgencyService;
+    private DeviceDao mDeviceDao;
 
     @Inject
-    private DeviceDao mDeviceDao;
+    public SubscriptionController(AgencyDao mAgencyService, DeviceDao mDeviceDao) {
+        this.mAgencyService = mAgencyService;
+        this.mDeviceDao = mDeviceDao;
+    }
 
     // Return results enum
     private enum SubscriptionResult {
@@ -43,10 +45,10 @@ public class SubscriptionController extends Controller {
         BAD_ACCOUNT(badRequest("No account for api_key")),
         NO_REGISTRATION_RESULT(badRequest("No registered device found for device ID."));
 
-        public Result mResultValue;
+        public Result result;
 
         SubscriptionResult(play.mvc.Result resultValue) {
-            mResultValue = resultValue;
+            result = resultValue;
         }
     }
 
@@ -57,14 +59,10 @@ public class SubscriptionController extends Controller {
      */
     @SuppressWarnings("Convert2Lambda")
     public CompletionStage<Result> subscribe() {
-        CompletionStage<SubscriptionResult> promiseOfSubscription = initiateSubscription();
-
-        return promiseOfSubscription.thenApplyAsync(new Function<SubscriptionResult, Result>() {
-            @Override
-            public Result apply(SubscriptionResult result) {
-                return result.mResultValue;
-            }
-        });
+        return initiateSubscription(request()).thenApplyAsync((stage) -> {
+                return stage.result;
+                }
+        );
     }
 
     /**
@@ -72,52 +70,55 @@ public class SubscriptionController extends Controller {
      *
      * @return CompletionStage<SubscriptionResult> result of registration action.
      */
-    private CompletionStage<SubscriptionResult> initiateSubscription() {
-        Http.RequestBody requestBody = request().body();
+    private CompletionStage<SubscriptionResult> initiateSubscription(Http.Request request) {
+        return CompletableFuture.supplyAsync(() -> {
 
-        if (validateInputData(requestBody)) {
-            Map<String, String[]> formEncodedMap = requestBody.asFormUrlEncoded();
+            if (validateInputData(request.body())) {
+                Map<String, String[]> formEncodedMap = request.body().asFormUrlEncoded();
 
-            Integer agencyId = formEncodedMap.get(AGENCY_NAME_KEY) != null
-                    ? Integer.valueOf(formEncodedMap.get(AGENCY_NAME_KEY)[0])
-                    : null;
+                Integer agencyId = formEncodedMap.get(AGENCY_NAME_KEY) != null
+                        ? Integer.valueOf(formEncodedMap.get(AGENCY_NAME_KEY)[0])
+                        : null;
 
-            String deviceId = formEncodedMap.get(DEVICE_UUID_KEY) != null
-                    ? formEncodedMap.get(DEVICE_UUID_KEY)[0].trim().toLowerCase()
-                    : null;
+                String deviceId = formEncodedMap.get(DEVICE_UUID_KEY) != null
+                        ? formEncodedMap.get(DEVICE_UUID_KEY)[0]
+                        : null;
 
-            String[] routes = formEncodedMap.get(ROUTE_LIST_KEY) != null
-                    ? formEncodedMap.get(ROUTE_LIST_KEY)[0].trim().split(" ")
-                    : null;
+                String[] routes = formEncodedMap.get(ROUTE_LIST_KEY) != null
+                        ? formEncodedMap.get(ROUTE_LIST_KEY)[0].trim().split(" ")
+                        : null;
 
-            if (agencyId != null && deviceId != null && routes != null) {
+                if (agencyId != null && deviceId != null && routes != null) {
 
-                // Check that the device is already registered.
-                Device device = mDeviceDao.getDevice(deviceId);
-                if (device == null) {
-                    return CompletableFuture.completedFuture(SubscriptionResult.NO_REGISTRATION_RESULT);
-                }
-
-                // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
-                List<Route> validRoutes = mAgencyService.getRoutes(agencyId, Arrays.asList(routes));
-                List<Subscription> subscriptions = new ArrayList<>();
-
-                if (!validRoutes.isEmpty()) {
-                    for (Route route : validRoutes) {
-                        Subscription subscription = new Subscription();
-                        subscription.device = device;
-                        subscription.route = route;
-                        subscriptions.add(subscription);
+                    // Check that the device is already registered.
+                    Device device = mDeviceDao.getDevice(deviceId);
+                    if (device == null) {
+                        return SubscriptionResult.NO_REGISTRATION_RESULT;
                     }
 
-                    // Persist the subscriptions
-                    device.subscriptions = subscriptions;
-                    mDeviceDao.saveDevice(device);
-                    return CompletableFuture.completedFuture(SubscriptionResult.OK);
+                    // Get a list of all the valid routes from the sent primitive array. Add them to the subscription.
+                    List<Route> validRoutes = mAgencyService.getRoutes(agencyId, Arrays.asList(routes));
+                    List<Subscription> subscriptions = new ArrayList<>();
+
+                    if (!validRoutes.isEmpty()) {
+                        for (Route route : validRoutes) {
+                            Subscription subscription = new Subscription();
+                            subscription.device = device;
+                            subscription.route = route;
+                            subscriptions.add(subscription);
+                        }
+
+                        // Persist the subscriptions
+                        device.subscriptions = subscriptions;
+                        mDeviceDao.saveDevice(device);
+
+                        return SubscriptionResult.OK;
+                    }
                 }
             }
-        }
-        return CompletableFuture.completedFuture(SubscriptionResult.BAD_SUBSCRIPTION_REQUEST);
+
+            return SubscriptionResult.BAD_SUBSCRIPTION_REQUEST;
+        });
     }
 
     /**

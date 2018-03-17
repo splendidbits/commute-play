@@ -65,15 +65,15 @@ public abstract class AgencyUpdate {
 
             // Get existing alerts for the agency.
             Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
-            
+
             // Diff the new and existing agency data and form a modifications model.
             AlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
-            // Save the agency in the datastore.
-            mAgencyManager.saveAgency(updatedAgency);
-            Logger.debug("Saving new or updated agency data.");
-
             if (agencyModifications.hasChangedAlerts()) {
+                // Save the agency in the datastore.
+                mAgencyManager.saveAgency(updatedAgency);
+                Logger.debug("Saving new or updated agency data.");
+
                 Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
                 mPushMessageManager.dispatchAlerts(agencyModifications);
 

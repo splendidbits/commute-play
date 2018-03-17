@@ -78,7 +78,7 @@ public class DeviceController extends Controller {
      * @return A Result.
      */
     public CompletionStage<Result> register() {
-        CompletionStage<DeviceControllerResult> promiseOfRegistration = initiateRegistration();
+        CompletionStage<DeviceControllerResult> promiseOfRegistration = initiateRegistration(request());
         return promiseOfRegistration.thenApplyAsync(deviceControllerResult -> deviceControllerResult.value);
     }
 
@@ -89,49 +89,46 @@ public class DeviceController extends Controller {
      * @return A Result.
      */
     public CompletionStage<Result> requestDeviceSubscriptionResend(final @Nullable String apiKey) {
-        final Http.Context inboundReqContext = ctx();
+        return CompletableFuture.supplyAsync(() -> {
+            if (apiKey == null || apiKey.isEmpty()) {
+                return DeviceControllerResult.MISSING_PARAMS_RESULT.value;
+            }
 
-        return CompletableFuture.supplyAsync(() -> inboundReqContext)
-                .thenApply(context -> {
-                    if (apiKey == null || apiKey.isEmpty()) {
-                        return DeviceControllerResult.MISSING_PARAMS_RESULT.value;
-                    }
+            // Return error if there is no Account or platform accounts for apiKey.
+            Account account = mAccountDao.getAccountForKey(apiKey);
+            if (account == null || !account.active || account.platformAccounts == null || account.platformAccounts.isEmpty()) {
+                return DeviceControllerResult.BAD_ACCOUNT.value;
+            }
 
-                    // Return error if there is no Account or platform accounts for apiKey.
-                    Account account = mAccountDao.getAccountForKey(apiKey);
-                    if (account == null || !account.active || account.platformAccounts == null || account.platformAccounts.isEmpty()) {
-                        return DeviceControllerResult.BAD_ACCOUNT.value;
-                    }
+            // Fetch all devices for the given account.
+            List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, 1);
+            if (allDevices.isEmpty()) {
+                return DeviceControllerResult.OK.value;
+            }
 
-                    // Fetch all devices for the given account.
-                    List<Device> allDevices = mDeviceDao.getAccountDevices(account.apiKey, 1);
-                    if (allDevices.isEmpty()) {
-                        return DeviceControllerResult.OK.value;
-                    }
+            // Send update using one of each platform.
+            for (PlatformAccount platformAccount : account.platformAccounts) {
+                if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
 
-                    // Send update using one of each platform.
-                    for (PlatformAccount platformAccount : account.platformAccounts) {
-                        if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
+                    // Create pu1sh services messages for the update.
+                    List<Message> messages = AlertHelper.getResubscribeMessages(allDevices, platformAccount);
+                    if (!messages.isEmpty()) {
+                        Task task = new Task("route_resend_subscriptions");
+                        task.messages = messages;
+                        task.priority = Task.TASK_PRIORITY_LOW;
 
-                            // Create pu1sh services messages for the update.
-                            List<Message> messages = AlertHelper.getResubscribeMessages(allDevices, platformAccount);
-                            if (!messages.isEmpty()) {
-                                Task task = new Task("route_resend_subscriptions");
-                                task.messages = messages;
-                                task.priority = Task.TASK_PRIORITY_LOW;
+                        try {
+                            mTaskQueue.queueTask(task, new PingAllDevicesCallback());
 
-                                try {
-                                    mTaskQueue.queueTask(task, new PingAllDevicesCallback());
-
-                                } catch (TaskValidationException e) {
-                                    Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
-                                }
-                            }
+                        } catch (TaskValidationException e) {
+                            Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
                         }
                     }
+                }
+            }
 
-                    return DeviceControllerResult.OK.value;
-                });
+            return DeviceControllerResult.OK.value;
+        });
     }
 
     /**
@@ -161,70 +158,72 @@ public class DeviceController extends Controller {
      * @return CompletionStage<RegistrationResult> result of registration action.
      */
     @Nonnull
-    private CompletionStage<DeviceControllerResult> initiateRegistration() {
+    private CompletionStage<DeviceControllerResult> initiateRegistration(Http.Request request) {
+        return CompletableFuture.supplyAsync(() -> {
 
-        Map<String, String[]> requestMap = request().body().asFormUrlEncoded();
-        if (requestMap == null) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.MISSING_PARAMS_RESULT);
-        }
-
-        String deviceId = requestMap.get(DEVICE_UUID_KEY) != null
-                ? requestMap.get(DEVICE_UUID_KEY)[0]
-                : null;
-
-        String registrationId = requestMap.get(REGISTRATION_TOKEN_KEY) != null
-                ? requestMap.get(REGISTRATION_TOKEN_KEY)[0]
-                : null;
-
-        String apiKey = requestMap.get(API_KEY) != null
-                ? requestMap.get(API_KEY)[0]
-                : null;
-
-        String appKey = requestMap.get(APP_ID_KEY) != null
-                ? requestMap.get(APP_ID_KEY)[0]
-                : null;
-
-        String userKey = requestMap.get(APP_USER_ID_KEY) != null
-                ? requestMap.get(APP_USER_ID_KEY)[0]
-                : null;
-
-        // Check that there was a valid registration token and device uuid.
-        if (registrationId == null || deviceId == null || apiKey == null) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.MISSING_PARAMS_RESULT);
-        }
-
-        Account account = mAccountDao.getAccountForKey(apiKey);
-        if (account == null || !account.active) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.BAD_ACCOUNT);
-        }
-
-        if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.BAD_ACCOUNT);
-        }
-
-        Device device = new Device(deviceId, registrationId);
-        device.account = account;
-        device.appKey = appKey;
-        device.userKey = userKey;
-
-        // Return error if there were no platform accounts for apiKey.
-        if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.BAD_ACCOUNT);
-        }
-
-        if (!mDeviceDao.saveDevice(device)) {
-            return CompletableFuture.completedFuture(DeviceControllerResult.UNKNOWN_ERROR);
-        }
-
-        // Send update using one of each platform.
-        for (PlatformAccount platformAccount : account.platformAccounts) {
-            if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
-                mPushMessageManager.sendRegistrationConfirmMessage(device, platformAccount);
-                break;
+            Map<String, String[]> requestMap = request.body().asFormUrlEncoded();
+            if (requestMap == null) {
+                return DeviceControllerResult.MISSING_PARAMS_RESULT;
             }
-        }
 
-        return CompletableFuture.completedFuture(DeviceControllerResult.OK);
+            String deviceId = requestMap.get(DEVICE_UUID_KEY) != null
+                    ? requestMap.get(DEVICE_UUID_KEY)[0]
+                    : null;
+
+            String registrationId = requestMap.get(REGISTRATION_TOKEN_KEY) != null
+                    ? requestMap.get(REGISTRATION_TOKEN_KEY)[0]
+                    : null;
+
+            String apiKey = requestMap.get(API_KEY) != null
+                    ? requestMap.get(API_KEY)[0]
+                    : null;
+
+            String appKey = requestMap.get(APP_ID_KEY) != null
+                    ? requestMap.get(APP_ID_KEY)[0]
+                    : null;
+
+            String userKey = requestMap.get(APP_USER_ID_KEY) != null
+                    ? requestMap.get(APP_USER_ID_KEY)[0]
+                    : null;
+
+            // Check that there was a valid registration token and device uuid.
+            if (registrationId == null || deviceId == null || apiKey == null) {
+                return DeviceControllerResult.MISSING_PARAMS_RESULT;
+            }
+
+            Account account = mAccountDao.getAccountForKey(apiKey);
+            if (account == null || !account.active) {
+                return DeviceControllerResult.BAD_ACCOUNT;
+            }
+
+            if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
+                return DeviceControllerResult.BAD_ACCOUNT;
+            }
+
+            Device device = new Device(deviceId, registrationId);
+            device.account = account;
+            device.appKey = appKey;
+            device.userKey = userKey;
+
+            // Return error if there were no platform accounts for apiKey.
+            if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
+                return DeviceControllerResult.BAD_ACCOUNT;
+            }
+
+            if (!mDeviceDao.saveDevice(device)) {
+                return DeviceControllerResult.UNKNOWN_ERROR;
+            }
+
+            // Send update using one of each platform.
+            for (PlatformAccount platformAccount : account.platformAccounts) {
+                if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
+                    mPushMessageManager.sendRegistrationConfirmMessage(device, platformAccount);
+                    break;
+                }
+            }
+
+            return DeviceControllerResult.OK;
+        });
     }
 
 

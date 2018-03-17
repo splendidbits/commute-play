@@ -30,7 +30,7 @@ public class AlertModifications {
      * @return true if the agency has updated alerts since the previous agency set.
      */
     public boolean hasChangedAlerts() {
-        return !(mUpdatedAlerts.isEmpty() && mStaleAlerts.isEmpty());
+        return !mUpdatedAlerts.isEmpty() || !mStaleAlerts.isEmpty();
     }
 
     /**
