@@ -268,7 +268,7 @@ public class AlertHelper {
 
             if (credentials != null) {
                 MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                        .setCollapseKey(alert.route.routeId + alert.type.name())
+                        .setCollapseKey(alert.route.routeId + "-" + alert.type.name())
                         .setPlatformCredentials(credentials)
                         .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
                         .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
@@ -343,7 +343,7 @@ public class AlertHelper {
 
         if (credentials != null) {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                    .setCollapseKey(alert.route.routeId + alert.type.name())
+                    .setCollapseKey(alert.route.routeId + "-" + alert.type.name())
                     .setPlatformCredentials(credentials)
                     .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
                     .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
