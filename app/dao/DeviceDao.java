@@ -182,13 +182,13 @@ public class DeviceDao extends BaseDao {
                 if (matchingDevices != null) {
                     for (Device matchingDevice : matchingDevices) {
                         if (matchingDevice.subscriptions != null) {
-                            mEbeanServer.deleteAll(matchingDevice.subscriptions);
+                            mEbeanServer.deleteAllPermanent(matchingDevice.subscriptions);
                         }
                         mEbeanServer.deletePermanent(matchingDevice);
                     }
                 }
 
-                mEbeanServer.insert(device);
+                mEbeanServer.save(device);
                 return true;
 
             } catch (Exception e) {
