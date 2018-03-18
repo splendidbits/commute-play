@@ -79,6 +79,7 @@ public abstract class AgencyUpdate {
 
             } else {
                 Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
+                mAgencyManager.cacheAgency(updatedAgency);
             }
         }
     }

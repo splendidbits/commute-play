@@ -11,7 +11,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -77,6 +76,10 @@ public class AgencyManager {
     @Nonnull
     public List<Agency> getCachedAgencyMetadata() {
         List<Agency> agencies = mCacheApi.get(CACHE_ALL_KEY);
+        if (agencies == null || agencies.isEmpty()) {
+
+        }
+
         return agencies != null ? agencies : new ArrayList<>();
     }
 
@@ -87,7 +90,7 @@ public class AgencyManager {
      *
      * @param agency agency to set as the cache.
      */
-    private void cacheAgency(@Nullable Agency agency) {
+    public void cacheAgency(@Nullable Agency agency) {
         if (agency != null && agency.id != null) {
             String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
 
@@ -97,17 +100,8 @@ public class AgencyManager {
             // Iterate through the list of cached agencies and check it contains this one.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
             if (!cachedAgencies.isEmpty()) {
-                Iterator<Agency> cachedAgencyIterator = cachedAgencies.iterator();
-
-                //for (Agency cachedAgency : cachedAgencies) {
-                while (cachedAgencyIterator.hasNext()) {
-                    Agency cachedAgency = cachedAgencyIterator.next();
-
-                    // Find a matching Agency Identifier.
-                    if (agency.id.equals(cachedAgency.id)) {
-                        cachedAgencyIterator.remove();
-                    }
-                }
+                // Find a matching Agency Identifier.
+                cachedAgencies.removeIf(cachedAgency -> agency.id.equals(cachedAgency.id));
             }
 
             // There was no cache match found for the agency. Add it to the cache.
