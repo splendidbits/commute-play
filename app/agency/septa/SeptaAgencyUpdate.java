@@ -41,7 +41,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
         String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
-            Logger.debug("Starting download of SEPTA agency alert data.");
+            Logger.info("Starting download of SEPTA agency alert data.");
 
             // Proxy pass-through to http://www3.septa.org/hackathon/Alerts/get_alert_data.php?req1=all
             CompletionStage<WSResponse> downloadStage = mWsClient
@@ -65,7 +65,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
         public Agency apply(WSResponse response) {
             Agency agencyAlerts = null;
             if (response != null && response.getStatus() == 200) {
-                Logger.debug("Downloaded SEPTA alerts");
+                Logger.info("Downloaded SEPTA alerts");
 
                 // SEPTA alerts were empty.
                 if (response.getBody() == null || response.getBody().isEmpty()) {
@@ -78,7 +78,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
                         .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
                         .create();
 
-                Logger.debug("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
+                Logger.info("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
                 agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
                 processAgencyUpdate(agencyAlerts);
             }

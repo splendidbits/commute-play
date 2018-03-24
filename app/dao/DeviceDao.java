@@ -82,7 +82,7 @@ public class DeviceDao extends BaseDao {
                     ? devices.get(devices.size() -1)
                     : null;
 
-            Logger.debug(device != null
+            Logger.info(device != null
                     ? String.format("Found device with deviceId %s", device.deviceId)
                     : String.format("No device found deviceId %s", deviceId));
 
@@ -111,7 +111,7 @@ public class DeviceDao extends BaseDao {
                     .findList();
 
             if (devices.isEmpty()) {
-                Logger.debug(String.format("No device found for token %s", staleToken));
+                Logger.info(String.format("No device found for token %s", staleToken));
                 return false;
             }
 
@@ -149,7 +149,7 @@ public class DeviceDao extends BaseDao {
                     .eq("token", deviceToken)
                     .delete();
 
-            Logger.debug(String.format("Removed device %s,", deviceToken));
+            Logger.info(String.format("Removed device %s,", deviceToken));
 
         } catch (Exception e) {
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);

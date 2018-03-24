@@ -75,7 +75,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        Logger.debug("Started parsing SEPTA alerts json body");
+        Logger.info("Started parsing SEPTA alerts json body");
 
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
@@ -274,7 +274,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         }
 
         Collections.sort(mAgency.routes);
-        Logger.debug("Finished creating and sorting SEPTA route-alert map.");
+        Logger.info("Finished creating and sorting SEPTA route-alert map.");
 
         return mAgency;
     }

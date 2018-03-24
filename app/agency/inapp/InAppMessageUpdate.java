@@ -44,12 +44,12 @@ public class InAppMessageUpdate extends AgencyUpdate {
 
     @Override
     public void startAgencyUpdate() {
-        Logger.debug("Starting compilation of Commute App Message alerts.");
+        Logger.info("Starting compilation of Commute App Message alerts.");
         String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
 
-            Logger.debug("Starting download of in-app messages.");
+            Logger.info("Starting download of in-app messages.");
             CompletionStage<WSResponse> downloadStage = mWsClient
                     .url(alertUrl)
                     .setRequestTimeout(APP_ALERT_TIMEOUT)
@@ -71,14 +71,14 @@ public class InAppMessageUpdate extends AgencyUpdate {
         public Agency apply(WSResponse response) {
             Agency agencyAlerts = null;
             if (response != null && response.getStatus() == 200) {
-                Logger.debug("Downloaded in-app Messages.");
+                Logger.info("Downloaded in-app Messages.");
 
                 // Create gson serializer
                 final Gson gson = new GsonBuilder()
                         .registerTypeAdapter(Agency.class, new InAppMessagesDeserializer(null))
                         .create();
 
-                Logger.debug("Finished parsing in-app json body. Sending to AgencyUpdateService");
+                Logger.info("Finished parsing in-app json body. Sending to AgencyUpdateService");
                 agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
                 processAgencyUpdate(agencyAlerts);
             }

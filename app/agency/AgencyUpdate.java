@@ -72,9 +72,9 @@ public abstract class AgencyUpdate {
             if (agencyModifications.hasChangedAlerts()) {
                 // Save the agency in the datastore.
                 mAgencyManager.saveAgency(updatedAgency);
-                Logger.debug("Saving new or updated agency data.");
+                Logger.info("Saving new or updated agency data.");
 
-                Logger.debug("New Agency Alerts persisted. Sending to subscribers.");
+                Logger.info("New Agency Alerts persisted. Sending to subscribers.");
                 mPushMessageManager.dispatchAlerts(agencyModifications);
 
             } else {

@@ -261,12 +261,12 @@ public class PushMessageManager {
 
         @Override
         public void messageCompleted(@Nonnull Message originalMessage) {
-            Logger.debug(String.format("Message %d completed.", originalMessage.id));
+            Logger.info(String.format("Message %d completed.", originalMessage.id));
         }
 
         @Override
         public void messageFailed(@Nonnull Message originalMessage, PlatformFailure failure) {
-            Logger.debug(String.format("Message %d failed - %s.", originalMessage.id, failure.failureMessage));
+            Logger.info(String.format("Message %d failed - %s.", originalMessage.id, failure.failureMessage));
         }
     }
 

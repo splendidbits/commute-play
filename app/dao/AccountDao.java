@@ -55,7 +55,7 @@ public class AccountDao extends BaseDao {
                     .filterMany("devices").eq("subscriptions.route.routeId", routeId)
                     .findList();
 
-            Logger.debug(!accounts.isEmpty()
+            Logger.info(!accounts.isEmpty()
                     ? String.format("Found %d accounts for route %s", accounts.size(), routeId)
                     : String.format("No accounts found for route %s", routeId));
 
@@ -80,7 +80,7 @@ public class AccountDao extends BaseDao {
                     .eq("apiKey", apiKey)
                     .findList();
 
-            Logger.debug(!accounts.isEmpty()
+            Logger.info(!accounts.isEmpty()
                     ? String.format("Found an API account found for key %s", apiKey)
                     : String.format("No API account found for key %s", apiKey));
 

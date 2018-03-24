@@ -41,7 +41,7 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        Logger.debug("Started parsing inapp messages json body");
+        Logger.info("Started parsing inapp messages json body");
 
         // The InApp message alerts feed uses DataFormat: 2016/10/10 3:52pm (yyyy/mm/dd hh mma)
         SimpleDateFormat messageTimeFormat = new SimpleDateFormat("yyyy/mm/dd hh:mma", Locale.US);
@@ -99,7 +99,7 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
         }
 
         Collections.sort(mAgency.routes);
-        Logger.debug("Finished creating and sorting in-app messages.");
+        Logger.info("Finished creating and sorting in-app messages.");
 
         return mAgency;
     }

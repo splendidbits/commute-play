@@ -62,7 +62,7 @@ public class AgencyDao extends BaseDao {
      * @return boolean for success.
      */
     public boolean saveAgency(@Nonnull Agency freshAgency) {
-        Logger.debug("Persisting agency routes in database.");
+        Logger.info("Persisting agency routes in database.");
         final Agency existingAgency = getAgency(freshAgency.id);
 
         try {
