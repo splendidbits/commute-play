@@ -1,8 +1,12 @@
-sudo rm -r commutealerts-0.2/
+sudo rm -r commutealerts-0.3
 
-git clone -b master https://github.com/splendidbits/commute-play commutealerts-0.2
-cd commutealerts-0.2
+git clone -b master https://github.com/splendidbits/commute-play commutealerts-0.3
+cd commutealerts-0.3
+../sbt/bin/sbt clean compile stage dist
+
+
+// Optional if modules are installed.
+cd commutealerts-0.3
 git submodule update --init --recursive
 git pull --all --recurse-submodules
 
-./activator clean compile stage dist run
