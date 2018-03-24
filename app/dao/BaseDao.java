@@ -28,9 +28,6 @@ class BaseDao {
             ServerConfig serverConfig = ((SpiEbeanServer) mEbeanServer).getServerConfig();
             serverConfig.setDdlGenerate(true);
             serverConfig.setDdlRun(true);
-
-//            DdlGenerator ddlGenerator = new DdlGenerator((SpiEbeanServer) mEbeanServer, serverConfig);
-//            ddlGenerator.execute(true);
         }
     }
 }

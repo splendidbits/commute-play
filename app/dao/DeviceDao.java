@@ -67,7 +67,7 @@ public class DeviceDao extends BaseDao {
     @Nullable
     public Device getDevice(@Nonnull String deviceId) {
         try {
-            Device device = mEbeanServer.find(Device.class)
+            List<Device> devices = mEbeanServer.find(Device.class)
                     .setOrder(new OrderBy<>("time_registered desc"))
                     .fetch("account")
                     .fetch("subscriptions")
@@ -76,7 +76,11 @@ public class DeviceDao extends BaseDao {
                     .where()
                     .eq("deviceId", deviceId)
                     .query()
-                    .findOne();
+                    .findList();
+
+            Device device = !devices.isEmpty()
+                    ? devices.get(devices.size() -1)
+                    : null;
 
             Logger.debug(device != null
                     ? String.format("Found device with deviceId %s", device.deviceId)
@@ -99,22 +103,23 @@ public class DeviceDao extends BaseDao {
      */
     public boolean saveUpdatedToken(@Nonnull String staleToken, @Nullable String newToken) {
         try {
-            Device device = mEbeanServer.find(Device.class)
+            List<Device> devices = mEbeanServer.find(Device.class)
                     .setOrder(new OrderBy<>("time_registered desc"))
                     .where()
                     .eq("token", staleToken)
                     .query()
-                    .findOne();
+                    .findList();
 
-            if (device != null && device.id != null) {
-                mEbeanServer.update(Device.class)
-                        .set("token", newToken)
-                        .where()
-                        .eq("token", staleToken)
-                        .update();
+            if (devices.isEmpty()) {
+                Logger.debug(String.format("No device found for token %s", staleToken));
+                return false;
             }
 
-            Logger.debug(String.format("No device found for token %s", staleToken));
+            mEbeanServer.update(Device.class)
+                    .set("token", newToken)
+                    .where()
+                    .eq("token", staleToken)
+                    .update();
 
         } catch (Exception e) {
             Logger.error("Error persisting updated Device Token", e);
@@ -178,19 +183,17 @@ public class DeviceDao extends BaseDao {
                         .query()
                         .findList();
 
-                if (matchingDevices != null) {
-                    for (Device matchingDevice : matchingDevices) {
-                        if (matchingDevice.subscriptions != null) {
-                            mEbeanServer.deleteAll(matchingDevice.subscriptions);
-                        }
-                        mEbeanServer.delete(matchingDevice);
+                for (Device matchingDevice : matchingDevices) {
+                    if (matchingDevice.subscriptions != null) {
+                        mEbeanServer.deleteAll(matchingDevice.subscriptions);
                     }
+                    mEbeanServer.delete(matchingDevice);
                 }
 
                 mEbeanServer.insert(device);
 
             } catch (Exception e) {
-                Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getStackTrace());
+                Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getMessage());
                 return false;
             }
 

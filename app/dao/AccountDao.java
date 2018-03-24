@@ -55,17 +55,15 @@ public class AccountDao extends BaseDao {
                     .filterMany("devices").eq("subscriptions.route.routeId", routeId)
                     .findList();
 
-            String logString = accounts != null && !accounts.isEmpty()
+            Logger.debug(!accounts.isEmpty()
                     ? String.format("Found %d accounts for route %s", accounts.size(), routeId)
-                    : String.format("No accounts found for route %s", routeId);
-
-            Logger.debug(logString);
+                    : String.format("No accounts found for route %s", routeId));
 
         } catch (Exception e) {
             Logger.error("Error fetching account.", e);
         }
 
-        return accounts != null ? accounts : new ArrayList<>();
+        return accounts;
     }
 
     /**
@@ -77,17 +75,18 @@ public class AccountDao extends BaseDao {
     @Nullable
     public Account getAccountForKey(String apiKey) {
         if (apiKey != null) {
-            Account account = mEbeanServer.createQuery(Account.class)
+            List<Account> accounts = mEbeanServer.createQuery(Account.class)
                     .where()
                     .eq("apiKey", apiKey)
-                    .findOne();
+                    .findList();
 
-            String logString = account != null
+            Logger.debug(!accounts.isEmpty()
                     ? String.format("Found an API account found for key %s", apiKey)
-                    : String.format("No API account found for key %s", apiKey);
+                    : String.format("No API account found for key %s", apiKey));
 
-            Logger.debug(logString);
-            return account;
+            if (!accounts.isEmpty()) {
+                return accounts.get(accounts.size() - 1);
+            }
         }
         return null;
     }
@@ -116,17 +115,16 @@ public class AccountDao extends BaseDao {
             if (savedAccount != null) {
                 account.id = savedAccount.id;
                 mEbeanServer.save(account);
-
-            } else {
+                } else {
                 mEbeanServer.insert(account);
             }
-
-            return true;
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
             return false;
         }
+
+        return true;
     }
 
     /**
@@ -137,18 +135,19 @@ public class AccountDao extends BaseDao {
      */
     public boolean removeAccount(long accountId) {
         try {
-            Account account = mEbeanServer.find(Account.class)
+            List<Account> accounts = mEbeanServer.find(Account.class)
                     .fetch("platformAccounts")
                     .where()
                     .idEq(accountId)
-                    .findOne();
+                    .findList();
 
-            mEbeanServer.deletePermanent(account);
-            return true;
+            mEbeanServer.deleteAllPermanent(accounts);
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
             return false;
         }
+
+        return true;
     }
 }
