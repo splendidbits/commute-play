@@ -64,7 +64,7 @@ public abstract class AgencyUpdate {
             AlertHelper.parseHtml(updatedAgency);
 
             // Get existing alerts for the agency.
-            Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
+            Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id, false);
 
             // Diff the new and existing agency data and form a modifications model.
             AlertModifications modifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);

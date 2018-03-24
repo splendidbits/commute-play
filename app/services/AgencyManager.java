@@ -59,9 +59,9 @@ public class AgencyManager {
      * @return A saved agency if it exists, or null if not.
      */
     @Nullable
-    public Agency getSavedAgency(int agencyId) {
+    public Agency getSavedAgency(int agencyId, boolean useCache) {
         Agency agency = getCachedAgency(agencyId);
-        if (agency == null) {
+        if (agency == null || !useCache) {
             return mAgencyDao.getAgency(agencyId);
         }
         return agency;

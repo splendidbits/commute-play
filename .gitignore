@@ -1,8 +1,7 @@
-.idea/libraries/
+**/.idea
 workspace.xml
 *.iml
 *.lock
-*.komodoproject
 .DS_Store
 .classpath
 .cache
@@ -11,11 +10,12 @@ workspace.xml
 RUNNING_PID
 repository/
 monitoring/
-project/target/*
-project/project/target/*
-target/*
+**/project/target/*
+**/project/project/target/*
+**/target/*
 logs/
 bin/
 .sbtserver
 out/
 passwords.txt
+credentials.properties
