@@ -9,7 +9,7 @@ import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;

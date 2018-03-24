@@ -14,7 +14,7 @@ import play.data.validation.ValidationError;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.twirl.api.Html;
-import services.fluffylog.Logger;
+import play.Logger;
 import views.html.signup;
 
 import javax.annotation.Nonnull;

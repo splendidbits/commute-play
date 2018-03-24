@@ -1,8 +1,8 @@
 package injection.modules;
 
 import com.google.inject.AbstractModule;
-import injection.providers.ApplicationLifecycleProvider;
-import main.ApplicationLifecycleListener;
+import injection.providers.LifecycleListenerProvider;
+import main.LifecycleListener;
 
 /**
  * GNU General Public License v3.0.
@@ -10,11 +10,10 @@ import main.ApplicationLifecycleListener;
  * Copyright 02/01/2017 Splendid Bits.
  */
 public class ApplicationModule extends AbstractModule {
-
     @Override
     protected void configure() {
-        bind(ApplicationLifecycleListener.class)
-                .toProvider(ApplicationLifecycleProvider.class)
+        bind(LifecycleListener.class)
+                .toProvider(LifecycleListenerProvider.class)
                 .asEagerSingleton();
     }
 }

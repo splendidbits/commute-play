@@ -3,7 +3,6 @@ import dao.AgencyDao;
 import dao.DeviceDao;
 import injection.modules.DatabaseModule;
 import injection.pushservices.modules.PushServicesModule;
-import main.fluffylog.FluffyLogModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import play.Application;
@@ -47,7 +46,6 @@ public abstract class CommuteTestApplication {
                     .overrides(routesBindingOverride)
                     .bindings(new PushServicesModule())
                     .bindings(new DatabaseModule())
-                    .bindings(new FluffyLogModule())
                     .build();
 
             mAccountDao = application.injector().instanceOf(AccountDao.class);

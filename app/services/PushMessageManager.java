@@ -21,7 +21,7 @@ import models.pushservices.db.Message;
 import models.pushservices.db.PlatformFailure;
 import models.pushservices.db.Recipient;
 import models.pushservices.db.Task;
-import services.fluffylog.Logger;
+import play.Logger;
 import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;

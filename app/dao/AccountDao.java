@@ -6,7 +6,7 @@ import io.ebean.FetchConfig;
 import io.ebean.Junction;
 import models.accounts.Account;
 import models.alerts.Route;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -32,8 +32,7 @@ public class AccountDao extends BaseDao {
      *
      * @param platform Push service platform type.
      * @param agencyId Id of {@link models.alerts.Agency}
-     * @param routeId An Agency {@link Route} routeId.
-     *
+     * @param routeId  An Agency {@link Route} routeId.
      * @return List of API accounts.
      */
     @Nonnull
@@ -81,7 +80,7 @@ public class AccountDao extends BaseDao {
             Account account = mEbeanServer.createQuery(Account.class)
                     .where()
                     .eq("apiKey", apiKey)
-                    .findUnique();
+                    .findOne();
 
             String logString = account != null
                     ? String.format("Found an API account found for key %s", apiKey)
@@ -95,8 +94,8 @@ public class AccountDao extends BaseDao {
 
     /**
      * Save an account.
-     * @param account to save.
      *
+     * @param account to save.
      * @return boolean of success.
      */
     public boolean saveAccount(Account account) {
@@ -113,7 +112,7 @@ public class AccountDao extends BaseDao {
             }
             accountSearch.endJunction();
 
-            Account savedAccount = accountSearch.endJunction().findUnique();
+            Account savedAccount = accountSearch.endJunction().findOne();
             if (savedAccount != null) {
                 account.id = savedAccount.id;
                 mEbeanServer.save(account);
@@ -132,8 +131,8 @@ public class AccountDao extends BaseDao {
 
     /**
      * Remove an account.
-     * @param accountId accountId
      *
+     * @param accountId accountId
      * @return boolean of success.
      */
     public boolean removeAccount(long accountId) {

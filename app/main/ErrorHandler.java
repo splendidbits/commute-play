@@ -4,7 +4,7 @@ import play.http.HttpErrorHandler;
 import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;

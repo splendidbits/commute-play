@@ -1,19 +1,12 @@
 name := "commutealerts"
-version := "0.2"
+version := "0.3"
 
 lazy val buildSettings = Seq(
   scalaVersion := "2.11.8"
 )
 
-lazy val fluffylog = (project in file("modules/fluffylog"))
-  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
-  .settings(buildSettings: _*)
-
 lazy val commutealerts = (project in file("."))
-  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer, PlayAkkaHttpServer)
-  .disablePlugins(PlayNettyServer)
-  .dependsOn(fluffylog)
-  .aggregate(fluffylog)
+  .enablePlugins(PlayJava, PlayEbean, PlayEnhancer)
   .settings(buildSettings: _*)
 
 resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
@@ -27,15 +20,16 @@ libraryDependencies ++= Seq(
   javaJpa,
   javaWs,
   guice,
-  "com.splendidbits" % "play-pushservices" % "1.0.2",
+  "com.splendidbits" % "play-pushservices" % "1.1",
   "com.typesafe.play" %% "play-ahc-ws-standalone" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",
   "com.typesafe.play" %% "play-json" % "2.6.1",
   "org.avaje" % "avaje-agentloader" % "2.1.2",
-  "org.postgresql" % "postgresql" % "42.1.1",
+  "org.postgresql" % "postgresql" % "42.2.2",
+  "org.jetbrains" % "annotations" % "13.0",
   "org.jsoup" % "jsoup" % "1.10.1",
-  "com.google.code.gson" % "gson" % "2.8.1",
+  "com.google.code.gson" % "gson" % "2.8.2",
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-all" % "2.0.2-beta" % Test
 )

@@ -1,4 +1,0 @@
-[submodule "modules/fluffylog"]
-	path = modules/fluffylog
-	url = https://splendidbits@github.com/splendidbits/play-fluffylog.git
-	branch = master

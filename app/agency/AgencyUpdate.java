@@ -5,9 +5,9 @@ import models.AlertModifications;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
+import play.Logger;
 import services.AgencyManager;
 import services.PushMessageManager;
-import services.fluffylog.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;

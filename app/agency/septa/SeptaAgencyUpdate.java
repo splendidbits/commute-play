@@ -11,7 +11,7 @@ import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
 import services.AgencyManager;
 import services.PushMessageManager;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.inject.Inject;
 import java.util.Locale;

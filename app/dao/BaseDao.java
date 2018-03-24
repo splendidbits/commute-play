@@ -2,10 +2,9 @@ package dao;
 
 import io.ebean.EbeanServer;
 import io.ebean.config.ServerConfig;
-import io.ebean.dbmigration.DdlGenerator;
 import io.ebeaninternal.api.SpiEbeanServer;
 import main.Constants;
-import services.fluffylog.Logger;
+import play.Logger;
 
 /**
  * GNU General Public License v3.0.
@@ -30,8 +29,8 @@ class BaseDao {
             serverConfig.setDdlGenerate(true);
             serverConfig.setDdlRun(true);
 
-            DdlGenerator ddlGenerator = new DdlGenerator((SpiEbeanServer) mEbeanServer, serverConfig);
-            ddlGenerator.execute(true);
+//            DdlGenerator ddlGenerator = new DdlGenerator((SpiEbeanServer) mEbeanServer, serverConfig);
+//            ddlGenerator.execute(true);
         }
     }
 }

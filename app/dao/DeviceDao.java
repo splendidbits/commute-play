@@ -4,7 +4,7 @@ import io.ebean.EbeanServer;
 import io.ebean.OrderBy;
 import models.devices.Device;
 import models.devices.Subscription;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ public class DeviceDao extends BaseDao {
                     .eq("account.apiKey", apiKey)
                     .findList();
 
-            if (devices != null && !devices.isEmpty()) {
+            if (!devices.isEmpty()) {
                 foundDevices.addAll(devices);
             }
 
@@ -76,7 +76,7 @@ public class DeviceDao extends BaseDao {
                     .where()
                     .eq("deviceId", deviceId)
                     .query()
-                    .findUnique();
+                    .findOne();
 
             Logger.debug(device != null
                     ? String.format("Found device with deviceId %s", device.deviceId)
@@ -112,16 +112,15 @@ public class DeviceDao extends BaseDao {
                         .where()
                         .eq("token", staleToken)
                         .update();
-
-                return true;
             }
 
             Logger.debug(String.format("No device found for token %s", staleToken));
 
         } catch (Exception e) {
             Logger.error("Error persisting updated Device Token", e);
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -146,12 +145,12 @@ public class DeviceDao extends BaseDao {
                     .delete();
 
             Logger.debug(String.format("Removed device %s,", deviceToken));
-            return true;
 
         } catch (Exception e) {
             Logger.error(String.format("Error deleting device for %s.", deviceToken), e);
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -189,16 +188,17 @@ public class DeviceDao extends BaseDao {
                 }
 
                 mEbeanServer.insert(device);
-                return true;
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getStackTrace());
+                return false;
             }
 
         } else {
             Logger.error("Device must contain a deviceId (UUID) and account.");
+            return false;
         }
-        return false;
+        return true;
     }
 
 }

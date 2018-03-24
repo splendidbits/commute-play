@@ -5,7 +5,7 @@ import models.alerts.Agency;
 import models.alerts.Route;
 import play.cache.CacheApi;
 import play.cache.NamedCache;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

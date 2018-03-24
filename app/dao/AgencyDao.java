@@ -6,7 +6,7 @@ import io.ebean.OrderBy;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -153,7 +153,6 @@ public class AgencyDao extends BaseDao {
                         .update();
             }
 
-            return true;
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency alerts model to database: %s.", e.getMessage()));
@@ -161,11 +160,13 @@ public class AgencyDao extends BaseDao {
                     e.getMessage().contains("Query threw SQLException:ERROR:")) {
                 createDatabase();
             }
+            return false;
 
         } catch (Exception e) {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", freshAgency.name), e);
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -256,7 +257,7 @@ public class AgencyDao extends BaseDao {
                     .eq("agency.id", agencyId)
                     .eq("routeId", routeId)
                     .endJunction()
-                    .findUnique();
+                    .findOne();
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
@@ -291,7 +292,7 @@ public class AgencyDao extends BaseDao {
                     .where()
                     .idEq(agencyId)
                     .query()
-                    .findUnique();
+                    .findOne();
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error fetching Agency models from database: %s.", e.getMessage()));

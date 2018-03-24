@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
-import services.fluffylog.Logger;
+import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -20,7 +20,7 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import services.PushMessageManager;
-import services.fluffylog.Logger;
+import play.Logger;
 import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;
