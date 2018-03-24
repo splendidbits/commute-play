@@ -92,22 +92,20 @@ public class AgencyManager {
      */
     public void cacheAgency(@Nullable Agency agency) {
         if (agency != null && agency.id != null) {
+
+            // Add or overwrite agency to its own cache.
             String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
-
             mCacheApi.set(agencyCacheKey, agency);
-            Logger.info(String.format("Cached agency %d to %s.", agency.id, agencyCacheKey));
+            Logger.info(String.format("Cached %s agency to %s.", agency.name, agencyCacheKey));
 
-            // Iterate through the list of cached agencies and check it contains this one.
+            // Remove agency from the all agencies cache.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
-            if (!cachedAgencies.isEmpty()) {
-                // Find a matching Agency Identifier.
-                cachedAgencies.removeIf(cachedAgency -> agency.id.equals(cachedAgency.id));
-            }
+            cachedAgencies.removeIf(cachedAgency -> agency.id.equals(cachedAgency.id));
 
-            // There was no cache match found for the agency. Add it to the cache.
+            // Add agency back to the all agencies cache.
             cachedAgencies.add(agency);
             mCacheApi.set(CACHE_ALL_KEY, cachedAgencies);
-            Logger.info(String.format("Cached agency %d to %s.", agency.id, CACHE_ALL_KEY));
+            Logger.info(String.format("Cached %s agency to %s.", agency.name, CACHE_ALL_KEY));
         }
     }
 
