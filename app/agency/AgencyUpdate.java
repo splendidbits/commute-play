@@ -71,8 +71,8 @@ public abstract class AgencyUpdate {
 
             int updatedAlertCount = agencyModifications.getUpdatedAlerts().size();
             int staleAlertCount = agencyModifications.getStaleAlerts().size();
-            Logger.info(String.format("\n[%d] new alerts found for agency: %s.", updatedAlertCount, updatedAgency.name));
-            Logger.info(String.format("[%d] stale alerts found for agency: %s.", staleAlertCount, updatedAgency.name));
+            Logger.info(String.format("[%d] new alerts found for: %s.", updatedAlertCount, updatedAgency.name));
+            Logger.info(String.format("[%d] stale alerts found for: %s.", staleAlertCount, updatedAgency.name));
 
             if (agencyModifications.hasChangedAlerts()) {
                 Logger.info("Saving new or updated agency data.");

@@ -22,6 +22,7 @@ import java.util.*;
  * the commute GCM agency alerts bundle models.
  */
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
+    private static final String[] IGNORED_ROUTES = {"bus_app"};
     private static final TimeZone timezone = TimeZone.getTimeZone("EST");
     private Agency mAgency;
 
@@ -102,6 +103,19 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
+
+                        // SKIP SOME ROUTES
+                        boolean ignoreRoute = false;
+                        for (String route : IGNORED_ROUTES) {
+                            if (route.equals(routeId)) {
+                                Logger.info(String.format("Ignoring route %s for agency %s", route, mAgency.name));
+                                ignoreRoute = true;
+                                break;
+                            }
+                        }
+                        if (ignoreRoute) {
+                            continue;
+                        }
 
                         /*
                          * Routes Parsing:

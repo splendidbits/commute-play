@@ -22,7 +22,7 @@ import java.util.function.Function;
  * Agency updater for SEPTA alerts.
  */
 public class SeptaAgencyUpdate extends AgencyUpdate {
-    public static final String AGENCY_NAME = "South East Pennsylvania Transit Association";
+    public static final String AGENCY_NAME = "SEPTA";
     public static final int AGENCY_ID = 1;
 
     private WSClient mWsClient;
