@@ -135,10 +135,12 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (routeId.contains("generic")) {
                             route.transitType = TransitType.TYPE_SPECIAL;
                             route.externalUri = "http://www.septa.org/service/";
+                            route.routeName = "General";
 
                         } else if (routeId.contains("cct")) {
                             route.transitType = TransitType.TYPE_SPECIAL;
                             route.externalUri = "http://www.septa.org/service/cct/";
+                            route.routeName = "CCT Connect";
 
                         } else if (routeId.contains("bsl")) {
                             route.transitType = TransitType.TYPE_SUBWAY;
