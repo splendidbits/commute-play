@@ -95,7 +95,7 @@ public class AgencyManager {
             String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
 
             mCacheApi.set(agencyCacheKey, agency);
-            Logger.info(String.format("Saved agency %d to %s.", agency.id, agencyCacheKey));
+            Logger.info(String.format("Cached agency %d to %s.", agency.id, agencyCacheKey));
 
             // Iterate through the list of cached agencies and check it contains this one.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
@@ -107,7 +107,7 @@ public class AgencyManager {
             // There was no cache match found for the agency. Add it to the cache.
             cachedAgencies.add(agency);
             mCacheApi.set(CACHE_ALL_KEY, cachedAgencies);
-            Logger.info(String.format("Saved agency %d to %s.", agency.id, CACHE_ALL_KEY));
+            Logger.info(String.format("Cached agency %d to %s.", agency.id, CACHE_ALL_KEY));
         }
     }
 

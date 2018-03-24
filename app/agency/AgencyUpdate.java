@@ -67,21 +67,26 @@ public abstract class AgencyUpdate {
             Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id);
 
             // Diff the new and existing agency data and form a modifications model.
-            AlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
+            AlertModifications modifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
-            int updatedAlertCount = agencyModifications.getUpdatedAlerts().size();
-            int staleAlertCount = agencyModifications.getStaleAlerts().size();
-            Logger.info(String.format("[%d] new alerts found for: %s.", updatedAlertCount, updatedAgency.name));
-            Logger.info(String.format("[%d] stale alerts found for: %s.", staleAlertCount, updatedAgency.name));
+            // Log some shit.
+            int updatedAlertCount = modifications.getUpdatedAlerts().size();
+            int staleAlertCount = modifications.getStaleAlerts().size();
+            int count = updatedAlertCount + staleAlertCount;
 
-            if (agencyModifications.hasChangedAlerts()) {
+            Logger.info(String.format("%s alerts found for %s.", count > 0 ? "* Updated" : "No updated", updatedAgency.name));
+            Logger.info(String.format("[%d] new alerts.", updatedAlertCount));
+            Logger.info(String.format("[%d] stale alerts.", staleAlertCount));
+
+            if (modifications.hasChangedAlerts()) {
                 Logger.info("Saving new or updated agency data.");
                 mAgencyManager.saveAgency(updatedAgency);
 
-                Logger.info("New Agency Alerts persisted. Sending to subscribers.");
-                mPushMessageManager.dispatchAlerts(agencyModifications);
+                Logger.info("Updated Agency Alerts persisted. Sending to subscribers.");
+                mPushMessageManager.dispatchAlerts(modifications);
 
             } else {
+                Logger.info("Updated Agency Alerts persisted. Sending to subscribers.");
                 mAgencyManager.cacheAgency(updatedAgency);
             }
         }

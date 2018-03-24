@@ -107,7 +107,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         // SKIP SOME ROUTES
                         boolean ignoreRoute = false;
                         for (String route : IGNORED_ROUTES) {
-                            if (route.equals(routeId)) {
+                            if (route.toLowerCase().equals(routeId.toLowerCase())) {
                                 Logger.info(String.format("Ignoring route %s for agency %s", route, mAgency.name));
                                 ignoreRoute = true;
                                 break;
