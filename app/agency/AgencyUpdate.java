@@ -69,16 +69,19 @@ public abstract class AgencyUpdate {
             // Diff the new and existing agency data and form a modifications model.
             AlertModifications agencyModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
+            int updatedAlertCount = agencyModifications.getUpdatedAlerts().size();
+            int staleAlertCount = agencyModifications.getStaleAlerts().size();
+            Logger.info(String.format("[%d] new alerts found for agency: %s.", updatedAlertCount, updatedAgency.name));
+            Logger.info(String.format("[%d] stale alerts found for agency: %s.", staleAlertCount, updatedAgency.name));
+
             if (agencyModifications.hasChangedAlerts()) {
-                // Save the agency in the datastore.
-                mAgencyManager.saveAgency(updatedAgency);
                 Logger.info("Saving new or updated agency data.");
+                mAgencyManager.saveAgency(updatedAgency);
 
                 Logger.info("New Agency Alerts persisted. Sending to subscribers.");
                 mPushMessageManager.dispatchAlerts(agencyModifications);
 
             } else {
-                Logger.info(String.format("No changed alerts found for agency: %s.", updatedAgency.name));
                 mAgencyManager.cacheAgency(updatedAgency);
             }
         }

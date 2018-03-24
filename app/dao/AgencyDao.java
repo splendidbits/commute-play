@@ -73,7 +73,7 @@ public class AgencyDao extends BaseDao {
 
             // Delete all routes if there are no fresh routes.
             if (freshAgency.routes == null || freshAgency.routes.isEmpty()) {
-                mEbeanServer.deleteAllPermanent(existingAgency.routes);
+                mEbeanServer.deleteAll(existingAgency.routes);
             }
 
             if (freshAgency.routes != null) {
@@ -104,11 +104,11 @@ public class AgencyDao extends BaseDao {
 
                                         // Delete all existing alerts.
                                         if (existingRoute.alerts != null) {
-                                            mEbeanServer.deleteAllPermanent(existingRoute.alerts);
+                                            mEbeanServer.deleteAll(existingRoute.alerts);
 
                                             // Delete all existing locations.
                                             for (Alert existingAlert : existingRoute.alerts) {
-                                                mEbeanServer.deleteAllPermanent(existingAlert.locations);
+                                                mEbeanServer.deleteAll(existingAlert.locations);
                                             }
                                         }
 

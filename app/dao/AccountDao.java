@@ -141,7 +141,7 @@ public class AccountDao extends BaseDao {
                     .idEq(accountId)
                     .findList();
 
-            mEbeanServer.deleteAllPermanent(accounts);
+            mEbeanServer.deleteAll(accounts);
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
