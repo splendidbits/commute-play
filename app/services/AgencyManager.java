@@ -96,7 +96,7 @@ public class AgencyManager {
             // Add or overwrite agency to its own cache.
             String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
             mCacheApi.set(agencyCacheKey, agency);
-            Logger.info(String.format("Cached %s agency to %s.", agency.name, agencyCacheKey));
+            Logger.info(String.format("Cached agency %s to %s.", agency.name, agencyCacheKey));
 
             // Remove agency from the all agencies cache.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
@@ -105,7 +105,7 @@ public class AgencyManager {
             // Add agency back to the all agencies cache.
             cachedAgencies.add(agency);
             mCacheApi.set(CACHE_ALL_KEY, cachedAgencies);
-            Logger.info(String.format("Cached %s agency to %s.", agency.name, CACHE_ALL_KEY));
+            Logger.info(String.format("Cached agency %s to %s.", agency.name, CACHE_ALL_KEY));
         }
     }
 
@@ -121,10 +121,9 @@ public class AgencyManager {
         Agency agency = mCacheApi.get(agencyCacheKey);
 
         if (agency != null) {
-            Logger.info(String.format("Cache hit for agency %d in %s. :)", agencyId, agencyCacheKey));
-
+            Logger.info(String.format("Cache hit for agency %s :)", agencyCacheKey));
         } else {
-            Logger.warn(String.format("Cache miss for agency %d in %s. :(", agencyId, agencyCacheKey));
+            Logger.warn(String.format("Cache miss for agency %s :(", agencyCacheKey));
         }
         return agency;
     }

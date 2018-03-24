@@ -1,20 +1,28 @@
 #!/bin/bash
 COMMUTE_VERSION="commutealerts-0.3"
+TEMP_DIR="commutealerts.temp"
 
-echo "* Stopping Commute Alerts Service"
-sudo service commutealerts stop 
 cd /var/play/splendidbits
 
-echo "* Removing previous application"
-sudo rm -r $COMMUTE_VERSION
-
 echo "* Downloading updated Commute application sources"
-git clone -b master https://splendidbits:9d560e33fd0c4382d2957744b907895bc589637e@github.com/splendidbits/commute-play $COMMUTE_VERSION
-ln -s $COMMUTE_VERSION commutealerts
-cd $COMMUTE_VERSION
+sudo rm -r $TEMP_DIR
+git clone -b master https://splendidbits:9d560e33fd0c4382d2957744b907895bc589637e@github.com/splendidbits/commute-play $TEMP_DIR
+cd $TEMP_DIR
 
 echo "* Compiling updated application sources"
 ../sbt/bin/sbt clean compile stage dist
+
+cd ..
+echo "* Stopping Commute Alerts Service"
+sudo service commutealerts stop
+
+echo "* Replacing previous application"
+sudo rm -r $COMMUTE_VERSION
+
+echo "* Moving previous application"
+mv $TEMP_DIR $COMMUTE_VERSION 
+
+ln -s $COMMUTE_VERSION commutealerts
 
 echo "* Restarting Commute Alerts Service"
 sudo service commutealerts start
