@@ -13,6 +13,8 @@ public class SchedulersModule extends AbstractModule implements AkkaGuiceSupport
     @Override
     protected void configure() {
         bindActor(AgencyUpdateActor.class, AgencyUpdateActor.ACTOR_NAME);
-        bind(CommuteSchedulers.class).asEagerSingleton();
+
+        bind(CommuteSchedulers.class)
+                .asEagerSingleton();
     }
 }

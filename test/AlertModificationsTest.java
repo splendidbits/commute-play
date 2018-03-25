@@ -52,22 +52,72 @@ public class AlertModificationsTest extends CommuteTestApplication {
     public static void teardown() {
         // Delete test Device.
         Device testDevice = mDeviceDao.getDevice(TestModelHelper.TEST_DEVICE_ID);
-        mDeviceDao.removeDevice(testDevice.token);
+        if (testDevice != null) {
+            mDeviceDao.removeDevice(testDevice.token);
+        }
 
         // Delete test Agency.
         Agency testAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
-        mAgencyDao.removeAgency(testAgency.id);
+        if (testAgency != null) {
+            mAgencyDao.removeAgency(testAgency.id);
+        }
 
         // Delete test Account.
         Account testAccount = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
-        mAccountDao.removeAccount(testAccount.id);
+        if (testAccount != null) {
+            mAccountDao.removeAccount(testAccount.id);
+        }
     }
 
     @Test
     public void testUnchanged() {
         Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
-        AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
+        Agency updatedAgency = TestModelHelper.createTestAgency();
+
+        // Populate second agency with an additional route, alerts, and locations.
+        Location secondLocation = TestModelHelper.createTestLocation();
+        secondLocation.message = "Second Location Test";
+        secondLocation.name = "Second Location Name";
+        secondLocation.date = Calendar.getInstance();
+
+        Alert secondAlert = TestModelHelper.createTestAlert();
+        secondAlert.messageTitle = "Second Alert Message Title";
+        secondAlert.messageSubtitle = "Second Alert Message Subtitle";
+        secondAlert.messageBody = "Second Alert Message Body";
+        secondAlert.locations = Arrays.asList(TestModelHelper.createTestLocation(), secondLocation);
+
+        Route secondRoute = TestModelHelper.createTestRoute();
+        secondRoute.routeId = "test_route_2";
+        secondRoute.routeName = "Second Route Name";
+        secondRoute.alerts = Arrays.asList(TestModelHelper.createTestAlert(), secondAlert);
+
+        existingAgency.routes = Arrays.asList(TestModelHelper.createTestRoute(), secondRoute);
+        AlertHelper.populateBackReferences(existingAgency);
+
+        // Populate second agency with the same data but reversed lists.
+        Location updatedAgencySecondLocation = TestModelHelper.createTestLocation();
+        updatedAgencySecondLocation.message = "Second Location Test";
+        updatedAgencySecondLocation.name = "Second Location Name";
+        updatedAgencySecondLocation.date = Calendar.getInstance();
+
+        Alert updatedAgencySecondAlert = TestModelHelper.createTestAlert();
+        updatedAgencySecondAlert.messageTitle = "Second Alert Message Title";
+        updatedAgencySecondAlert.messageSubtitle = "Second Alert Message Subtitle";
+        updatedAgencySecondAlert.messageBody = "Second Alert Message Body";
+        updatedAgencySecondAlert.locations = Arrays.asList(TestModelHelper.createTestLocation(), updatedAgencySecondLocation);
+        Collections.reverse(updatedAgencySecondAlert.locations);
+
+        Route updatedAgencySecondRoute = TestModelHelper.createTestRoute();
+        updatedAgencySecondRoute.routeId = "test_route_2";
+        updatedAgencySecondRoute.routeName = "Second Route";
+        updatedAgencySecondRoute.alerts = Arrays.asList(TestModelHelper.createTestAlert(), updatedAgencySecondAlert);
+        Collections.reverse(updatedAgencySecondRoute.alerts);
+
+        updatedAgency.routes = Arrays.asList(TestModelHelper.createTestRoute(), updatedAgencySecondRoute);
+        Collections.reverse(updatedAgency.routes);
+        AlertHelper.populateBackReferences(updatedAgency);
+
+        AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
         assertNotNull(alertModifications);
         assertFalse(alertModifications.hasChangedAlerts());

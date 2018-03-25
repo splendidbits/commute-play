@@ -61,7 +61,7 @@ public class AgencyDao extends BaseDao {
      * @param freshAgency new agency to persist.
      * @return boolean for success.
      */
-    public boolean saveAgency(@Nonnull Agency freshAgency) {
+    public synchronized boolean saveAgency(@Nonnull Agency freshAgency) {
         Logger.info("Persisting agency routes in database.");
         final Agency existingAgency = getAgency(freshAgency.id);
 
@@ -164,6 +164,7 @@ public class AgencyDao extends BaseDao {
             Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", freshAgency.name), e);
             return false;
         }
+
         return true;
     }
 
@@ -173,7 +174,7 @@ public class AgencyDao extends BaseDao {
      * @return list of agencies.
      */
     @Nullable
-    public List<Agency> getAgencies() {
+    public synchronized List<Agency> getAgencies() {
         return mEbeanServer.find(Agency.class)
                 .fetch("routes", new FetchConfig().lazy())
                 .findList();
@@ -284,7 +285,7 @@ public class AgencyDao extends BaseDao {
      * @return agency model with children, if found, or null.
      */
     @Nullable
-    public Agency getAgency(int agencyId) {
+    public synchronized Agency getAgency(int agencyId) {
         try {
             List<Agency> agencies = mEbeanServer.find(Agency.class)
                     .setOrder(new OrderBy<>("routes.routeId desc"))
@@ -322,7 +323,7 @@ public class AgencyDao extends BaseDao {
      * @return boolean of success.
      */
 
-    public boolean removeAgency(long agencyId) {
+    public synchronized boolean removeAgency(long agencyId) {
         try {
             List<Agency> agencies = mEbeanServer.find(Agency.class)
                     .fetch("routes")

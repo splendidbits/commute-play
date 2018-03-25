@@ -26,7 +26,7 @@ public class CompareUtils {
             return true;
         }
 
-        // .isEmpty() == null for collections.
+        // Collections
         if (object1 instanceof Collection) {
             Collection collection1 = (Collection) object1;
             if (collection1.isEmpty() && object2 == null) {
@@ -39,6 +39,25 @@ public class CompareUtils {
             if (collection2.isEmpty() && object1 == null) {
                 return true;
             }
+        }
+
+        if (object1 instanceof Collection && object2 instanceof Collection) {
+            if (((Collection) object1).isEmpty() && ((Collection) object2).isEmpty()) {
+                return true;
+            }
+
+            for (Object object1Item : (Collection) object1) {
+                if (!(((Collection) object2).contains(object1Item))) {
+                    return false;
+                }
+            }
+
+            for (Object object2Item : (Collection) object2) {
+                if (!(((Collection) object1).contains(object2Item))) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // String
@@ -66,10 +85,10 @@ public class CompareUtils {
             }
         }
 
-        if (object1 == null || object2 == null) {
-            return true;
+        if (object1 != null && object2 != null) {
+            return object1.hashCode() == object2.hashCode();
         }
 
-        return object1.hashCode() == object2.hashCode();
+        return false;
     }
 }

@@ -667,14 +667,8 @@ public class AlertHelper {
     private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
         List<Alert> updatedAlerts = new ArrayList<>();
 
-        // If there are no fresh alerts alerts, nothing can be updated.
-        if (freshAlerts == null || freshAlerts.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // If all existing alerts are empty mark all fresh as updated.
-        if (existingAlerts == null || existingAlerts.isEmpty()) {
-            return freshAlerts;
+        if (CompareUtils.isEquals(existingAlerts, freshAlerts)) {
+            return updatedAlerts;
         }
 
         // Iterate through and add each updated alert that did not already exist before.

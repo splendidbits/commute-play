@@ -15,16 +15,18 @@ echo "* Compiling updated application sources"
 cd ..
 echo "* Stopping Commute Alerts Service"
 sudo service commutealerts stop
+sudo service postgresql stop
 
 echo "* Replacing previous application"
 sudo rm -r $COMMUTE_VERSION
 
 echo "* Moving previous application"
-mv $TEMP_DIR $COMMUTE_VERSION 
+mv $TEMP_DIR $COMMUTE_VERSION
 
 ln -s $COMMUTE_VERSION commutealerts
 
 echo "* Restarting Commute Alerts Service"
+sudo service postgresql start
 sudo service commutealerts start
 sudo service commutealerts status
 cd ~
