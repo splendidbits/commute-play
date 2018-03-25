@@ -5,6 +5,8 @@ import com.google.inject.Provider;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
+import io.ebean.Ebean;
+import io.ebean.EbeanServerFactory;
 import io.ebean.config.ServerConfig;
 import main.Constants;
 import models.accounts.Account;
@@ -76,6 +78,7 @@ public class CommuteEbeanConfigProvider implements Provider<EbeanConfig> {
         serverConfig.setUpdateChangesOnly(false);
 
         this.serverConfig = serverConfig;
+        Ebean.register(EbeanServerFactory.create(serverConfig), true);
     }
 
     @Override
