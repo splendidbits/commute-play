@@ -1,6 +1,5 @@
 package controllers;
 
-import annotations.CommuteEbeanServer;
 import com.google.inject.Inject;
 import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
@@ -9,13 +8,13 @@ import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import play.Logger;
 import play.data.DynamicForm;
 import play.data.FormFactory;
 import play.data.validation.ValidationError;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.twirl.api.Html;
-import play.Logger;
 import views.html.signup;
 
 import javax.annotation.Nonnull;
@@ -32,7 +31,7 @@ public class SignupController extends Controller {
     private FormFactory mFormFactory;
 
     @Inject
-    public SignupController(@CommuteEbeanServer EbeanServer ebeanServer, FormFactory formFactory) {
+    public SignupController(EbeanServer ebeanServer, FormFactory formFactory) {
         mEbeanServer = ebeanServer;
         mFormFactory = formFactory;
     }

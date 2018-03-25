@@ -1,9 +1,10 @@
 package injection.modules;
 
-import annotations.CommuteEbeanServer;
 import com.google.inject.AbstractModule;
 import injection.providers.CommuteEbeanServerProvider;
+import injection.providers.CommuteEbeanConfigProvider;
 import io.ebean.EbeanServer;
+import play.db.ebean.EbeanConfig;
 
 /**
  * GuiseModule for invoking the ebean Database provider.
@@ -12,8 +13,11 @@ public class DatabaseModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(EbeanConfig.class)
+                .toProvider(CommuteEbeanConfigProvider.class)
+                .asEagerSingleton();
+
         bind(EbeanServer.class)
-                .annotatedWith(CommuteEbeanServer.class)
                 .toProvider(CommuteEbeanServerProvider.class)
                 .asEagerSingleton();
     }

@@ -1,6 +1,5 @@
 package main;
 
-import annotations.CommuteEbeanServer;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.ebean.EbeanServer;
@@ -12,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 public class LifecycleListener {
 
     @Inject
-    public LifecycleListener(@CommuteEbeanServer EbeanServer ebeanServer, ApplicationLifecycle applicationLifecycle) {
+    public LifecycleListener(EbeanServer ebeanServer, ApplicationLifecycle applicationLifecycle) {
             applicationLifecycle.addStopHook(() -> CompletableFuture.runAsync(() -> {
             ebeanServer.shutdown(true, false);
         }));

@@ -1,6 +1,5 @@
 package dao;
 
-import annotations.CommuteEbeanServer;
 import enums.pushservices.PlatformType;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
@@ -22,7 +21,7 @@ import java.util.List;
 public class AccountDao extends BaseDao {
 
     @Inject
-    public AccountDao(@CommuteEbeanServer EbeanServer ebeanServer) {
+    public AccountDao(EbeanServer ebeanServer) {
         super(ebeanServer);
     }
 
