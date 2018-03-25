@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
   "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",
   "com.typesafe.play" %% "play-json" % "2.6.1",
-  "org.avaje" % "avaje-agentloader" % "2.1.2",
+  "io.ebean" % "ebean-agent" % "10.1.6",
   "org.postgresql" % "postgresql" % "42.2.2",
   "org.jetbrains" % "annotations" % "13.0",
   "org.jsoup" % "jsoup" % "1.10.1",
@@ -33,9 +33,6 @@ libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-all" % "2.0.2-beta" % Test
 )
-
-dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm" % "8.1.1"
-dependencyOverrides += "org.avaje.ebeanorm" % "avaje-ebeanorm-agent" % "8.1.1"
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
 //resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/cache")

@@ -1,7 +1,6 @@
 package injection.modules;
 
 import com.google.inject.AbstractModule;
-import injection.providers.LifecycleListenerProvider;
 import main.LifecycleListener;
 
 /**
@@ -13,7 +12,6 @@ public class ApplicationModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(LifecycleListener.class)
-                .toProvider(LifecycleListenerProvider.class)
                 .asEagerSingleton();
     }
 }
