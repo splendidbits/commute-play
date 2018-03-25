@@ -1,5 +1,6 @@
 package dao;
 
+import annotations.CommuteEbeanServer;
 import io.ebean.EbeanServer;
 import io.ebean.config.ServerConfig;
 import io.ebeaninternal.api.SpiEbeanServer;
@@ -14,7 +15,7 @@ import play.Logger;
 class BaseDao {
     EbeanServer mEbeanServer;
 
-    BaseDao(EbeanServer ebeanServer) {
+    BaseDao(@CommuteEbeanServer EbeanServer ebeanServer) {
         mEbeanServer = ebeanServer;
     }
 

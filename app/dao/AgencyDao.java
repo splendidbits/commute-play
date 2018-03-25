@@ -1,5 +1,6 @@
 package dao;
 
+import annotations.CommuteEbeanServer;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
 import io.ebean.OrderBy;
@@ -22,7 +23,7 @@ import java.util.List;
 public class AgencyDao extends BaseDao {
 
     @Inject
-    public AgencyDao(EbeanServer ebeanServer) {
+    public AgencyDao(@CommuteEbeanServer EbeanServer ebeanServer) {
         super(ebeanServer);
     }
 

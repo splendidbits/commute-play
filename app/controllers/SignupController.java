@@ -1,5 +1,6 @@
 package controllers;
 
+import annotations.CommuteEbeanServer;
 import com.google.inject.Inject;
 import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
@@ -31,7 +32,7 @@ public class SignupController extends Controller {
     private FormFactory mFormFactory;
 
     @Inject
-    public SignupController(EbeanServer ebeanServer, FormFactory formFactory) {
+    public SignupController(@CommuteEbeanServer EbeanServer ebeanServer, FormFactory formFactory) {
         mEbeanServer = ebeanServer;
         mFormFactory = formFactory;
     }

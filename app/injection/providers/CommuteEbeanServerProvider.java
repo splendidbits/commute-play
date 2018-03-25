@@ -5,6 +5,7 @@ import com.google.inject.Provider;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
+import io.ebean.Ebean;
 import io.ebean.EbeanServer;
 import io.ebean.EbeanServerFactory;
 import io.ebean.config.ServerConfig;
@@ -17,6 +18,10 @@ import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
+import play.Environment;
+import play.db.DBApi;
+import play.db.ebean.EbeanConfig;
+import play.inject.ApplicationLifecycle;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -28,10 +33,17 @@ import java.util.Properties;
  * Copyright 4/2/16 Splendid Bits.
  */
 public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
-    private final EbeanServer mEbeanServer;
+
+    private final Config config;
 
     @Inject
-    public CommuteEbeanServerProvider(Config config) {
+    public CommuteEbeanServerProvider(Config config, ServerConfig serverConfig, EbeanConfig ebeanConfig,
+                                      ApplicationLifecycle lifecycle, Environment environment, DBApi dbApi) {
+        this.config = config;
+    }
+
+    @Override
+    public EbeanServer get() {
         if (config == null || config.isEmpty()) {
             throw new RuntimeException("No Play Framework configuration found.");
         }
@@ -72,11 +84,8 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setDdlGenerate(false);
         serverConfig.setUpdateChangesOnly(false);
 
-        mEbeanServer = EbeanServerFactory.create(serverConfig);
-    }
-
-    @Override
-    public EbeanServer get() {
-        return mEbeanServer;
+        EbeanServer ebeanServer = EbeanServerFactory.create(serverConfig);
+        Ebean.register(ebeanServer, true);
+        return ebeanServer;
     }
 }

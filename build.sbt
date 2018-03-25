@@ -22,20 +22,12 @@ libraryDependencies ++= Seq(
   guice,
   "com.splendidbits" % "play-pushservices" % "1.1.2",
   "com.typesafe.play" %% "play-ahc-ws-standalone" % "1.0.1",
-  "com.typesafe.play" %% "play-ws-standalone-json" % "1.0.1",
-  "com.typesafe.play" %% "play-ws-standalone-xml" % "1.0.1",
-  "com.typesafe.play" %% "play-json" % "2.6.1",
-  "io.ebean" % "ebean-agent" % "10.1.6",
   "org.postgresql" % "postgresql" % "42.2.2",
   "org.jetbrains" % "annotations" % "13.0",
-  "org.jsoup" % "jsoup" % "1.10.1",
   "com.google.code.gson" % "gson" % "2.8.2",
-  "junit" % "junit" % "4.12" % Test,
-  "org.mockito" % "mockito-all" % "2.0.2-beta" % Test
+  "org.jsoup" % "jsoup" % "1.10.1",
+  "junit" % "junit" % "4.12" % Test
 )
-
-testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-q")
-//resolvers += ("Local Maven Repository" at "/Users/daniel/.ivy2/cache")
 
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.
