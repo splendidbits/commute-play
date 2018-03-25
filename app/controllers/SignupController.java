@@ -3,7 +3,9 @@ package controllers;
 import com.google.inject.Inject;
 import enums.pushservices.PlatformType;
 import helpers.ValidationHelper;
+import io.ebean.Ebean;
 import io.ebean.EbeanServer;
+import main.Constants;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -31,8 +33,8 @@ public class SignupController extends Controller {
     private FormFactory mFormFactory;
 
     @Inject
-    public SignupController(EbeanServer ebeanServer, FormFactory formFactory) {
-        mEbeanServer = ebeanServer;
+    public SignupController(FormFactory formFactory) {
+        mEbeanServer = Ebean.getServer(Constants.DATABASE_SERVER_NAME);
         mFormFactory = formFactory;
     }
 

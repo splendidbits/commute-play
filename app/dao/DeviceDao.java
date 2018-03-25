@@ -1,6 +1,5 @@
 package dao;
 
-import io.ebean.EbeanServer;
 import io.ebean.OrderBy;
 import models.devices.Device;
 import models.devices.Subscription;
@@ -19,8 +18,8 @@ import java.util.List;
 public class DeviceDao extends BaseDao {
 
     @Inject
-    public DeviceDao(EbeanServer ebeanServer) {
-        super(ebeanServer);
+    public DeviceDao() {
+        super();
     }
 
     @Nonnull
