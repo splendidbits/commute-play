@@ -147,7 +147,7 @@ public class PushMessageManager {
             }
 
         } catch (TaskValidationException e) {
-            Logger.error("Commute Task threw an exception.");
+            Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
             return null;
         }
 
@@ -217,7 +217,7 @@ public class PushMessageManager {
                 mTaskQueue.queueTask(messageTask, new SendMessagePlatformQueueCallback());
 
             } catch (TaskValidationException e) {
-                Logger.error("Commute Task threw an exception.");
+                Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
                 return false;
             }
         }

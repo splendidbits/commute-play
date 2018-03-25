@@ -25,14 +25,16 @@ public class AgencyAlertsController extends Controller {
     private static final String INAPP_RAW_JSON_FEED = String.format(Locale.US,
             "%s/alerts/inapp", Constants.PROD_API_SERVER_HOST);
 
-    @Inject
     private AgencyDao mAgencyDao;
-
-    @Inject
     private WSClient mWSClient;
+    private AgencyManager mAgencyManager;
 
     @Inject
-    private AgencyManager mAgencyManager;
+    public AgencyAlertsController(AgencyDao mAgencyDao, WSClient mWSClient, AgencyManager mAgencyManager) {
+        this.mAgencyDao = mAgencyDao;
+        this.mWSClient = mWSClient;
+        this.mAgencyManager = mAgencyManager;
+    }
 
     public Result index() {
         return ok();
@@ -61,18 +63,15 @@ public class AgencyAlertsController extends Controller {
                 break;
 
             case 2:
+            default:
                 agencyDownloadStage = mWSClient
                         .url(INAPP_RAW_JSON_FEED)
                         .setFollowRedirects(true)
                         .get();
                 break;
-
-            default:
-                return CompletableFuture.completedFuture(badRequest());
         }
 
         return agencyDownloadStage.thenApply(response -> {
-
             if (response.getStatus() == 200 && response.getBody() != null) {
                 return ok(response.getBody()).as("application/json");
             }
@@ -89,17 +88,16 @@ public class AgencyAlertsController extends Controller {
      * @return Entire agency in json format.
      */
     public CompletionStage<Result> getAgencyAlerts(int agencyId) {
-        // Check the cache.
-        Agency agency = mAgencyManager.getCachedAgency(agencyId);
+        return CompletableFuture.supplyAsync(() -> {
+            Agency agency = mAgencyManager.getCachedAgency(agencyId);
+            if (agency == null) {
+                agency = mAgencyDao.getAgency(agencyId);
+            }
+            return agency;
 
-        // If the agency was missing or expired, fetch from the database.
-        if (agency == null) {
-            agency = mAgencyDao.getAgency(agencyId);
-        }
-
-        return agency != null
-                ? CompletableFuture.completedFuture(ok(Json.toJson(agency)))
-                : CompletableFuture.completedFuture(ok(Json.newObject()));
+        }).thenApply(agency -> agency != null
+                ? ok(Json.toJson(agency))
+                : ok(Json.newObject()));
     }
 
     /**
@@ -108,23 +106,24 @@ public class AgencyAlertsController extends Controller {
      * @return collection of {@link Agency}'s.
      */
     public CompletableFuture<Result> getAgencies() {
-        // Check the cache.
-        List<Agency> agencies = mAgencyManager.getCachedAgencyMetadata();
-        JsonNode jsonAgencies = Json.toJson(agencies);
+        return CompletableFuture.supplyAsync(() -> {
+            List<Agency> agencies = mAgencyManager.getCachedAgencyMetadata();
+            JsonNode jsonAgencies = Json.toJson(agencies);
 
-        // Delete all nodes with children (it will just delete "routes" from the agencies
-        // as that is the only Agency array, then breaks to next Agency.
-        for (JsonNode jsonAgency : jsonAgencies) {
-            for (Iterator<JsonNode> it = jsonAgency.elements(); it.hasNext(); ) {
-                JsonNode jsonAgencyNode = it.next();
-                if (jsonAgencyNode.isArray()) {
-                    it.remove();
-                    break;
+            // Delete all nodes with children (it will just delete "routes" from the agencies
+            // as that is the only Agency array, then breaks to next Agency.
+            for (JsonNode jsonAgency : jsonAgencies) {
+                for (Iterator<JsonNode> it = jsonAgency.elements(); it.hasNext(); ) {
+                    JsonNode jsonAgencyNode = it.next();
+                    if (jsonAgencyNode.isArray()) {
+                        it.remove();
+                        break;
+                    }
                 }
             }
-        }
 
-        return CompletableFuture.completedFuture(ok(jsonAgencies.toString()));
+            return ok(jsonAgencies.toString());
+        });
     }
 
     /**
@@ -136,21 +135,24 @@ public class AgencyAlertsController extends Controller {
      * @return Collection of matched alerts.
      */
     public CompletableFuture<Result> getRouteAlerts(Integer agencyId, String routeId) {
-        if (agencyId != null && routeId != null) {
-            // Check the agency cache for a valid route.
-            Agency agency = mAgencyManager.getCachedAgency(agencyId);
-            if (agency != null && agency.routes != null) {
-                for (Route agencyRoute : agency.routes) {
-                    if (agencyRoute.routeId.equals(routeId)) {
-                        return CompletableFuture.completedFuture(ok(Json.toJson(agencyRoute)));
+        return CompletableFuture.supplyAsync(() -> {
+            if (agencyId != null && routeId != null) {
+
+                // Check the agency cache for a valid route.
+                Agency agency = mAgencyManager.getCachedAgency(agencyId);
+                if (agency != null && agency.routes != null) {
+                    for (Route agencyRoute : agency.routes) {
+                        if (agencyRoute.routeId.equals(routeId)) {
+                            return ok(Json.toJson(agencyRoute));
+                        }
                     }
                 }
+
+                Route route = mAgencyDao.getRoute(agencyId, routeId);
+                return ok(Json.toJson(route));
             }
 
-            Route route = mAgencyDao.getRoute(agencyId, routeId);
-            return CompletableFuture.completedFuture(ok(Json.toJson(route)));
-        }
-
-        return CompletableFuture.completedFuture(ok(Json.newObject()));
+            return badRequest(Json.newObject());
+        });
     }
 }

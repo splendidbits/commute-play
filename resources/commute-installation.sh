@@ -10,20 +10,19 @@ git clone -b master https://splendidbits:9d560e33fd0c4382d2957744b907895bc589637
 cd $TEMP_DIR
 
 echo "* Compiling updated application sources"
-../sbt/bin/sbt clean compile stage dist
+/var/play/splendidbits/sbt/bin/sbt clean compile stage dist
 
-cd ..
 echo "* Stopping Commute Alerts Service"
 sudo service commutealerts stop
 sudo service postgresql stop
 
 echo "* Replacing previous application"
+cd /var/play/splendidbits
 sudo rm -r $COMMUTE_VERSION
+sudo mv $TEMP_DIR/ $COMMUTE_VERSION
 
-echo "* Moving previous application"
-mv $TEMP_DIR $COMMUTE_VERSION
-
-ln -s $COMMUTE_VERSION commutealerts
+rm commutealerts
+ln -s $COMMUTE_VERSION/ commutealerts
 
 echo "* Restarting Commute Alerts Service"
 sudo service postgresql start
