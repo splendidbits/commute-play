@@ -1,5 +1,6 @@
 package dao;
 
+import io.ebean.EbeanServer;
 import io.ebean.OrderBy;
 import models.devices.Device;
 import models.devices.Subscription;
@@ -18,8 +19,8 @@ import java.util.List;
 public class DeviceDao extends BaseDao {
 
     @Inject
-    public DeviceDao() {
-        super();
+    public DeviceDao(EbeanServer ebeanServer) {
+        super(ebeanServer);
     }
 
     @Nonnull
@@ -78,7 +79,7 @@ public class DeviceDao extends BaseDao {
                     .findList();
 
             Device device = !devices.isEmpty()
-                    ? devices.get(devices.size() -1)
+                    ? devices.get(devices.size() - 1)
                     : null;
 
             Logger.info(device != null

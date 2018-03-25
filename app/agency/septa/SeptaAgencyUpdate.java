@@ -5,13 +5,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;
 import models.alerts.Agency;
-import play.Environment;
+import play.Logger;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.SeptaAlertsDeserializer;
 import services.AgencyManager;
 import services.PushMessageManager;
-import play.Logger;
 
 import javax.inject.Inject;
 import java.util.Locale;
@@ -26,14 +25,12 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
     public static final int AGENCY_ID = 1;
 
     private WSClient mWsClient;
-    private Environment mEnvironment;
 
     @Inject
-    public SeptaAgencyUpdate(WSClient wsClient, Environment environment, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
+    public SeptaAgencyUpdate(WSClient wsClient, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
         super(agencyManager, pushMessageManager);
 
         mWsClient = wsClient;
-        mEnvironment = environment;
     }
 
     @Override

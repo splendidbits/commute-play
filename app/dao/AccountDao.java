@@ -1,6 +1,7 @@
 package dao;
 
 import enums.pushservices.PlatformType;
+import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
 import io.ebean.Junction;
 import models.accounts.Account;
@@ -20,8 +21,8 @@ import java.util.List;
 public class AccountDao extends BaseDao {
 
     @Inject
-    public AccountDao() {
-        super();
+    public AccountDao(EbeanServer ebeanServer) {
+        super(ebeanServer);
     }
 
     /**
@@ -114,7 +115,7 @@ public class AccountDao extends BaseDao {
             if (savedAccount != null) {
                 account.id = savedAccount.id;
                 mEbeanServer.save(account);
-                } else {
+            } else {
                 mEbeanServer.insert(account);
             }
 

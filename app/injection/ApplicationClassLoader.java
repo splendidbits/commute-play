@@ -2,7 +2,6 @@ package injection;
 
 import injection.modules.ApplicationModule;
 import injection.modules.DatabaseModule;
-import injection.modules.SchedulersModule;
 import injection.pushservices.modules.PushServicesModule;
 import play.ApplicationLoader;
 import play.inject.guice.GuiceApplicationBuilder;
@@ -20,7 +19,6 @@ public class ApplicationClassLoader extends GuiceApplicationLoader {
         return initialBuilder
                 .in(context.environment())
                 .bindings(new PushServicesModule())
-                .bindings(new SchedulersModule())
                 .bindings(new ApplicationModule())
                 .bindings(new DatabaseModule());
     }

@@ -5,13 +5,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;
 import models.alerts.Agency;
-import play.Environment;
+import play.Logger;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
 import serializers.InAppMessagesDeserializer;
 import services.AgencyManager;
 import services.PushMessageManager;
-import play.Logger;
 
 import javax.inject.Inject;
 import java.util.Locale;
@@ -31,14 +30,12 @@ public class InAppMessageUpdate extends AgencyUpdate {
 
     private ParseMessages mParseMessagesFunc;
     private WSClient mWsClient;
-    private Environment mEnvironment;
 
     @Inject
-    public InAppMessageUpdate(WSClient wsClient, Environment environment, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
+    public InAppMessageUpdate(WSClient wsClient, AgencyManager agencyManager, PushMessageManager pushMessageManager) {
         super(agencyManager, pushMessageManager);
 
         mWsClient = wsClient;
-        mEnvironment = environment;
         mParseMessagesFunc = new ParseMessages();
     }
 
@@ -48,7 +45,6 @@ public class InAppMessageUpdate extends AgencyUpdate {
         String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
-
             Logger.info("Starting download of in-app messages.");
             CompletionStage<WSResponse> downloadStage = mWsClient
                     .url(alertUrl)

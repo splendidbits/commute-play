@@ -1,5 +1,6 @@
 package dao;
 
+import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
 import io.ebean.OrderBy;
 import models.alerts.Agency;
@@ -21,8 +22,8 @@ import java.util.List;
 public class AgencyDao extends BaseDao {
 
     @Inject
-    public AgencyDao() {
-        super();
+    public AgencyDao(EbeanServer ebeanServer) {
+        super(ebeanServer);
     }
 
     private void insertAlerts(Route route) {
