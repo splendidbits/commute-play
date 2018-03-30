@@ -116,7 +116,7 @@ public class DeviceController extends Controller {
                             mTaskQueue.queueMessages(messages, new PingAllDevicesCallback());
 
                         } catch (MessageValidationException e) {
-                            Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
+                            Logger.error(String.format("Error sending Task to push-services: %s", e.getMessage()));
                         }
                     }
                 }

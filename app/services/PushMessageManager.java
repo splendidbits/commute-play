@@ -54,47 +54,18 @@ public class PushMessageManager {
         Map<String, List<Alert>> updatedRouteAlerts = new HashMap<>();
         Map<String, List<Alert>> staleRouteAlerts = new HashMap<>();
 
-        MessageTaskQueueListener taskQueueListener = new MessageTaskQueueListener();
-
         /*
-         * Iterate through each updated alert and add it to a map with its corresponding
-         * Route object.
-         */
-        for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
-            if (updatedAlert.route == null || updatedAlert.route.routeId == null) {
-                Logger.error("Updated Alert must have routes with routeIds.");
-                return null;
-            }
-
-            Route route = updatedAlert.route;
-            String routeId = route.routeId;
-
-            // Add the alert to the list of updated alerts for the route.
-            List<Alert> alerts = updatedRouteAlerts.containsKey(routeId)
-                    ? updatedRouteAlerts.get(routeId)
-                    : new ArrayList<>();
-
-            alerts.add(updatedAlert);
-            updatedRouteAlerts.put(routeId, alerts);
-        }
-
-        /*
-         * Iterate through each stale alert and add it to a list if the alert
-         * type was not already added for that update route alerts..
+         * Create a list of messages for cancelled (stale) alerts.
          */
         for (Alert staleAlert : alertModifications.getStaleAlerts()) {
-            if (staleAlert.route == null || staleAlert.route.routeId == null) {
-                Logger.error("Updated Alert must have routes with routeIds.");
-                return null;
-            }
-
             Route route = staleAlert.route;
             String routeId = route.routeId;
 
-            /*
-             * If the updates alerts do not contain the same alert type, send a cancellation,
-             * and add the alert to the list of updated alerts for the route.
-             */
+            if (routeId == null) {
+                Logger.error("Updated Alert must have routes with routeIds.");
+                return null;
+            }
+
             List<Alert> alerts = staleRouteAlerts.containsKey(routeId)
                     ? staleRouteAlerts.get(routeId)
                     : new ArrayList<>();
@@ -103,10 +74,35 @@ public class PushMessageManager {
             staleRouteAlerts.put(routeId, alerts);
         }
 
+        /*
+         * Create a list of messages for updated (fresh) alerts.
+         */
+        for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
+            Route route = updatedAlert.route;
+            String routeId = route.routeId;
+
+            if (routeId == null) {
+                Logger.error("Updated Alert must have routes with routeIds.");
+                return null;
+            }
+
+            List<Alert> alerts = updatedRouteAlerts.containsKey(routeId)
+                    ? updatedRouteAlerts.get(routeId)
+                    : new ArrayList<>();
+
+            // Add the alert to the list of updated alerts for the route if the route
+            // has *NOT* already been marked as stale.
+            if (!staleRouteAlerts.containsKey(routeId)) {
+                alerts.add(updatedAlert);
+            }
+
+            updatedRouteAlerts.put(routeId, alerts);
+        }
+
         // Iterate through the updated (fresh) Alerts to send messages for.
-        for (Map.Entry<String, List<Alert>> routeAlertEntry : updatedRouteAlerts.entrySet()) {
-            String routeId = routeAlertEntry.getKey();
-            List<Alert> alerts = routeAlertEntry.getValue();
+        for (Map.Entry<String, List<Alert>> updatedAlertEntry : updatedRouteAlerts.entrySet()) {
+            String routeId = updatedAlertEntry.getKey();
+            List<Alert> alerts = updatedAlertEntry.getValue();
 
             updatedAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, false));
         }
@@ -119,11 +115,13 @@ public class PushMessageManager {
             staleAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, true));
         }
 
+        MessageTaskQueueListener taskQueueListener = new MessageTaskQueueListener();
+
         try {
-            // Add each task to the queue.
-
-
+            Logger.info(String.format("Sending %d Agency update alert messages to push-services module", updatedAlertMessages.size()));
             mTaskQueue.queueMessages(new ArrayList<>(updatedAlertMessages), taskQueueListener);
+
+            Logger.info(String.format("Sending %d Agency stale alert messages to push-services module", staleAlertMessages.size()));
             mTaskQueue.queueMessages(new ArrayList<>(staleAlertMessages), taskQueueListener);
 
 
@@ -185,6 +183,7 @@ public class PushMessageManager {
         // Add the message task to the TaskQueue.
         if (message != null) {
             try {
+                Logger.info(String.format("Sending confirmation message for device %s to push-services module", device.deviceId));
                 mTaskQueue.queueMessages(Collections.singletonList(message), new MessageTaskQueueListener());
                 return true;
 

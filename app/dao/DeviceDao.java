@@ -84,7 +84,7 @@ public class DeviceDao extends BaseDao {
 
             Logger.info(device != null
                     ? String.format("Found device with deviceId %s", device.deviceId)
-                    : String.format("No device found deviceId %s", deviceId));
+                    : String.format("No device found for deviceId %s", deviceId));
 
             return device;
 
