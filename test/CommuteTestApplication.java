@@ -1,16 +1,16 @@
 import dao.AccountDao;
 import dao.AgencyDao;
 import dao.DeviceDao;
+import injection.modules.ApplicationModule;
 import injection.modules.DatabaseModule;
 import injection.pushservices.modules.PushServicesModule;
+import main.LifecycleListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import play.Application;
 import play.Mode;
 import play.api.inject.Binding;
 import play.api.inject.BindingKey;
-import play.api.inject.guice.GuiceableModule;
-import play.api.inject.guice.GuiceableModule$;
 import play.api.routing.Router;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.routing.RoutingDsl;
@@ -38,14 +38,19 @@ public abstract class CommuteTestApplication {
                     .toProvider(MockRouterProvider.class)
                     .eagerly();
 
-            // Create a module from a single binding.
-            GuiceableModule module = GuiceableModule$.MODULE$.fromPlayBinding(routesBindingOverride);
-
             application = new GuiceApplicationBuilder()
                     .in(Mode.TEST)
+                    .configure("db.commutealerts.name", "commutealerts")
+                    .configure("db.commutealerts.driver", "org.postgresql.Driver")
+                    .configure("db.commutealerts.url", "jdbc:postgresql://localhost:5432/commutealerts")
+                    .configure("db.commutealerts.username", "splendidbits")
+                    .configure("db.commutealerts.password", "kYBaf34sfd8L")
+                    .configure("db.commutealerts.databasePlatformName", "postgres")
                     .overrides(routesBindingOverride)
-                    .bindings(new PushServicesModule())
+                    .bindings(new ApplicationModule())
                     .bindings(new DatabaseModule())
+                    .bindings(new PushServicesModule())
+                    .disable(LifecycleListener.class)
                     .build();
 
             mAccountDao = application.injector().instanceOf(AccountDao.class);

@@ -2,31 +2,30 @@ package controllers;
 
 import dao.AccountDao;
 import dao.DeviceDao;
-import enums.pushservices.Failure;
+import enums.pushservices.FailureType;
 import enums.pushservices.PlatformType;
-import exceptions.pushservices.TaskValidationException;
+import exceptions.pushservices.MessageValidationException;
 import helpers.AlertHelper;
-import interfaces.pushservices.TaskQueueCallback;
+import interfaces.pushservices.TaskQueueListener;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.devices.Device;
-import models.pushservices.app.FailedRecipient;
 import models.pushservices.app.UpdatedRecipient;
 import models.pushservices.db.Message;
 import models.pushservices.db.PlatformFailure;
 import models.pushservices.db.Recipient;
-import models.pushservices.db.Task;
+import play.Logger;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import services.PushMessageManager;
-import play.Logger;
 import services.pushservices.TaskQueue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -113,14 +112,10 @@ public class DeviceController extends Controller {
                     // Create pu1sh services messages for the update.
                     List<Message> messages = AlertHelper.getResubscribeMessages(allDevices, platformAccount);
                     if (!messages.isEmpty()) {
-                        Task task = new Task("route_resend_subscriptions");
-                        task.messages = messages;
-                        task.priority = Task.TASK_PRIORITY_LOW;
-
                         try {
-                            mTaskQueue.queueTask(task, new PingAllDevicesCallback());
+                            mTaskQueue.queueMessages(messages, new PingAllDevicesCallback());
 
-                        } catch (TaskValidationException e) {
+                        } catch (MessageValidationException e) {
                             Logger.error(String.format("Error sending Task to pushservices: %s", e.getMessage()));
                         }
                     }
@@ -205,12 +200,10 @@ public class DeviceController extends Controller {
         });
     }
 
-
-    /**
+    /*
      * Callback received from provider with results of device message.
      */
-    private class PingAllDevicesCallback implements TaskQueueCallback {
-
+    private class PingAllDevicesCallback implements TaskQueueListener {
         @Override
         public void updatedRecipients(@Nonnull List<UpdatedRecipient> updatedRecipients) {
             Logger.info(String.format("%d recipients require registration updates.", updatedRecipients.size()));
@@ -219,34 +212,33 @@ public class DeviceController extends Controller {
                 Recipient staleRecipient = recipientUpdate.getStaleRecipient();
                 Recipient updatedRecipient = recipientUpdate.getUpdatedRecipient();
 
-                mDeviceDao.saveUpdatedToken(staleRecipient.token, updatedRecipient.token);
+                mDeviceDao.saveUpdatedToken(staleRecipient.getToken(), updatedRecipient.getToken());
             }
         }
 
         @Override
-        public void failedRecipients(@Nonnull List<FailedRecipient> failedRecipients) {
+        public void failedRecipients(@Nonnull List<Recipient> failedRecipients) {
             Logger.warn(String.format("%d recipients failed fatally.", failedRecipients.size()));
 
-            for (FailedRecipient failedRecipient : failedRecipients) {
-                Recipient recipient = failedRecipient.getRecipient();
-                Failure failure = failedRecipient.getFailure().failure;
+            for (Recipient recipient : failedRecipients) {
+                FailureType failure = recipient.getPlatformFailure().getFailureType();
 
-                if (failure != null && (failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
-                        failure == Failure.RECIPIENT_NOT_REGISTERED ||
-                        failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    mDeviceDao.removeDevice(recipient.token);
+                if (failure != null && (failure == FailureType.RECIPIENT_REGISTRATION_INVALID ||
+                        failure == FailureType.RECIPIENT_NOT_REGISTERED ||
+                        failure == FailureType.MESSAGE_PACKAGE_INVALID)) {
+                    mDeviceDao.removeDevice(recipient.getToken());
                 }
             }
         }
 
         @Override
         public void messageCompleted(@Nonnull Message originalMessage) {
-            Logger.info(String.format("Message %d completed.", originalMessage.id));
+            Logger.info(String.format("Message %d completed.", originalMessage.getId()));
         }
 
         @Override
         public void messageFailed(@Nonnull Message originalMessage, PlatformFailure failure) {
-            Logger.info(String.format("Message %d failed - %s.", originalMessage.id, failure.failureMessage));
+            Logger.info(String.format("Message %d failed - %s.", originalMessage.getId(), failure.getFailureMessage()));
         }
     }
 }

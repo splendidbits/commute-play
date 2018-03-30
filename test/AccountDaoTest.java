@@ -13,6 +13,7 @@ public class AccountDaoTest extends CommuteTestApplication {
 
     @BeforeClass
     public static void initialise() {
+
     }
 
     @Test

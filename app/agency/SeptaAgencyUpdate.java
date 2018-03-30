@@ -1,6 +1,5 @@
-package agency.septa;
+package agency;
 
-import agency.AgencyUpdate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;
@@ -60,25 +59,27 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
     private class ParseAgencyFunction implements Function<WSResponse, Agency> {
         @Override
         public Agency apply(WSResponse response) {
-            Agency agencyAlerts = null;
-            if (response != null && response.getStatus() == 200) {
-                Logger.info("Downloaded SEPTA alerts");
-
-                // SEPTA alerts were empty.
-                if (response.getBody() == null || response.getBody().isEmpty()) {
-                    Logger.error("SEPTA JSON alerts body was empty");
-                    return null;
-                }
-
-                // Create gson serializer
-                final Gson gson = new GsonBuilder()
-                        .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
-                        .create();
-
-                Logger.info("Finished parsing SEPTA alerts json body. Sending to AgencyUpdateService");
-                agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
-                processAgencyUpdate(agencyAlerts);
+            if (response == null || response.getStatus() != 200) {
+                Logger.error("SEPTA JSON alerts could not be downloaded.");
+                return null;
             }
+
+            // SEPTA alerts were empty.
+            if (response.getBody() == null || response.getBody().isEmpty()) {
+                Logger.error("SEPTA JSON alerts body was empty");
+                return null;
+            }
+
+            Logger.info("Downloaded SEPTA alerts");
+            // Create gson serializer
+            final Gson gson = new GsonBuilder()
+                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
+                    .create();
+
+            Agency agencyAlerts = gson.fromJson(response.getBody(), Agency.class);
+            processAgencyUpdate(agencyAlerts);
+
+            Logger.info("Finished parsing and sorting SEPTA alerts.");
             return agencyAlerts;
         }
     }

@@ -1,6 +1,6 @@
 package serializers;
 
-import agency.inapp.InAppMessageUpdate;
+import agency.InAppMessageUpdate;
 import com.google.gson.*;
 import enums.AlertType;
 import main.Constants;

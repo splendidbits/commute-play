@@ -38,7 +38,7 @@ public class SubscriptionController extends Controller {
     }
 
     // Return results enum
-    private enum SubscriptionResult {
+    enum SubscriptionResult {
         OK(ok("Success")),
         BAD_SUBSCRIPTION_REQUEST(badRequest("Error adding device subscriptions")),
         MISSING_PARAMS_RESULT(badRequest("Invalid registration parameters in request.")),
@@ -57,12 +57,8 @@ public class SubscriptionController extends Controller {
      *
      * @return A result for if the subscription request succeeded or failed.
      */
-    @SuppressWarnings("Convert2Lambda")
     public CompletionStage<Result> subscribe() {
-        return initiateSubscription(request()).thenApplyAsync((stage) -> {
-                return stage.result;
-                }
-        );
+        return initiateSubscription(request()).thenApplyAsync((stage) -> stage.result);
     }
 
     /**

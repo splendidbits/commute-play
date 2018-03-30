@@ -1,6 +1,5 @@
-package agency.inapp;
+package agency;
 
-import agency.AgencyUpdate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import main.Constants;

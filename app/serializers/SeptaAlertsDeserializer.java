@@ -1,6 +1,6 @@
 package serializers;
 
-import agency.septa.SeptaAgencyUpdate;
+import agency.SeptaAgencyUpdate;
 import com.google.gson.*;
 import enums.AlertType;
 import enums.RouteFlag;
@@ -80,6 +80,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
 
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
+
+        Calendar nowCal = Calendar.getInstance(TimeZone.getTimeZone("EST"));
 
         try {
             final JsonArray schedulesArray = json.getAsJsonArray();
@@ -188,12 +190,16 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          */
                         List<Alert> rowAlerts = new ArrayList<>();
 
+                        Calendar lastUpdateCalendar = lastUpdated != null
+                                ? getParsedDate(lastUpdated, false)
+                                : nowCal;
+
                         // Parse the detour locations into the correct type.
                         if (!detourMessage.isEmpty()) {
                             AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
                             alert.highPriority = true;
-                            alert.lastUpdated = getParsedDate(lastUpdated, false);
+                            alert.lastUpdated = lastUpdateCalendar;
                             alert.type = type;
                             alert.messageTitle = type.title;
                             alert.messageSubtitle = detourReason;
@@ -225,8 +231,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.locations = detourLocations;
                             rowAlerts.add(alert);
                         }
-
-                        Calendar lastUpdateCalendar = getParsedDate(lastUpdated, false);
 
                         // Snow Alerts
                         if (isSnow.toLowerCase().equals("y")) {

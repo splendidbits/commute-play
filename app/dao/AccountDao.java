@@ -3,7 +3,6 @@ package dao;
 import enums.pushservices.PlatformType;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
-import io.ebean.Junction;
 import models.accounts.Account;
 import models.alerts.Route;
 import play.Logger;
@@ -99,32 +98,14 @@ public class AccountDao extends BaseDao {
      */
     public boolean saveAccount(Account account) {
         try {
-            Junction<Account> accountSearch = mEbeanServer.find(Account.class)
-                    .fetch("platformAccounts")
-                    .where()
-                    .disjunction();
-
-            if (account.id != null) {
-                accountSearch.idEq(account.id);
-            } else if (account.apiKey != null) {
-                accountSearch.eq("api_key", account.apiKey);
-            }
-            accountSearch.endJunction();
-
-            Account savedAccount = accountSearch.endJunction().findOne();
-            if (savedAccount != null) {
-                account.id = savedAccount.id;
-                mEbeanServer.save(account);
-            } else {
-                mEbeanServer.insert(account);
-            }
+            mEbeanServer.save(account);
+            return true;
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
-            return false;
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -141,13 +122,13 @@ public class AccountDao extends BaseDao {
                     .idEq(accountId)
                     .findList();
 
-            mEbeanServer.deleteAll(accounts);
+            mEbeanServer.deleteAllPermanent(accounts);
+            return true;
 
         } catch (Exception e) {
             Logger.error("Error deleting agency.", e);
-            return false;
         }
 
-        return true;
+        return false;
     }
 }

@@ -11,8 +11,9 @@ RUNNING_PID
 repository/
 monitoring/
 **/project/target/*
-**/project/project/target/*
+**/project/project/*
 **/target/*
+**/classes/*
 logs/
 bin/
 .sbtserver

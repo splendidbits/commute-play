@@ -1,7 +1,7 @@
 package actors;
 
-import agency.inapp.InAppMessageUpdate;
-import agency.septa.SeptaAgencyUpdate;
+import agency.InAppMessageUpdate;
+import agency.SeptaAgencyUpdate;
 import akka.actor.UntypedActor;
 import com.google.inject.Inject;
 import enums.AgencyUpdateType;

@@ -3,11 +3,11 @@ package services;
 import com.google.inject.Inject;
 import dao.AccountDao;
 import dao.DeviceDao;
-import enums.pushservices.Failure;
+import enums.pushservices.FailureType;
 import enums.pushservices.PlatformType;
-import exceptions.pushservices.TaskValidationException;
+import exceptions.pushservices.MessageValidationException;
 import helpers.AlertHelper;
-import interfaces.pushservices.TaskQueueCallback;
+import interfaces.pushservices.TaskQueueListener;
 import javafx.util.Pair;
 import models.AlertModifications;
 import models.accounts.Account;
@@ -15,12 +15,10 @@ import models.accounts.PlatformAccount;
 import models.alerts.Alert;
 import models.alerts.Route;
 import models.devices.Device;
-import models.pushservices.app.FailedRecipient;
 import models.pushservices.app.UpdatedRecipient;
 import models.pushservices.db.Message;
 import models.pushservices.db.PlatformFailure;
 import models.pushservices.db.Recipient;
-import models.pushservices.db.Task;
 import play.Logger;
 import services.pushservices.TaskQueue;
 
@@ -50,14 +48,13 @@ public class PushMessageManager {
      * @return updated and cancelled alerts messages.
      */
     public Pair<Set<Message>, Set<Message>> dispatchAlerts(@Nonnull AlertModifications alertModifications) {
-        List<Task> taskList = new ArrayList<>();
-
-        // Map of routeIds and all updated AlertTypes.
         Set<Message> updatedAlertMessages = new HashSet<>();
         Set<Message> staleAlertMessages = new HashSet<>();
 
         Map<String, List<Alert>> updatedRouteAlerts = new HashMap<>();
         Map<String, List<Alert>> staleRouteAlerts = new HashMap<>();
+
+        MessageTaskQueueListener taskQueueListener = new MessageTaskQueueListener();
 
         /*
          * Iterate through each updated alert and add it to a map with its corresponding
@@ -84,7 +81,7 @@ public class PushMessageManager {
         /*
          * Iterate through each stale alert and add it to a list if the alert
          * type was not already added for that update route alerts..
-        */
+         */
         for (Alert staleAlert : alertModifications.getStaleAlerts()) {
             if (staleAlert.route == null || staleAlert.route.routeId == null) {
                 Logger.error("Updated Alert must have routes with routeIds.");
@@ -97,7 +94,7 @@ public class PushMessageManager {
             /*
              * If the updates alerts do not contain the same alert type, send a cancellation,
              * and add the alert to the list of updated alerts for the route.
-            */
+             */
             List<Alert> alerts = staleRouteAlerts.containsKey(routeId)
                     ? staleRouteAlerts.get(routeId)
                     : new ArrayList<>();
@@ -111,42 +108,26 @@ public class PushMessageManager {
             String routeId = routeAlertEntry.getKey();
             List<Alert> alerts = routeAlertEntry.getValue();
 
-            Task updatedRouteTask = new Task(String.format("agency-%d:updated-route:%s", alertModifications.getAgencyId(), routeId));
-            updatedRouteTask.priority = Task.TASK_PRIORITY_MEDIUM;
-            updatedRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, false);
-            updatedAlertMessages.addAll(updatedRouteTask.messages);
-
-            if (!updatedRouteTask.messages.isEmpty()) {
-                taskList.add(updatedRouteTask);
-            } else {
-                Logger.warn("No messages were generated for updated route");
-            }
+            updatedAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, false));
         }
 
-        // Iterate through the updated (fresh) Alerts to send messages for.
+        // Iterate through the removed (stale) Alerts to send messages for.
         for (Map.Entry<String, List<Alert>> staleAlertEntry : staleRouteAlerts.entrySet()) {
             String routeId = staleAlertEntry.getKey();
             List<Alert> alerts = staleAlertEntry.getValue();
 
-            Task staleRouteTask = new Task(String.format("agency-%d:stale-route:%s", alertModifications.getAgencyId(), routeId));
-            staleRouteTask.priority = Task.TASK_PRIORITY_HIGH;
-            staleRouteTask.messages = createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, true);
-            staleAlertMessages.addAll(staleRouteTask.messages);
-
-            if (!staleRouteTask.messages.isEmpty()) {
-                taskList.add(staleRouteTask);
-            } else {
-                Logger.warn("No messages were generated for updated route");
-            }
+            staleAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, true));
         }
 
         try {
             // Add each task to the queue.
-            for (Task alertsTask : taskList) {
-                mTaskQueue.queueTask(alertsTask, new SendMessagePlatformQueueCallback());
-            }
 
-        } catch (TaskValidationException e) {
+
+            mTaskQueue.queueMessages(new ArrayList<>(updatedAlertMessages), taskQueueListener);
+            mTaskQueue.queueMessages(new ArrayList<>(staleAlertMessages), taskQueueListener);
+
+
+        } catch (MessageValidationException e) {
             Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
             return null;
         }
@@ -199,37 +180,25 @@ public class PushMessageManager {
      * @return boolean true if there were errors dispatching the registration message.
      */
     public boolean sendRegistrationConfirmMessage(@Nonnull Device device, @Nonnull PlatformAccount account) {
-        Task messageTask = new Task("registration-response");
-        messageTask.priority = Task.TASK_PRIORITY_HIGH;
         Message message = AlertHelper.buildDeviceRegisteredMessage(device, account);
 
-        if (message != null) {
-            messageTask.messages.add(message);
-
-        } else {
-            Logger.error("Could not build registration confirmation message.");
-            return false;
-        }
-
         // Add the message task to the TaskQueue.
-        if (messageTask.messages != null) {
+        if (message != null) {
             try {
-                mTaskQueue.queueTask(messageTask, new SendMessagePlatformQueueCallback());
+                mTaskQueue.queueMessages(Collections.singletonList(message), new MessageTaskQueueListener());
+                return true;
 
-            } catch (TaskValidationException e) {
+            } catch (MessageValidationException e) {
                 Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
-                return false;
             }
         }
-
-        return messageTask.messages != null && !messageTask.messages.isEmpty();
+        return false;
     }
 
-    /**
+    /*
      * TaskQueue Task Result Callbacks from the platform provider(s).
      */
-    private class SendMessagePlatformQueueCallback implements TaskQueueCallback {
-
+    private class MessageTaskQueueListener implements TaskQueueListener {
         @Override
         public void updatedRecipients(@Nonnull List<UpdatedRecipient> updatedRecipients) {
             Logger.info(String.format("%d recipients require registration updates.", updatedRecipients.size()));
@@ -238,35 +207,34 @@ public class PushMessageManager {
                 Recipient staleRecipient = recipientUpdate.getStaleRecipient();
                 Recipient updatedRecipient = recipientUpdate.getUpdatedRecipient();
 
-                mDeviceDao.saveUpdatedToken(staleRecipient.token, updatedRecipient.token);
+                mDeviceDao.saveUpdatedToken(staleRecipient.getToken(), updatedRecipient.getToken());
             }
         }
 
         @Override
-        public void failedRecipients(@Nonnull List<FailedRecipient> failedRecipients) {
+        public void failedRecipients(@Nonnull List<Recipient> failedRecipients) {
             Logger.warn(String.format("%d recipients failed fatally.", failedRecipients.size()));
 
-            for (FailedRecipient recipientFailure : failedRecipients) {
-                Recipient failedRecipient = recipientFailure.getRecipient();
-                PlatformFailure failure = recipientFailure.getFailure();
+            for (Recipient recipient : failedRecipients) {
+                FailureType failure = recipient.getPlatformFailure().getFailureType();
 
-                if (failure.failure != null && (failure.failure == Failure.RECIPIENT_REGISTRATION_INVALID ||
-                        failure.failure == Failure.RECIPIENT_NOT_REGISTERED ||
-                        failure.failure == Failure.MESSAGE_PACKAGE_INVALID)) {
-                    Logger.error(String.format("GCM Failure: Deleted recipient %s",failedRecipient.token));
-                    mDeviceDao.removeDevice(failedRecipient.token);
+                if (failure != null && (failure == FailureType.RECIPIENT_REGISTRATION_INVALID ||
+                                failure == FailureType.RECIPIENT_NOT_REGISTERED ||
+                                failure == FailureType.MESSAGE_PACKAGE_INVALID)) {
+                    Logger.error(String.format("GCM Failure: Deleted recipient %s", recipient.getToken()));
+                    mDeviceDao.removeDevice(recipient.getToken());
                 }
             }
         }
 
         @Override
         public void messageCompleted(@Nonnull Message originalMessage) {
-            Logger.info(String.format("Message %d completed.", originalMessage.id));
+            Logger.info(String.format("Message %d completed.", originalMessage.getId()));
         }
 
         @Override
         public void messageFailed(@Nonnull Message originalMessage, PlatformFailure failure) {
-            Logger.info(String.format("Message %d failed - %s.", originalMessage.id, failure.failureMessage));
+            Logger.info(String.format("Message %d failed - %s.", originalMessage.getId(), failure.getFailureMessage()));
         }
     }
 

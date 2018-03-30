@@ -1,4 +1,4 @@
-import agency.septa.SeptaAgencyUpdate;
+import agency.SeptaAgencyUpdate;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import enums.AlertType;

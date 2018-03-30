@@ -2,7 +2,7 @@ package helpers;
 
 import enums.pushservices.MessagePriority;
 import enums.pushservices.PlatformType;
-import exceptions.pushservices.TaskValidationException;
+import exceptions.pushservices.MessageValidationException;
 import helpers.pushservices.MessageBuilder;
 import models.AlertModifications;
 import models.accounts.PlatformAccount;
@@ -37,7 +37,7 @@ public class AlertHelper {
      * messages with a longer TTL will be de-prioritised (throttled) but they will expunged
      * after a certain period of time.
      */
-    private static final int ALERT_SHORT_TTL = 60 * 60 * 1; // 1 hour
+    private static final int ALERT_SHORT_TTL = 60 * 60; // 1 hour
     private static final int ALERT_LONG_TTL = 60 * 60 * 48; // 48 hours
 
     /**
@@ -240,10 +240,10 @@ public class AlertHelper {
                         .setTimeToLiveSeconds(ALERT_LONG_TTL)
                         .setPlatformCredentials(credentials)
                         .setDeviceTokens(tokens)
-                        .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_REGISTRATION_COMPLETE.value)
+                        .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_REGISTRATION_COMPLETE.value)
                         .build();
 
-            } catch (TaskValidationException e) {
+            } catch (MessageValidationException e) {
                 Logger.error("Exception building the device_registration message.");
             }
         }
@@ -267,14 +267,20 @@ public class AlertHelper {
             Credentials credentials = getMessageCredentials(platformAccount);
 
             if (credentials != null) {
+                Set<String> tokenSet = new HashSet<>();
+                for (Device device : devices) {
+                    tokenSet.add(device.token);
+                }
+
                 MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                         .setCollapseKey(alert.route.routeId + "-" + alert.type.name())
                         .setPlatformCredentials(credentials)
-                        .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
-                        .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
-                        .putData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, alert.route.routeName)
-                        .putData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name())
-                        .putData(AlertMessageKey.KEY_ALERT_MESSAGE.value, alert.messageBody);
+                        .setDeviceTokens(tokenSet)
+                        .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
+                        .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
+                        .addData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, alert.route.routeName)
+                        .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name())
+                        .addData(AlertMessageKey.KEY_ALERT_MESSAGE.value, alert.messageBody);
 
                 switch (alert.type) {
                     case TYPE_DETOUR:
@@ -308,15 +314,9 @@ public class AlertHelper {
                         break;
                 }
 
-                Set<String> tokenSet = new HashSet<>();
-                for (Device device : devices) {
-                    tokenSet.add(device.token);
-                }
-
-                messageBuilder.setDeviceTokens(tokenSet);
                 try {
                     messages.add(messageBuilder.build());
-                } catch (TaskValidationException e) {
+                } catch (MessageValidationException e) {
                     Logger.error("Exception building the alert update message.");
                 }
             } else {
@@ -345,9 +345,9 @@ public class AlertHelper {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
                     .setCollapseKey(alert.route.routeId + "-" + alert.type.name())
                     .setPlatformCredentials(credentials)
-                    .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
-                    .putData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
-                    .putData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name());
+                    .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
+                    .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
+                    .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name());
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
@@ -358,7 +358,7 @@ public class AlertHelper {
 
             try {
                 messages.add(messageBuilder.build());
-            } catch (TaskValidationException e) {
+            } catch (MessageValidationException e) {
                 Logger.error("Exception building the alert cancellation message.");
             }
 
@@ -378,8 +378,8 @@ public class AlertHelper {
                     .setPlatformCredentials(credentials)
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setTimeToLiveSeconds(ALERT_LONG_TTL)
-                    .putData("alert_type", MessageType.TYPE_RESEND_SUBSCRIPTIONS.value)
-                    .putData(MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value);
+                    .addData("alert_type", MessageType.TYPE_RESEND_SUBSCRIPTIONS.value)
+                    .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value);
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
@@ -390,7 +390,7 @@ public class AlertHelper {
 
             try {
                 messages.add(messageBuilder.build());
-            } catch (TaskValidationException e) {
+            } catch (MessageValidationException e) {
                 Logger.error("Exception building the alert cancellation message.");
             }
 
@@ -407,15 +407,15 @@ public class AlertHelper {
      * @return size of all fields in the payload.
      */
     private static int messagePayloadCount(@Nonnull Message message) {
-        List<PayloadElement> messagePayload = message.payloadData;
+        List<PayloadElement> messagePayload = message.getPayloadData();
         final int controlCharCount = 6; // {, ", }, ,
 
         int payloadByteCount = 0;
         if (messagePayload != null) {
 
             for (PayloadElement element : messagePayload) {
-                payloadByteCount += element.key.length();
-                payloadByteCount += element.value.length();
+                payloadByteCount += element.getKey().length();
+                payloadByteCount += element.getValue().length();
                 payloadByteCount += controlCharCount;
             }
         }
@@ -430,14 +430,14 @@ public class AlertHelper {
      * @param truncateAmount amount to reduce the payload contents by.
      */
     private static void truncateMessagePayload(@Nonnull Message message, int truncateAmount) {
-        List<PayloadElement> messagePayload = message.payloadData;
+        List<PayloadElement> messagePayload = message.getPayloadData();
         if (messagePayload != null && isAlertMessage(message) && truncateAmount > 0) {
 
             for (PayloadElement element : messagePayload) {
-                String messageBody = element.value;
+                String messageBody = element.getValue();
 
                 // First, try to trim the alert message itself as much as possible.
-                if (element.equals(AlertMessageKey.KEY_ALERT_MESSAGE) && !messageBody.isEmpty()) {
+                if (element.getKey().equals(AlertMessageKey.KEY_ALERT_MESSAGE.value) && !messageBody.isEmpty()) {
 
                     /*
                      * The payload message can't just be truncated by amount sent, as this may
@@ -458,10 +458,10 @@ public class AlertHelper {
                     int sliceAnchorEnd = messageBody.length() - (truncateAmount - oversliceAmount);
 
                     // Truncate the model in place.
-                    element.value = messageBody.substring(0, sliceAnchorEnd);
+                    element.setValue(messageBody.substring(0, sliceAnchorEnd));
 
                     Logger.warn(String.format("Sliced %1$d bytes off message type %2$s payload end.",
-                            (truncateAmount - oversliceAmount), message.collapseKey));
+                            (truncateAmount - oversliceAmount), message.getCollapseKey()));
                 }
             }
         }
@@ -474,10 +474,10 @@ public class AlertHelper {
      * @return true if the message an agency alert message.
      */
     private static boolean isAlertMessage(@Nonnull Message message) {
-        List<PayloadElement> messagePayload = message.payloadData;
+        List<PayloadElement> messagePayload = message.getPayloadData();
         if (messagePayload != null) {
             for (PayloadElement element : messagePayload) {
-                if (element.equals(MessageType.TYPE_MESSAGE_NOTIFY)) {
+                if (element.getKey().equals(MessageType.TYPE_MESSAGE_NOTIFY.value)) {
                     return true;
                 }
             }
@@ -493,11 +493,10 @@ public class AlertHelper {
      */
     private static Credentials getMessageCredentials(@Nonnull PlatformAccount account) {
         if (account.platformType != null) {
-            Credentials credentials = new Credentials();
-            credentials.platformType = PlatformType.SERVICE_GCM;
-            credentials.authKey = account.authorisationKey;
-            credentials.packageUri = account.packageUri;
-            credentials.certBody = account.certificateBody;
+            Credentials credentials = new Credentials(PlatformType.SERVICE_GCM);
+            credentials.setAuthKey(account.authorisationKey);
+            credentials.setPackageUri(account.packageUri);
+            credentials.setCertBody(account.certificateBody);
             return credentials;
         }
         return null;
