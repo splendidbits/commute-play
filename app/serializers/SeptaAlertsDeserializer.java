@@ -42,8 +42,9 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
     }
 
-    public static Calendar getParsedDate(String jsonDate, boolean isDetourDate) {
-        if (jsonDate != null) {
+    public static Calendar getParsedDate(String jsonDate, boolean allowNullDate) {
+        if (jsonDate != null && jsonDate.isEmpty()) {
+
             SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSSa", Locale.US);
             dateFormat1.setLenient(true);
             dateFormat1.setTimeZone(TimeZone.getTimeZone("EST"));
@@ -70,8 +71,14 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             }
         }
 
-        Logger.error(String.format("Error Parsing date %s. Using current time.", jsonDate));
-        return isDetourDate ? null : Calendar.getInstance(timezone, Locale.US);
+        if (allowNullDate) {
+            Logger.warn(String.format("Error Parsing date %s. Using epoch start time time.", jsonDate));
+            Calendar epochStart = Calendar.getInstance(timezone, Locale.US);
+            epochStart.setTimeInMillis(0);
+            return epochStart;
+        }
+
+        return null;
     }
 
     @Override
@@ -100,11 +107,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                     String detourStartLocation = bucket.get("detour_start_location").getAsString();
                     String isSnow = bucket.get("isSnow").getAsString();
                     String lastUpdated = bucket.get("last_updated").getAsString();
-
-                    if (lastUpdated == null || lastUpdated.isEmpty()) {
-                        Logger.warn("Trying to deserialize SEPTA alert row with a null date. Skipping");
-                        continue;
-                    }
 
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
