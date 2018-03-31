@@ -236,6 +236,7 @@ public class AlertHelper {
 
             try {
                 return new MessageBuilder.Builder()
+                        .setCollapseKey("device-registration")
                         .setMessagePriority(MessagePriority.PRIORITY_NORMAL)
                         .setTimeToLiveSeconds(ALERT_LONG_TTL)
                         .setPlatformCredentials(credentials)
@@ -375,6 +376,7 @@ public class AlertHelper {
 
         if (credentials != null) {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                    .setCollapseKey("resubscribe-all")
                     .setPlatformCredentials(credentials)
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setTimeToLiveSeconds(ALERT_LONG_TTL)

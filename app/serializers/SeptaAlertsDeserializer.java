@@ -81,8 +81,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
 
-        Calendar nowCal = Calendar.getInstance(TimeZone.getTimeZone("EST"));
-
         try {
             final JsonArray schedulesArray = json.getAsJsonArray();
             if (schedulesArray != null) {
@@ -102,6 +100,11 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                     String detourStartLocation = bucket.get("detour_start_location").getAsString();
                     String isSnow = bucket.get("isSnow").getAsString();
                     String lastUpdated = bucket.get("last_updated").getAsString();
+
+                    if (lastUpdated == null || lastUpdated.isEmpty()) {
+                        Logger.warn("Trying to deserialize SEPTA alert row with a null date. Skipping");
+                        continue;
+                    }
 
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
@@ -190,16 +193,12 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          */
                         List<Alert> rowAlerts = new ArrayList<>();
 
-                        Calendar lastUpdateCalendar = lastUpdated != null
-                                ? getParsedDate(lastUpdated, false)
-                                : nowCal;
-
                         // Parse the detour locations into the correct type.
                         if (!detourMessage.isEmpty()) {
                             AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
                             alert.highPriority = true;
-                            alert.lastUpdated = lastUpdateCalendar;
+                            alert.lastUpdated = getParsedDate(lastUpdated, false);
                             alert.type = type;
                             alert.messageTitle = type.title;
                             alert.messageSubtitle = detourReason;
@@ -231,6 +230,8 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.locations = detourLocations;
                             rowAlerts.add(alert);
                         }
+
+                        Calendar lastUpdateCalendar = getParsedDate(lastUpdated, false);
 
                         // Snow Alerts
                         if (isSnow.toLowerCase().equals("y")) {

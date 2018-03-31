@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   javaJpa,
   javaWs,
   guice,
-  "com.splendidbits" % "play-pushservices" % "1.2",
+  "com.splendidbits" % "play-pushservices" % "1.2.1",
   "org.postgresql" % "postgresql" % "42.2.2",
   "org.jetbrains" % "annotations" % "13.0",
   "com.google.code.gson" % "gson" % "2.8.2",
