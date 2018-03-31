@@ -90,12 +90,7 @@ public class PushMessageManager {
                     ? updatedRouteAlerts.get(routeId)
                     : new ArrayList<>();
 
-            // Add the alert to the list of updated alerts for the route if the route
-            // has *NOT* already been marked as stale.
-            if (!staleRouteAlerts.containsKey(routeId)) {
-                alerts.add(updatedAlert);
-            }
-
+            alerts.add(updatedAlert);
             updatedRouteAlerts.put(routeId, alerts);
         }
 

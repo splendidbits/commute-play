@@ -47,13 +47,13 @@ public class CompareUtils {
             }
 
             for (Object object1Item : (Collection) object1) {
-                if (!(((Collection) object2).contains(object1Item))) {
+                if (!((Collection) object2).contains(object1Item)) {
                     return false;
                 }
             }
 
             for (Object object2Item : (Collection) object2) {
-                if (!(((Collection) object1).contains(object2Item))) {
+                if (!((Collection) object1).contains(object2Item)) {
                     return false;
                 }
             }

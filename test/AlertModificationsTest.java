@@ -88,7 +88,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         Route secondRoute = TestModelHelper.createTestRoute();
         secondRoute.routeId = "test_route_2";
-        secondRoute.routeName = "Second Route Name";
+        secondRoute.routeName = "Second Route";
         secondRoute.alerts = Arrays.asList(TestModelHelper.createTestAlert(), secondAlert);
 
         existingAgency.routes = Arrays.asList(TestModelHelper.createTestRoute(), secondRoute);
@@ -517,7 +517,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.getUpdatedAlerts().contains(detourAlert));
         assertTrue(alertModifications.getStaleAlerts().contains(informationAlert));
 
-        // Check there was 2 updated alerts and 0 stale alert processed.
+        // Check there was 2 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getKey().size(), 2);
         assertEquals(dispatchedMessages.getValue().size(), 1);

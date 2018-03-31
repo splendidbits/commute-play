@@ -668,6 +668,10 @@ public class AlertHelper {
     private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
         List<Alert> updatedAlerts = new ArrayList<>();
 
+        if (freshAlerts == null) {
+            return new ArrayList<>();
+        }
+
         if (CompareUtils.isEquals(existingAlerts, freshAlerts)) {
             return updatedAlerts;
         }

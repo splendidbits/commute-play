@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.ebean.Finder;
 import io.ebean.Model;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -65,10 +64,8 @@ public class Location extends Model implements Comparable<Location> {
 
             boolean sameLongitude = StringUtils.equals(longitude, other.longitude);
 
-            boolean sameDate = DateUtils.isSameInstant(date, other.date);
-
             // Match everything.
-            return (sameName && sameMessage && sameSequence && sameLatitude && sameLongitude && sameDate);
+            return (sameName && sameMessage && sameSequence && sameLatitude && sameLongitude);
         }
         return o.equals(this);
     }
