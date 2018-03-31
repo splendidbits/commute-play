@@ -79,14 +79,12 @@ public abstract class AgencyUpdate {
             Logger.info(String.format("[%d] stale alerts.", staleAlertCount));
 
             if (modifications.hasChangedAlerts()) {
-                Logger.info("Saving new or updated agency data.");
                 mAgencyManager.saveAgency(updatedAgency);
 
-                Logger.info("Updated Agency Alerts persisted. Sending to subscribers.");
+                Logger.info(String.format("Updated %s Agency Alerts persisted. Sending to subscribers.", updatedAgency.name));
                 mPushMessageManager.dispatchAlerts(modifications);
 
             } else {
-                Logger.info("Updated Agency Alerts persisted. Sending to subscribers.");
                 mAgencyManager.cacheAgency(updatedAgency);
             }
         }

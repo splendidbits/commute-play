@@ -43,7 +43,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     }
 
     public static Calendar getParsedDate(String jsonDate, boolean allowNullDate) {
-        if (jsonDate != null && jsonDate.isEmpty()) {
+        if (jsonDate != null && !jsonDate.isEmpty()) {
 
             SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSSa", Locale.US);
             dateFormat1.setLenient(true);
@@ -71,7 +71,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
             }
         }
 
-        if (allowNullDate) {
+        if (!allowNullDate) {
             Logger.warn(String.format("Error Parsing date %s. Using epoch start time time.", jsonDate));
             Calendar epochStart = Calendar.getInstance(timezone, Locale.US);
             epochStart.setTimeInMillis(0);
@@ -96,17 +96,49 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                 for (JsonElement scheduleRow : schedulesArray) {
                     JsonObject bucket = scheduleRow.getAsJsonObject();
 
-                    String routeId = bucket.get("route_id").getAsString();
-                    String routeName = bucket.get("route_name").getAsString();
-                    String advisoryMessage = bucket.get("advisory_message").getAsString();
-                    String currentMessage = bucket.get("current_message").getAsString();
-                    String detourStartDate = bucket.get("detour_start_date_time").getAsString();
-                    String detourEndDate = bucket.get("detour_end_date_time").getAsString();
-                    String detourMessage = bucket.get("detour_message").getAsString();
-                    String detourReason = bucket.get("detour_reason").getAsString();
-                    String detourStartLocation = bucket.get("detour_start_location").getAsString();
-                    String isSnow = bucket.get("isSnow").getAsString();
-                    String lastUpdated = bucket.get("last_updated").getAsString();
+                    String routeId = !bucket.get("route_id").isJsonNull()
+                            ? bucket.get("route_id").getAsString()
+                            : "";
+
+                    String routeName = !bucket.get("route_name").isJsonNull()
+                            ? bucket.get("route_name").getAsString()
+                            : "";
+
+                    String advisoryMessage = !bucket.get("advisory_message").isJsonNull()
+                            ? bucket.get("advisory_message").getAsString()
+                            : "";
+
+                    String currentMessage = !bucket.get("current_message").isJsonNull()
+                            ? bucket.get("current_message").getAsString()
+                            : "";
+
+                    String detourStartDate = !bucket.get("detour_start_date_time").isJsonNull()
+                            ? bucket.get("detour_start_date_time").getAsString()
+                            : "";
+
+                    String detourEndDate = !bucket.get("detour_end_date_time").isJsonNull()
+                            ? bucket.get("detour_end_date_time").getAsString()
+                            : "";
+
+                    String detourMessage = !bucket.get("detour_message").isJsonNull()
+                            ? bucket.get("detour_message").getAsString()
+                            : "";
+
+                    String detourReason = !bucket.get("detour_reason").isJsonNull()
+                            ? bucket.get("detour_reason").getAsString()
+                            : "";
+
+                    String detourStartLocation = !bucket.get("detour_start_location").isJsonNull()
+                            ? bucket.get("detour_start_location").getAsString()
+                            : "";
+
+                    String isSnow = !bucket.get("isSnow").isJsonNull()
+                            ? bucket.get("isSnow").getAsString()
+                            : "";
+
+                    String lastUpdated = !bucket.get("last_updated").isJsonNull()
+                            ? bucket.get("last_updated").getAsString()
+                            : "";
 
                     if (routeId != null) {
                         routeId = routeId.toLowerCase();
