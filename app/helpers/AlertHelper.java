@@ -43,7 +43,7 @@ public class AlertHelper {
     /**
      * Different types of commute push message types.
      */
-    private static final String MESSAGE_TYPE_KEY = "message_type";
+    private static final String MESSAGE_TYPE_KEY = "type";
 
     private enum MessageType {
         TYPE_MESSAGE_NOTIFY("message_notify"),
