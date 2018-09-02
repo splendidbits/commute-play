@@ -43,6 +43,7 @@ public class AlertHelper {
     /**
      * Different types of commute push message types.
      */
+    private static final String LEGACY_MESSAGE_TYPE_KEY = "message_type";
     private static final String MESSAGE_TYPE_KEY = "type";
 
     private enum MessageType {
@@ -242,6 +243,7 @@ public class AlertHelper {
                         .setPlatformCredentials(credentials)
                         .setDeviceTokens(tokens)
                         .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_REGISTRATION_COMPLETE.value)
+                        .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_REGISTRATION_COMPLETE.value)
                         .build();
 
             } catch (MessageValidationException e) {
@@ -278,6 +280,7 @@ public class AlertHelper {
                         .setPlatformCredentials(credentials)
                         .setDeviceTokens(tokenSet)
                         .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
+                        .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
                         .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
                         .addData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, alert.route.routeName)
                         .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name())
@@ -347,6 +350,7 @@ public class AlertHelper {
                     .setCollapseKey(alert.route.routeId + "-" + alert.type.name())
                     .setPlatformCredentials(credentials)
                     .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
+                    .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
                     .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.route.routeId)
                     .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.type.name());
 
@@ -381,7 +385,8 @@ public class AlertHelper {
                     .setMessagePriority(MessagePriority.PRIORITY_HIGH)
                     .setTimeToLiveSeconds(ALERT_LONG_TTL)
                     .addData("alert_type", MessageType.TYPE_RESEND_SUBSCRIPTIONS.value)
-                    .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value);
+                    .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value)
+                    .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_RESEND_SUBSCRIPTIONS.value);
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
