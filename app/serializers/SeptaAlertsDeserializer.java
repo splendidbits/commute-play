@@ -5,13 +5,13 @@ import com.google.gson.*;
 import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
+import helpers.AlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
 import play.Logger;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -24,66 +24,16 @@ import java.util.*;
 public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
     private static final String[] IGNORED_ROUTES = {"bus_app"};
     private static final TimeZone timezone = TimeZone.getTimeZone("EST");
-    private Agency mAgency;
-
-    public SeptaAlertsDeserializer(@Nullable Agency partialAgency) {
-        mAgency = partialAgency;
-
-        // Create agency if there was no partially filled agency from the client.
-        if (mAgency == null) {
-            mAgency = new Agency(SeptaAgencyUpdate.AGENCY_ID);
-            mAgency.name = SeptaAgencyUpdate.AGENCY_NAME;
-            mAgency.phone = "+1 (215) 580 7800";
-            mAgency.externalUri = "http://www.septa.org";
-            mAgency.utcOffset = -5f;
-            mAgency.routes = new ArrayList<>();
-        }
-
-        mAgency.id = SeptaAgencyUpdate.AGENCY_ID;
-    }
-
-    public static Calendar getParsedDate(String jsonDate, boolean allowNullDate) {
-        if (jsonDate != null && !jsonDate.isEmpty()) {
-
-            SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSSa", Locale.US);
-            dateFormat1.setLenient(true);
-            dateFormat1.setTimeZone(TimeZone.getTimeZone("EST"));
-
-            // last_updated 2 - 2017-03-14 15:56:57.090
-            SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US);
-            dateFormat2.setLenient(true);
-            dateFormat2.setTimeZone(TimeZone.getTimeZone("EST"));
-
-            // detour        - 07/14/2016   9:26 AM
-            SimpleDateFormat dateFormat3 = new SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.US);
-            dateFormat3.setLenient(true);
-            dateFormat3.setTimeZone(TimeZone.getTimeZone("EST"));
-
-            List<SimpleDateFormat> dateFormatters = Arrays.asList(dateFormat1, dateFormat2, dateFormat3);
-            for (SimpleDateFormat formatter : dateFormatters) {
-                try {
-                    Calendar calendar = Calendar.getInstance(timezone, Locale.US);
-                    calendar.setTime(formatter.parse(jsonDate));
-                    return calendar;
-
-                } catch (ParseException e) {
-                }
-            }
-        }
-
-        if (!allowNullDate) {
-            Logger.warn(String.format("Error Parsing date %s. Using epoch start time time.", jsonDate));
-            Calendar epochStart = Calendar.getInstance(timezone, Locale.US);
-            epochStart.setTimeInMillis(0);
-            return epochStart;
-        }
-
-        return null;
-    }
 
     @Override
     public Agency deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         Logger.info("Started parsing SEPTA alerts json body");
+
+        Agency agency = new Agency(SeptaAgencyUpdate.AGENCY_ID);
+        agency.setName(SeptaAgencyUpdate.AGENCY_NAME);
+        agency.setPhone("+1 215 580 7800");
+        agency.setExternalUri("http://www.septa.org");
+        agency.setUtcOffset(-5f);
 
         // Map of route objects containing alerts. // [routeId, Route]
         HashMap<String, Route> routesMap = new HashMap<>();
@@ -147,7 +97,7 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         boolean ignoreRoute = false;
                         for (String route : IGNORED_ROUTES) {
                             if (route.toLowerCase().equals(routeId.toLowerCase())) {
-                                Logger.info(String.format("Ignoring route %s for agency %s", route, mAgency.name));
+                                Logger.info(String.format("Ignoring route %s for agency %s", route, agency.getName()));
                                 ignoreRoute = true;
                                 break;
                             }
@@ -166,53 +116,54 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          * json document. Check to see if there's already a Route model stored for this routeId.
                          */
                         Route route = new Route(routeId, routeName);
-                        if (routesMap.containsKey(route.routeId)) {
-                            route = routesMap.get(route.routeId);
+
+                        if (routesMap.containsKey(route.getRouteId())) {
+                            route = routesMap.get(route.getRouteId());
                         }
 
                         // Create the Route model, as it may be the first time this route has been seen.
                         if (routeId.contains("generic")) {
-                            route.transitType = TransitType.TYPE_SPECIAL;
-                            route.externalUri = "http://www.septa.org/service/";
-                            route.routeName = "General";
+                            route.setTransitType(TransitType.TYPE_SPECIAL);
+                            route.setExternalUri("http://www.septa.org/service/");
+                            route.setRouteName("General");
 
                         } else if (routeId.contains("cct")) {
-                            route.transitType = TransitType.TYPE_SPECIAL;
-                            route.externalUri = "http://www.septa.org/service/cct/";
-                            route.routeName = "CCT Connect";
+                            route.setTransitType(TransitType.TYPE_SPECIAL);
+                            route.setExternalUri("http://www.septa.org/service/cct/");
+                            route.setRouteName("CCT Connect");
 
                         } else if (routeId.contains("bsl")) {
-                            route.transitType = TransitType.TYPE_SUBWAY;
-                            route.externalUri = "http://www.septa.org/service/bsl/";
+                            route.setTransitType(TransitType.TYPE_SUBWAY);
+                            route.setExternalUri("http://www.septa.org/service/bsl/");
 
                         } else if (routeId.contains("mfl")) {
-                            route.transitType = TransitType.TYPE_SUBWAY;
-                            route.externalUri = "http://www.septa.org/service/mfl/";
+                            route.setTransitType(TransitType.TYPE_SUBWAY);
+                            route.setExternalUri("http://www.septa.org/service/mfl/");
 
                         } else if (routeId.contains("nhsl")) {
-                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
-                            route.externalUri = "http://www.septa.org/service/highspeed/";
+                            route.setTransitType(TransitType.TYPE_LIGHT_RAIL);
+                            route.setExternalUri("http://www.septa.org/service/highspeed/");
 
                         } else if (routeId.contains("bus_")) {
-                            route.transitType = TransitType.TYPE_BUS;
-                            route.externalUri = "http://www.septa.org/service/bus/";
+                            route.setTransitType(TransitType.TYPE_BUS);
+                            route.setExternalUri("http://www.septa.org/service/bus/");
 
                         } else if (routeId.contains("trolley_")) {
-                            route.transitType = TransitType.TYPE_LIGHT_RAIL;
-                            route.externalUri = "http://www.septa.org/service/trolley/";
+                            route.setTransitType(TransitType.TYPE_LIGHT_RAIL);
+                            route.setExternalUri("http://www.septa.org/service/trolley/");
 
                         } else if (routeId.contains("rr_")) {
-                            route.transitType = TransitType.TYPE_RAIL;
-                            route.externalUri = "http://www.septa.org/service/rail/";
+                            route.setTransitType(TransitType.TYPE_RAIL);
+                            route.setExternalUri("http://www.septa.org/service/rail/");
                         }
 
                         // Set route flags.
                         if (routeId.contains("generic")) {
-                            route.isSticky = true;
-                            route.isDefault = true;
+                            route.setSticky(true);
+                            route.setDefault(true);
 
                         } else if (routeId.contains("bso") || routeId.contains("mfo")) {
-                            route.routeFlag = RouteFlag.TYPE_OWL;
+                            route.setRouteFlag(RouteFlag.TYPE_OWL);
                         }
 
                         /*
@@ -231,37 +182,40 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (!detourMessage.isEmpty()) {
                             AlertType type = AlertType.TYPE_DETOUR;
                             Alert alert = new Alert();
-                            alert.highPriority = true;
-                            alert.lastUpdated = getParsedDate(lastUpdated, false);
-                            alert.type = type;
-                            alert.messageTitle = type.title;
-                            alert.messageSubtitle = detourReason;
-                            alert.messageBody = detourMessage;
-                            alert.route = route;
+                            alert.setHighPriority(true);
+                            alert.setLastUpdated(getParsedDate(lastUpdated, false));
+                            alert.setType(type);
+                            alert.setMessageTitle(type.title);
+                            alert.setMessageSubtitle(detourReason);
+                            alert.setMessageBody(detourMessage);
+                            alert.setId(AlertHelper.createHash(alert, routeId));
 
                             // Add the detour startup and end locations if they exist.
                             ArrayList<Location> detourLocations = new ArrayList<>();
                             if (!detourStartDate.isEmpty()) {
                                 Location startLocation = new Location();
-                                startLocation.name = detourStartLocation;
-                                startLocation.date = getParsedDate(detourStartDate, true);
-                                startLocation.sequence = 0;
-                                startLocation.message = detourReason;
-                                startLocation.alert = alert;
+                                startLocation.setName(detourStartLocation);
+                                startLocation.setDate(getParsedDate(detourStartDate, true));
+                                startLocation.setSequence(0);
+                                startLocation.setMessage(detourReason);
+                                startLocation.setId(AlertHelper.createHash(startLocation, alert.getId()));
+
                                 detourLocations.add(startLocation);
                             }
 
                             if (!detourEndDate.isEmpty()) {
                                 Location endLocation = new Location();
-                                endLocation.name = detourStartLocation;
-                                endLocation.date = getParsedDate(detourEndDate, true);
-                                endLocation.sequence = -1;
-                                endLocation.message = detourReason;
-                                endLocation.alert = alert;
+                                endLocation.setName(detourStartLocation);
+                                endLocation.setDate(getParsedDate(detourEndDate, true));
+                                endLocation.setSequence(-1);
+                                endLocation.setMessage(detourReason);
+                                endLocation.setId(AlertHelper.createHash(endLocation, alert.getId()));
+
                                 detourLocations.add(endLocation);
                             }
 
-                            alert.locations = detourLocations;
+                            alert.setLocations(detourLocations);
+
                             rowAlerts.add(alert);
                         }
 
@@ -271,12 +225,13 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (isSnow.toLowerCase().equals("y")) {
                             AlertType typeWeather = AlertType.TYPE_WEATHER;
                             Alert alert = new Alert();
-                            alert.highPriority = true;
-                            alert.lastUpdated = lastUpdateCalendar;
-                            alert.type = typeWeather;
-                            alert.messageTitle = typeWeather.title;
-                            alert.messageBody = currentMessage;
-                            alert.route = route;
+                            alert.setHighPriority(true);
+                            alert.setLastUpdated(lastUpdateCalendar);
+                            alert.setType(typeWeather);
+                            alert.setMessageTitle(typeWeather.title);
+                            alert.setMessageBody(currentMessage);
+                            alert.setId(AlertHelper.createHash(alert, routeId));
+
                             rowAlerts.add(alert);
                         }
 
@@ -284,12 +239,13 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (!advisoryMessage.isEmpty()) {
                             AlertType typeInformation = AlertType.TYPE_INFORMATION;
                             Alert alert = new Alert();
-                            alert.highPriority = false;
-                            alert.lastUpdated = lastUpdateCalendar;
-                            alert.type = typeInformation;
-                            alert.messageTitle = typeInformation.title;
-                            alert.messageBody = advisoryMessage;
-                            alert.route = route;
+                            alert.setHighPriority(false);
+                            alert.setLastUpdated(lastUpdateCalendar);
+                            alert.setType(typeInformation);
+                            alert.setMessageTitle(typeInformation.title);
+                            alert.setMessageBody(advisoryMessage);
+                            alert.setId(AlertHelper.createHash(alert, routeId));
+
                             rowAlerts.add(alert);
                         }
 
@@ -297,40 +253,77 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (!currentMessage.isEmpty()) {
                             AlertType typeCurrent = AlertType.TYPE_DISRUPTION;
                             Alert alert = new Alert();
-                            alert.highPriority = true;
-                            alert.lastUpdated = lastUpdateCalendar;
-                            alert.type = typeCurrent;
-                            alert.messageTitle = typeCurrent.title;
-                            alert.messageBody = currentMessage;
-                            alert.route = route;
+                            alert.setHighPriority(true);
+                            alert.setLastUpdated(lastUpdateCalendar);
+                            alert.setType(typeCurrent);
+                            alert.setMessageTitle(typeCurrent.title);
+                            alert.setMessageBody(currentMessage);
+                            alert.setId(AlertHelper.createHash(alert, routeId));
+
                             rowAlerts.add(alert);
                         }
 
                         // Add alerts to route.
-                        if (!rowAlerts.isEmpty()) {
-                            if (route.alerts == null) {
-                                route.alerts = new ArrayList<>();
-                            }
-                            route.alerts.addAll(rowAlerts);
-                        }
+                        route.setAlerts(rowAlerts);
 
                         // Add the modified route back into the map.
-                        route.agency = mAgency;
                         routesMap.put(routeId, route);
                     }
                 }
 
                 // Add all routes to the agency.
-                mAgency.routes.addAll(routesMap.values());
+                if (!routesMap.isEmpty()) {
+                    List<Route> routes = new ArrayList<>(routesMap.values());
+                    agency.setRoutes(routes);
+                }
             }
 
         } catch (IllegalStateException pe) {
             Logger.error("Error parsing json body into alert object", pe);
         }
 
-        Collections.sort(mAgency.routes);
+        Collections.sort(agency.getRoutes());
         Logger.info("Finished creating and sorting SEPTA route-alert map.");
 
-        return mAgency;
+        return agency;
+    }
+
+    public static Calendar getParsedDate(String jsonDate, boolean allowNullDate) {
+        if (jsonDate != null && !jsonDate.isEmpty()) {
+
+            SimpleDateFormat dateFormat1 = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSSa", Locale.US);
+            dateFormat1.setLenient(true);
+            dateFormat1.setTimeZone(TimeZone.getTimeZone("EST"));
+
+            // last_updated 2 - 2017-03-14 15:56:57.090
+            SimpleDateFormat dateFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US);
+            dateFormat2.setLenient(true);
+            dateFormat2.setTimeZone(TimeZone.getTimeZone("EST"));
+
+            // detour        - 07/14/2016   9:26 AM
+            SimpleDateFormat dateFormat3 = new SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.US);
+            dateFormat3.setLenient(true);
+            dateFormat3.setTimeZone(TimeZone.getTimeZone("EST"));
+
+            List<SimpleDateFormat> dateFormatters = Arrays.asList(dateFormat1, dateFormat2, dateFormat3);
+            for (SimpleDateFormat formatter : dateFormatters) {
+                try {
+                    Calendar calendar = Calendar.getInstance(timezone, Locale.US);
+                    calendar.setTime(formatter.parse(jsonDate));
+                    return calendar;
+
+                } catch (ParseException e) {
+                }
+            }
+        }
+
+        if (!allowNullDate) {
+            Logger.warn(String.format("Error Parsing date %s. Using epoch start time time.", jsonDate));
+            Calendar epochStart = Calendar.getInstance(timezone, Locale.US);
+            epochStart.setTimeInMillis(0);
+            return epochStart;
+        }
+
+        return null;
     }
 }

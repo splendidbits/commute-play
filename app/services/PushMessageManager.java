@@ -44,70 +44,27 @@ public class PushMessageManager {
     /**
      * Notify Push subscribers of the agency alerts that have changed.
      *
-     * @param alertModifications Collection of modified route alerts.
+     * @param modifications Collection of modified route alerts.
      * @return updated and cancelled alerts messages.
      */
-    public Pair<Set<Message>, Set<Message>> dispatchAlerts(@Nonnull AlertModifications alertModifications) {
+    public Pair<Set<Message>, Set<Message>> dispatchAlerts(@Nonnull AlertModifications modifications) {
         Set<Message> updatedAlertMessages = new HashSet<>();
         Set<Message> staleAlertMessages = new HashSet<>();
 
-        Map<String, List<Alert>> updatedRouteAlerts = new HashMap<>();
-        Map<String, List<Alert>> staleRouteAlerts = new HashMap<>();
-
-        /*
-         * Create a list of messages for cancelled (stale) alerts.
-         */
-        for (Alert staleAlert : alertModifications.getStaleAlerts()) {
-            Route route = staleAlert.route;
-            String routeId = route.routeId;
-
-            if (routeId == null) {
-                Logger.error("Updated Alert must have routes with routeIds.");
-                return null;
-            }
-
-            List<Alert> alerts = staleRouteAlerts.containsKey(routeId)
-                    ? staleRouteAlerts.get(routeId)
-                    : new ArrayList<>();
-
-            alerts.add(staleAlert);
-            staleRouteAlerts.put(routeId, alerts);
-        }
-
-        /*
-         * Create a list of messages for updated (fresh) alerts.
-         */
-        for (Alert updatedAlert : alertModifications.getUpdatedAlerts()) {
-            Route route = updatedAlert.route;
-            String routeId = route.routeId;
-
-            if (routeId == null) {
-                Logger.error("Updated Alert must have routes with routeIds.");
-                return null;
-            }
-
-            List<Alert> alerts = updatedRouteAlerts.containsKey(routeId)
-                    ? updatedRouteAlerts.get(routeId)
-                    : new ArrayList<>();
-
-            alerts.add(updatedAlert);
-            updatedRouteAlerts.put(routeId, alerts);
-        }
-
         // Iterate through the updated (fresh) Alerts to send messages for.
-        for (Map.Entry<String, List<Alert>> updatedAlertEntry : updatedRouteAlerts.entrySet()) {
-            String routeId = updatedAlertEntry.getKey();
+        for (Map.Entry<Route, List<Alert>> updatedAlertEntry : modifications.getUpdatedAlerts().entrySet()) {
+            String routeId = updatedAlertEntry.getKey().getRouteId();
             List<Alert> alerts = updatedAlertEntry.getValue();
 
-            updatedAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, false));
+            updatedAlertMessages.addAll(createAlertMessages(modifications.getAgencyId(), routeId, alerts, false));
         }
 
         // Iterate through the removed (stale) Alerts to send messages for.
-        for (Map.Entry<String, List<Alert>> staleAlertEntry : staleRouteAlerts.entrySet()) {
-            String routeId = staleAlertEntry.getKey();
+        for (Map.Entry<Route, List<Alert>> staleAlertEntry : modifications.getStaleAlerts().entrySet()) {
+            String routeId = staleAlertEntry.getKey().getRouteId();
             List<Alert> alerts = staleAlertEntry.getValue();
 
-            staleAlertMessages.addAll(createAlertMessages(alertModifications.getAgencyId(), routeId, alerts, true));
+            staleAlertMessages.addAll(createAlertMessages(modifications.getAgencyId(), routeId, alerts, true));
         }
 
         MessageTaskQueueListener taskQueueListener = new MessageTaskQueueListener();
@@ -141,7 +98,7 @@ public class PushMessageManager {
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertMessages(int agencyId, @Nonnull String routeId, @Nonnull List<Alert> alerts, boolean isCancellation) {
+    private List<Message> createAlertMessages(String agencyId, @Nonnull String routeId, @Nonnull List<Alert> alerts, boolean isCancellation) {
         List<Message> messages = new ArrayList<>();
         List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, routeId);
 
@@ -213,8 +170,8 @@ public class PushMessageManager {
                 FailureType failure = recipient.getPlatformFailure().getFailureType();
 
                 if (failure != null && (failure == FailureType.RECIPIENT_REGISTRATION_INVALID ||
-                                failure == FailureType.RECIPIENT_NOT_REGISTERED ||
-                                failure == FailureType.MESSAGE_PACKAGE_INVALID)) {
+                        failure == FailureType.RECIPIENT_NOT_REGISTERED ||
+                        failure == FailureType.MESSAGE_PACKAGE_INVALID)) {
                     Logger.error(String.format("GCM Failure: Deleted recipient %s", recipient.getToken()));
                     mDeviceDao.removeDevice(recipient.getToken());
                 }

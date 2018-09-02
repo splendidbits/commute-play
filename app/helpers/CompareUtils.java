@@ -2,6 +2,7 @@ package helpers;
 
 import org.apache.commons.lang3.time.DateUtils;
 
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
@@ -76,12 +77,22 @@ public class CompareUtils {
         }
 
         // Date
-        if (object1 instanceof Date && object2 instanceof Date) {
-            Date date1 = (Date) object1;
-            Date date2 = (Date) object2;
+        if ((object1 instanceof Date && object2 instanceof Date) ||
+                (object1 instanceof Calendar && object2 instanceof Calendar)) {
 
-            if (!DateUtils.isSameInstant(date1, date2)) {
-                return false;
+            Date date1;
+            Date date2;
+
+            if (object1 instanceof Calendar) {
+                date1 = ((Calendar) object1).getTime();
+                date2 = ((Calendar) object1).getTime();
+            } else {
+                date1 = (Date) object1;
+                date2 = (Date) object2;
+            }
+
+            if (DateUtils.isSameInstant(date1, date2)) {
+                return true;
             }
         }
 

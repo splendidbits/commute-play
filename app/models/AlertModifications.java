@@ -1,26 +1,28 @@
 package models;
 
 import models.alerts.Alert;
-import org.apache.commons.lang3.StringUtils;
+import models.alerts.Route;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains a list of new, updated, or removed (stale) alerts for an {@link models.alerts.Agency}
  */
 public class AlertModifications {
-    private int mAgencyId;
-    private List<Alert> mUpdatedAlerts = new ArrayList<>();
-    private List<Alert> mStaleAlerts = new ArrayList<>();
+    private String mAgencyId;
+    private Map<Route, List<Alert>> mUpdatedAlerts = new HashMap<>();
+    private Map<Route, List<Alert>> mStaleAlerts = new HashMap<>();
 
     /**
      * Create a modifications model for a specific agency.
      *
      * @param agencyId Identifier of agency for updated or stale alerts.
      */
-    public AlertModifications(int agencyId) {
+    public AlertModifications(String agencyId) {
         mAgencyId = agencyId;
     }
 
@@ -38,10 +40,20 @@ public class AlertModifications {
      *
      * @param alert The alert to flag as updated or new.
      */
-    public void addUpdatedAlert(@Nonnull Alert alert) {
-        if (!StringUtils.isBlank(alert.route.routeId)) {
-            mUpdatedAlerts.add(alert);
+    public void addUpdatedAlert(@Nonnull Route route, @Nonnull Alert alert) {
+        List<Alert> alerts = new ArrayList<>();
+
+        for (Map.Entry<Route, List<Alert>> updatedEntry : mUpdatedAlerts.entrySet()) {
+            Route updatedRoute = updatedEntry.getKey();
+            List<Alert> updatedAlerts = updatedEntry.getValue();
+
+            if (updatedRoute.getRouteId().toLowerCase().equals(route.getRouteId().toLowerCase())) {
+                alerts = updatedAlerts;
+            }
         }
+
+        alerts.add(alert);
+        mUpdatedAlerts.put(route, alerts);
     }
 
     /**
@@ -49,12 +61,20 @@ public class AlertModifications {
      *
      * @param alert The alert which is deemed stale.
      */
-    public void addStaleAlert(@Nonnull Alert alert) {
-        if (!StringUtils.isBlank(alert.route.routeId)) {
-            if (!mUpdatedAlerts.contains(alert)) {
-                mStaleAlerts.add(alert);
+    public void addStaleAlert(@Nonnull Route route, @Nonnull Alert alert) {
+        List<Alert> alerts = new ArrayList<>();
+
+        for (Map.Entry<Route, List<Alert>> updatedEntry : mStaleAlerts.entrySet()) {
+            Route updatedRoute = updatedEntry.getKey();
+            List<Alert> updatedAlerts = updatedEntry.getValue();
+
+            if (updatedRoute.getRouteId().toLowerCase().equals(route.getRouteId().toLowerCase())) {
+                alerts = updatedAlerts;
             }
         }
+
+        alerts.add(alert);
+        mStaleAlerts.put(route, alerts);
     }
 
     /**
@@ -62,7 +82,7 @@ public class AlertModifications {
      *
      * @return list of updated alerts.
      */
-    public List<Alert> getUpdatedAlerts() {
+    public Map<Route, List<Alert>> getUpdatedAlerts() {
         return mUpdatedAlerts;
     }
 
@@ -70,7 +90,7 @@ public class AlertModifications {
      * Get all alerts, which should be considered stale)
      * @return list of stale alerts.
      */
-    public List<Alert> getStaleAlerts() {
+    public Map<Route, List<Alert>> getStaleAlerts() {
         return mStaleAlerts;
     }
 
@@ -79,7 +99,7 @@ public class AlertModifications {
      *
      * @return Agency identifier.
      */
-    public int getAgencyId() {
+    public String getAgencyId() {
         return mAgencyId;
     }
 }

@@ -35,7 +35,7 @@ public class AccountDao extends BaseDao {
      * @return List of API accounts.
      */
     @Nonnull
-    public List<Account> getAccounts(@Nonnull PlatformType platform, int agencyId, @Nonnull String routeId) {
+    public List<Account> getAccounts(@Nonnull PlatformType platform, String agencyId, @Nonnull String routeId) {
         List<Account> accounts = new ArrayList<>();
 
         try {

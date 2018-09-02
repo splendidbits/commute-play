@@ -4,6 +4,9 @@ import models.accounts.PlatformAccount;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Calendar;
+import java.util.TimeZone;
+
 import static org.junit.Assert.*;
 
 /**
@@ -11,14 +14,17 @@ import static org.junit.Assert.*;
  */
 public class AccountDaoTest extends CommuteTestApplication {
 
+    private static TestModelHelper testModelHelper;
+
     @BeforeClass
     public static void initialise() {
+        testModelHelper = new TestModelHelper(Calendar.getInstance(TimeZone.getTimeZone("EST")));
 
     }
 
     @Test
     public void testDatabaseAccountInsert() {
-        Account newAccount = TestModelHelper.createTestAccount();
+        Account newAccount = testModelHelper.createTestAccount();
         assertTrue(mAccountDao.saveAccount(newAccount));
 
         // Get the account
@@ -33,7 +39,7 @@ public class AccountDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseAccountUpdate() {
-        Account newAccount = TestModelHelper.createTestAccount();
+        Account newAccount = testModelHelper.createTestAccount();
         mAccountDao.saveAccount(newAccount);
 
         // Update the account.

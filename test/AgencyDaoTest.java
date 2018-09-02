@@ -1,6 +1,6 @@
 import enums.AlertType;
-import enums.RouteFlag;
 import enums.TransitType;
+import helpers.AlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
@@ -9,20 +9,20 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.Assert.*;
+import static java.util.Collections.singletonList;
+import static junit.framework.TestCase.*;
 
 /**
  * Test core functions of the Device Data Access Layer.
  */
 public class AgencyDaoTest extends CommuteTestApplication {
+    private static TestModelHelper testModelHelper;
 
     @BeforeClass
     public static void initialise() {
+        testModelHelper = new TestModelHelper(Calendar.getInstance(TimeZone.getTimeZone("EST")));
     }
 
     @After
@@ -32,9 +32,9 @@ public class AgencyDaoTest extends CommuteTestApplication {
     }
 
     @Test
-    public void testDatabaseAgencyInsert() throws CloneNotSupportedException {
+    public void testDatabaseAgencyInsert() {
         // Save the agency
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         assertTrue(mAgencyDao.saveAgency(initialAgency));
 
         // Get the agency, check everything is still there.
@@ -42,80 +42,91 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertNotNull(updatedAgency);
 
         // Check the agency has the route.
-        assertNotNull(updatedAgency.routes);
-        assertEquals(updatedAgency.routes.size(), 1);
+        assertNotNull(updatedAgency.getRoutes());
+        assertEquals(1, updatedAgency.getRoutes().size());
 
         // Check the agency has the Alert.
-        assertNotNull(updatedAgency.routes.get(0));
-        assertNotNull(updatedAgency.routes.get(0).alerts);
-        assertEquals(updatedAgency.routes.get(0).alerts.size(), 1);
+        assertNotNull(updatedAgency.getRoutes().get(0));
+        assertNotNull(updatedAgency.getRoutes().get(0).getAlerts());
+        assertEquals(1, updatedAgency.getRoutes().get(0).getAlerts().size());
 
         // Check the agency has the Location.
-        assertNotNull(updatedAgency.routes.get(0).alerts.get(0).locations);
-        assertEquals(updatedAgency.routes.get(0).alerts.get(0).locations.size(), 1);
+        assertNotNull(updatedAgency.getRoutes().get(0).getAlerts().get(0).getLocations());
+        assertEquals(1, updatedAgency.getRoutes().get(0).getAlerts().get(0).getLocations().size());
     }
 
     @Test
     public void testDatabaseAgencyUpdate() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
         // Get the agency
         Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.name = "Updated Name";
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.setName("Updated Name");
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
-        assertEquals(fetchedAgency.name, "Updated Name");
+        assertEquals(fetchedAgency.getName(), "Updated Name");
     }
 
     @Test
     public void testDatabaseRouteAdd() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
         Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
 
-        // Check the agency has the route.
-        assertNotNull(fetchedAgency.routes);
-        assertEquals(fetchedAgency.routes.size(), 1);
+        // Check the agency
+        assertNotNull(fetchedAgency.getRoutes());
+        assertEquals(1, fetchedAgency.getRoutes().size());
+        assertEquals(1, fetchedAgency.getRoutes().get(0).getAlerts().size());
+        assertEquals(1, fetchedAgency.getRoutes().get(0).getAlerts().get(0).getLocations().size());
 
-        Route existingRoute = TestModelHelper.createTestRoute();
+        // Add original and new route
+        Route routeOne = testModelHelper.createTestRoute();
 
-        // Add the second route
-        Route newRoute = new Route("test_route_2");
-        newRoute.externalUri = "http://example.com";
-        newRoute.isSticky = false;
-        newRoute.routeFlag = RouteFlag.TYPE_PRIVATE;
-        newRoute.transitType = TransitType.TYPE_SPECIAL;
-        newRoute.routeName = "Route 2 Name";
-        newRoute.alerts = Collections.singletonList(TestModelHelper.createTestAlert());
+        Alert routeTwoAlert = testModelHelper.createTestAlert();
+        routeTwoAlert.setMessageBody("new alert");
 
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.routes = Arrays.asList(existingRoute, newRoute);
+        Location routeTwoLocation = testModelHelper.createTestLocation();
+        routeTwoLocation.setName("new location");
+        routeTwoLocation.setId(AlertHelper.createHash(routeTwoLocation));
+        routeTwoAlert.setLocations(new ArrayList<>(singletonList(routeTwoLocation)));
+
+        routeTwoAlert.setId(AlertHelper.createHash(routeTwoAlert, "route_2"));
+        routeTwoAlert.setLocations(new ArrayList<>(singletonList(routeTwoLocation)));
+
+
+        Route routeTwo = testModelHelper.createTestRoute("route_2");
+        routeTwo.setRouteName("route_2");
+        routeTwo.setAlerts(new ArrayList<>(singletonList(routeTwoAlert)));
+        routeTwo.setTransitType(TransitType.TYPE_SPECIAL);
+
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.setRoutes(Arrays.asList(routeOne, routeTwo));
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         // Check the new route is there.
         fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
-        assertNotNull(fetchedAgency.routes);
-        assertEquals(fetchedAgency.routes.size(), 2);
+        assertNotNull(fetchedAgency.getRoutes());
+        assertEquals(2, fetchedAgency.getRoutes().size());
 
         // Check it contains the previous route
-        assertTrue(fetchedAgency.routes.contains(existingRoute));
-        assertTrue(fetchedAgency.routes.contains(newRoute));
+        assertTrue(fetchedAgency.getRoutes().contains(routeOne));
+        assertTrue(fetchedAgency.getRoutes().contains(routeTwo));
     }
 
     @Test
     public void testDatabaseRouteUpdate() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
@@ -123,31 +134,31 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertNotNull(fetchedAgency);
 
         // Check the agency has the route.
-        assertNotNull(fetchedAgency.routes);
-        assertEquals(fetchedAgency.routes.size(), 1);
+        assertNotNull(fetchedAgency.getRoutes());
+        assertEquals(1, fetchedAgency.getRoutes().size());
 
         // Modify the route
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        Route updatedRoute = TestModelHelper.createTestRoute();
-        updatedRoute.routeName = "Updated Name";
-        updatedAgency.routes = Collections.singletonList(updatedRoute);
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        Route updatedRoute = testModelHelper.createTestRoute();
+        updatedRoute.setRouteName("Updated Name");
+        updatedAgency.setRoutes(new ArrayList<>(singletonList(updatedRoute)));
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         // Check the new route is there.
         fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
-        assertNotNull(fetchedAgency.routes);
-        assertEquals(fetchedAgency.routes.size(), 1);
+        assertNotNull(fetchedAgency.getRoutes());
+        assertEquals(1, fetchedAgency.getRoutes().size());
 
         // Check it contains the previous route
-        assertTrue(fetchedAgency.routes.contains(updatedRoute));
-        assertEquals(fetchedAgency.routes.get(0).routeName, "Updated Name");
+        assertTrue(fetchedAgency.getRoutes().contains(updatedRoute));
+        assertEquals("Updated Name", fetchedAgency.getRoutes().get(0).getRouteName());
     }
 
     @Test
     public void testDatabaseRouteRemove() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
         // Ensure the Agency was updated
@@ -155,40 +166,44 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertNotNull(fetchedAgency);
 
         // Check the agency has the route.
-        assertNotNull(fetchedAgency.routes);
-        assertEquals(fetchedAgency.routes.size(), 1);
+        assertNotNull(fetchedAgency.getRoutes());
+        assertEquals(1, fetchedAgency.getRoutes().size());
 
         // Remove the route
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.routes = null;
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.setRoutes(null);
         mAgencyDao.saveAgency(updatedAgency);
 
         // Check the new route is not there.
         fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         assertNotNull(fetchedAgency);
-        assertTrue(fetchedAgency.routes == null || fetchedAgency.routes.isEmpty());
+        assertTrue(fetchedAgency.getRoutes() == null || fetchedAgency.getRoutes().isEmpty());
     }
 
     @Test
     public void testDatabaseAlertsAdd() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
         // Modify route1 to have one new alert with no locations, and the existing alert
-        Alert existingAlert = TestModelHelper.createTestAlert();
-        Alert newAlert = new Alert();
-        newAlert.highPriority = false;
-        newAlert.messageTitle = "New Alert Message Title";
-        newAlert.messageSubtitle = "New Alert Message Subtitle";
-        newAlert.messageBody = "New Alert Message Body";
-        newAlert.type = AlertType.TYPE_DETOUR;
-        newAlert.locations = Collections.singletonList(TestModelHelper.createTestLocation());
-        newAlert.lastUpdated = Calendar.getInstance();
+        Alert existingAlert = testModelHelper.createTestAlert();
+        existingAlert.setId(AlertHelper.createHash(existingAlert, TestModelHelper.ROUTE_ID));
 
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        Route updatedRoute = TestModelHelper.createTestRoute();
-        updatedRoute.alerts = Arrays.asList(existingAlert, newAlert);
-        updatedAgency.routes = Collections.singletonList(updatedRoute);
+        Alert newAlert = new Alert();
+        newAlert.setHighPriority(false);
+        newAlert.setMessageTitle("New Alert Message Title");
+        newAlert.setMessageSubtitle("New Alert Message Subtitle");
+        newAlert.setMessageBody("New Alert Message Body");
+        newAlert.setType(AlertType.TYPE_DETOUR);
+        newAlert.setLastUpdated(Calendar.getInstance());
+        newAlert.setId(AlertHelper.createHash(newAlert, TestModelHelper.ROUTE_ID));
+
+        newAlert.setLocations(new ArrayList<>(singletonList(testModelHelper.createTestLocation())));
+
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        Route updatedRoute = testModelHelper.createTestRoute();
+        updatedRoute.setAlerts(Arrays.asList(existingAlert, newAlert));
+        updatedAgency.setRoutes(new ArrayList<>(singletonList(updatedRoute)));
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
@@ -196,85 +211,84 @@ public class AgencyDaoTest extends CommuteTestApplication {
         assertNotNull(fetchedAgency);
 
         // Check the routes are correct.
-        assertNotNull(fetchedAgency.routes);
-        assertFalse(fetchedAgency.routes.isEmpty());
-        assertEquals(fetchedAgency.routes.size(), 1);
+        assertNotNull(fetchedAgency.getRoutes());
+        assertFalse(fetchedAgency.getRoutes().isEmpty());
+        assertEquals(1, fetchedAgency.getRoutes().size());
 
         // Check the agency has the new alert.
-        assertEquals(fetchedAgency.routes.get(0).alerts.size(), 2);
-
-        assertEquals(fetchedAgency.routes.get(0).alerts.get(0).locations.size(), 1);
-        assertEquals(fetchedAgency.routes.get(0).alerts.get(1).locations.size(), 1);
+        assertEquals(2, fetchedAgency.getRoutes().get(0).getAlerts().size());
+        assertEquals(1, fetchedAgency.getRoutes().get(0).getAlerts().get(0).getLocations().size());
+        assertEquals(1, fetchedAgency.getRoutes().get(0).getAlerts().get(1).getLocations().size());
     }
 
     @Test
     public void testDatabaseAlertRemove() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
-        initialAgency = TestModelHelper.createTestAgency();
-        Route initialRoute = TestModelHelper.createTestRoute();
-        initialRoute.alerts = null;
-        initialAgency.routes = Collections.singletonList(initialRoute);
+        initialAgency = testModelHelper.createTestAgency();
+        Route initialRoute = testModelHelper.createTestRoute();
+        initialRoute.setAlerts(null);
+        initialAgency.setRoutes(new ArrayList<>(singletonList(initialRoute)));
 
         mAgencyDao.saveAgency(initialAgency);
         List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
 
         assertNotNull(routes);
-        assertTrue(routes.get(0).alerts == null || routes.get(0).alerts.isEmpty());
+        assertTrue(routes.get(0).getAlerts() == null || routes.get(0).getAlerts().isEmpty());
     }
 
     @Test
     public void testDatabaseLocationRemove() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
         Route routes = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
 
         assertNotNull(routes);
-        assertNotNull(routes.alerts);
-        assertEquals(routes.alerts.size(), 1);
-        assertEquals(routes.alerts.get(0).locations.size(), 1);
+        assertNotNull(routes.getAlerts());
+        assertEquals(1, routes.getAlerts().size());
+        assertEquals(1, routes.getAlerts().get(0).getLocations().size());
 
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.routes.get(0).alerts.get(0).locations = null;
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.getRoutes().get(0).getAlerts().get(0).setLocations(null);
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         Route updatedRoute = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
-        assertEquals(updatedRoute.alerts.get(0).locations.size(), 0);
+        assertEquals(0, updatedRoute.getAlerts().get(0).getLocations().size());
 
         Agency fetchedAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
-        assertEquals(fetchedAgency.routes.get(0).alerts.get(0).locations.size(), 0);
+        assertEquals(0, fetchedAgency.getRoutes().get(0).getAlerts().get(0).getLocations().size());
     }
 
     @Test
     public void testDatabaseLocationUpdate() {
-        Agency initialAgency = TestModelHelper.createTestAgency();
+        Agency initialAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(initialAgency);
 
-        Route updatedRoute = TestModelHelper.createTestRoute();
+        Route updatedRoute = testModelHelper.createTestRoute();
+        Alert updatedAlert = testModelHelper.createTestAlert();
 
         // Update the location
-        Location updatedLocation = TestModelHelper.createTestLocation();
-        updatedLocation.message = "new message";
+        int locationId = initialAgency.getRoutes().get(0).getAlerts().get(0).getLocations().get(0).getId();
+        Location updatedLocation = testModelHelper.createTestLocation();
+        updatedLocation.setId(locationId);
+        updatedLocation.setMessage("new message");
 
-        Alert updatedAlert = TestModelHelper.createTestAlert();
-        updatedAlert.locations = Collections.singletonList(updatedLocation);
-        updatedAlert.route = updatedRoute;
-        updatedRoute.alerts = Collections.singletonList(updatedAlert);
+        updatedAlert.setLocations(new ArrayList<>(singletonList(updatedLocation)));
+        updatedRoute.setAlerts(new ArrayList<>(singletonList(updatedAlert)));
 
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedRoute.agency = updatedAgency;
-        updatedAgency.routes = Collections.singletonList(updatedRoute);
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.setRoutes(new ArrayList<>(singletonList(updatedRoute)));
 
         assertTrue(mAgencyDao.saveAgency(updatedAgency));
 
         List<Route> routes = mAgencyDao.getRoutes(TestModelHelper.AGENCY_ID);
         assertNotNull(routes);
-        assertNotNull(routes.get(0).alerts);
-        assertEquals(routes.get(0).alerts.size(), 1);
+        assertNotNull(routes.get(0).getAlerts());
+        assertEquals(1, routes.get(0).getAlerts().size());
 
-        assertNotNull(routes.get(0).alerts.get(0).locations);
-        assertFalse(routes.get(0).alerts.get(0).locations.isEmpty());
-        assertEquals(routes.get(0).alerts.get(0).locations.get(0).message, "new message");
+        assertNotNull(routes.get(0).getAlerts().get(0).getLocations());
+        assertFalse(routes.get(0).getAlerts().get(0).getLocations().isEmpty());
+        assertEquals("new message", routes.get(0).getAlerts().get(0).getLocations().get(0).getMessage());
     }
 }

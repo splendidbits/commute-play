@@ -5,6 +5,7 @@ import enums.AlertType;
 import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
+import io.ebean.annotation.PrivateOwned;
 import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
@@ -14,48 +15,125 @@ import java.util.List;
 @Entity
 @Table(name = "alerts", schema = "agency_alerts")
 public class Alert extends Model implements Comparable<Alert> {
-    public static Finder<Long, Alert> find = new Finder<>(Alert.class);
+    public static Finder<Integer, Alert> find = new Finder<>(Alert.class);
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(name = "alert_id_seq_gen", sequenceName = "alert_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alert_id_seq_gen")
-    public Long id;
+    private Integer id;
+
+    @OneToMany(mappedBy = "alert", orphanRemoval = true, cascade = CascadeType.MERGE)
+//    @OneToMany(mappedBy = "alert", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "alert_id", table = "agency_alerts.locations", referencedColumnName = "id")
+    private List<Location> locations;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(
-            name = "route_id",
-            table = "agency_alerts.routes",
-            referencedColumnName = "id")
-    public Route route;
+    @PrivateOwned
+    @ManyToOne
+    private Route route;
 
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    public AlertType type = AlertType.TYPE_NONE;
+    private AlertType type;
 
-    @Column(name = "message_title", columnDefinition = "TEXT")
-    public String messageTitle;
+    @Column(name = "message_title", columnDefinition = "text")
+    private String messageTitle;
 
-    @Column(name = "message_subtitle", columnDefinition = "TEXT")
-    public String messageSubtitle;
+    @Column(name = "message_subtitle", columnDefinition = "text")
+    private String messageSubtitle;
 
-    @Column(name = "message_body", columnDefinition = "TEXT")
-    public String messageBody;
+    @Column(name = "message_body", columnDefinition = "text")
+    private String messageBody;
 
-    @Column(name = "external_uri", columnDefinition = "TEXT")
-    public String externalUri;
+    @Column(name = "external_uri", columnDefinition = "text")
+    private String externalUri;
 
-    @OneToMany(mappedBy = "alert", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    public List<Location> locations;
-
-    @Column(name = "high_priority", nullable = false)
-    public Boolean highPriority = false;
+    @Column(name = "high_priority", columnDefinition = "boolean default false")
+    private Boolean highPriority;
 
     @Basic
     @Column(name = "last_updated", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar lastUpdated;
+    private Calendar lastUpdated;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Route getRoute() {
+        return route;
+    }
+
+    public void setRoute(Route route) {
+        this.route = route;
+    }
+
+    public AlertType getType() {
+        return type;
+    }
+
+    public void setType(AlertType type) {
+        this.type = type;
+    }
+
+    public String getMessageTitle() {
+        return messageTitle;
+    }
+
+    public void setMessageTitle(String messageTitle) {
+        this.messageTitle = messageTitle;
+    }
+
+    public String getMessageSubtitle() {
+        return messageSubtitle;
+    }
+
+    public void setMessageSubtitle(String messageSubtitle) {
+        this.messageSubtitle = messageSubtitle;
+    }
+
+    public String getMessageBody() {
+        return messageBody;
+    }
+
+    public void setMessageBody(String messageBody) {
+        this.messageBody = messageBody;
+    }
+
+    public String getExternalUri() {
+        return externalUri;
+    }
+
+    public void setExternalUri(String externalUri) {
+        this.externalUri = externalUri;
+    }
+
+    public List<Location> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(List<Location> locations) {
+        this.locations = locations;
+    }
+
+    public Boolean getHighPriority() {
+        return highPriority;
+    }
+
+    public void setHighPriority(Boolean highPriority) {
+        this.highPriority = highPriority;
+    }
+
+    public Calendar getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(Calendar lastUpdated) {
+        this.lastUpdated = lastUpdated;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -74,10 +152,12 @@ public class Alert extends Model implements Comparable<Alert> {
 
             boolean sameExternalUri = CompareUtils.isEquals(externalUri, other.externalUri);
 
-            boolean samePriority = highPriority == other.highPriority;
+            boolean samePriority = CompareUtils.isEquals(highPriority, other.highPriority);
+
+            boolean sameLastUpdated = CompareUtils.isEquals(lastUpdated, other.lastUpdated);
 
             // Match everything.
-            return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations && sameExternalUri && samePriority);
+            return (sameType && sameTitle && sameSubtitle && sameBody && sameLocations && sameExternalUri && samePriority & sameLastUpdated);
         }
 
         return obj.equals(this);
@@ -113,6 +193,10 @@ public class Alert extends Model implements Comparable<Alert> {
 
         hashCode += highPriority != null
                 ? highPriority.hashCode()
+                : hashCode;
+
+        hashCode += lastUpdated != null
+                ? lastUpdated.hashCode()
                 : hashCode;
 
         return hashCode.hashCode();

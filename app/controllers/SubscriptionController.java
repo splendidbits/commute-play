@@ -72,8 +72,8 @@ public class SubscriptionController extends Controller {
             if (validateInputData(request.body())) {
                 Map<String, String[]> formEncodedMap = request.body().asFormUrlEncoded();
 
-                Integer agencyId = formEncodedMap.get(AGENCY_NAME_KEY) != null
-                        ? Integer.valueOf(formEncodedMap.get(AGENCY_NAME_KEY)[0])
+                String agencyId = formEncodedMap.get(AGENCY_NAME_KEY) != null
+                        ? formEncodedMap.get(AGENCY_NAME_KEY)[0]
                         : null;
 
                 String deviceId = formEncodedMap.get(DEVICE_UUID_KEY) != null

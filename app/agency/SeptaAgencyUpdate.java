@@ -20,8 +20,8 @@ import java.util.function.Function;
  * Agency updater for SEPTA alerts.
  */
 public class SeptaAgencyUpdate extends AgencyUpdate {
-    public static final String AGENCY_NAME = "SEPTA";
-    public static final int AGENCY_ID = 1;
+    public static final String AGENCY_NAME = "South-East Pennsylvania Transit Association";
+    public static final String AGENCY_ID = "SEPTA";
 
     private WSClient mWsClient;
 
@@ -34,7 +34,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
 
     @Override
     public void startAgencyUpdate() {
-        String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
+        String septaAlertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%s/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
             Logger.info("Starting download of SEPTA agency alert data.");
@@ -73,7 +73,7 @@ public class SeptaAgencyUpdate extends AgencyUpdate {
             Logger.info("Downloaded SEPTA alerts");
             // Create gson serializer
             final Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
+                    .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
                     .create();
 
             Agency agencyAlerts = gson.fromJson(response.getBody(), Agency.class);

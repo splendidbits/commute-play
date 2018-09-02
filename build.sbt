@@ -1,5 +1,5 @@
-name := "commutealerts"
-version := "0.3"
+name := "Commute Alerts"
+version := "1.0"
 
 lazy val buildSettings = Seq(
   scalaVersion := "2.11.8"
@@ -17,7 +17,6 @@ libraryDependencies ++= Seq(
   javaJdbc,
   cacheApi,
   ehcache,
-  javaJpa,
   javaWs,
   guice,
   "com.splendidbits" % "play-pushservices" % "1.2.1",
@@ -27,6 +26,9 @@ libraryDependencies ++= Seq(
   "org.jsoup" % "jsoup" % "1.10.1",
   "junit" % "junit" % "4.12" % Test
 )
+
+dependencyOverrides += "io.ebean" % "ebean" % "11.15.3"
+dependencyOverrides += "io.ebean" % "ebean-agent" % "11.11.1"
 
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.

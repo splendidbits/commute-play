@@ -25,7 +25,7 @@ import java.util.Locale;
  */
 public class AgencyManager {
     private static final String CACHE_ALL_KEY = "cache_agency_all";
-    private static final String CACHE_AGENCY_KEY = "cache_agency_%d";
+    private static final String CACHE_AGENCY_KEY = "cache_agency_%s";
 
     private CacheApi mCacheApi;
     private AgencyDao mAgencyDao;
@@ -59,7 +59,7 @@ public class AgencyManager {
      * @return A saved agency if it exists, or null if not.
      */
     @Nullable
-    public Agency getSavedAgency(int agencyId, boolean useCache) {
+    public Agency getSavedAgency(String agencyId, boolean useCache) {
         Agency agency = getCachedAgency(agencyId);
         if (agency == null || !useCache) {
             return mAgencyDao.getAgency(agencyId);
@@ -91,21 +91,21 @@ public class AgencyManager {
      * @param agency agency to set as the cache.
      */
     public void cacheAgency(@Nullable Agency agency) {
-        if (agency != null && agency.id != null) {
+        if (agency != null && agency.getId() != null) {
 
             // Add or overwrite agency to its own cache.
-            String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.id);
+            String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agency.getId());
             mCacheApi.set(agencyCacheKey, agency);
-            Logger.info(String.format("Cached agency %s to %s.", agency.name, agencyCacheKey));
+            Logger.info(String.format("Cached agency %s to %s.", agency.getName(), agencyCacheKey));
 
             // Remove agency from the all agencies cache.
             List<Agency> cachedAgencies = getCachedAgencyMetadata();
-            cachedAgencies.removeIf(cachedAgency -> agency.id.equals(cachedAgency.id));
+            cachedAgencies.removeIf(cachedAgency -> agency.getId().equals(cachedAgency.getId()));
 
             // Add agency back to the all agencies cache.
             cachedAgencies.add(agency);
             mCacheApi.set(CACHE_ALL_KEY, cachedAgencies);
-            Logger.info(String.format("Cached agency %s to %s.", agency.name, CACHE_ALL_KEY));
+            Logger.info(String.format("Cached agency %s to %s.", agency.getName(), CACHE_ALL_KEY));
         }
     }
 
@@ -116,7 +116,7 @@ public class AgencyManager {
      * @return An {@link Agency} with all sub-models. Null if never cached or stale.
      */
     @Nullable
-    public Agency getCachedAgency(int agencyId) {
+    public Agency getCachedAgency(String agencyId) {
         String agencyCacheKey = String.format(Locale.US, CACHE_AGENCY_KEY, agencyId);
         Agency agency = mCacheApi.get(agencyCacheKey);
 

@@ -1,19 +1,19 @@
 package dao;
 
+import helpers.AlertHelper;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
 import io.ebean.OrderBy;
 import models.alerts.Agency;
 import models.alerts.Alert;
+import models.alerts.Location;
 import models.alerts.Route;
 import play.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import javax.persistence.PersistenceException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,142 +26,39 @@ public class AgencyDao extends BaseDao {
         super(ebeanServer);
     }
 
-    private void insertAlerts(Route route) {
-        // Save each alert.
-        if (route.alerts != null) {
-            for (Alert freshAlert : route.alerts) {
-                freshAlert.route = route;
-                mEbeanServer.save(freshAlert);
-            }
-        }
-    }
-
-    private void insertAgency(Agency agency) {
-        if (agency != null) {
-            mEbeanServer.save(agency);
-            insertRoutes(agency, agency.routes);
-        }
-    }
-
-    private void insertRoutes(Agency agency, List<Route> routes) {
-        if (routes != null) {
-            for (Route route : routes) {
-                route.agency = agency;
-
-                // Save top level changes in the route.
-                mEbeanServer.save(route);
-                insertAlerts(route);
-            }
-        }
-    }
-
     /**
      * Save a bundle of agency route alerts to the datastore, clearing out the previous set.
      *
-     * @param freshAgency new agency to persist.
+     * @param agency new agency to persist.
      * @return boolean for success.
      */
-    public synchronized boolean saveAgency(@Nonnull Agency freshAgency) {
+    public synchronized boolean saveAgency(@Nonnull Agency agency) {
         Logger.info("Persisting agency routes in database.");
-        final Agency existingAgency = getAgency(freshAgency.id);
+
+        AlertHelper.populateBackReferences(agency);
 
         try {
-            if (existingAgency == null) {
-                insertAgency(freshAgency);
+            Agency savedAgency = mEbeanServer.find(Agency.class)
+                    .fetch("routes", new FetchConfig().query())
+                    .fetch("routes.alerts", new FetchConfig().query())
+                    .fetch("routes.alerts.locations", new FetchConfig().query())
+                    .setId(agency.getId())
+                    .findOne();
+
+            if (savedAgency == null) {
+                mEbeanServer.save(agency);
                 return true;
             }
 
-            // Delete all routes if there are no fresh routes.
-            if (freshAgency.routes == null || freshAgency.routes.isEmpty()) {
-                mEbeanServer.deleteAll(existingAgency.routes);
-            }
-
-            if (freshAgency.routes != null) {
-
-                // If there are no existing routes at all, just insert all.
-                if (existingAgency.routes == null || existingAgency.routes.isEmpty()) {
-                    insertRoutes(freshAgency, freshAgency.routes);
-                    return true;
-                }
-
-                // Find route matches.
-                for (Route freshRoute : freshAgency.routes) {
-                    boolean foundExistingRouteMatch = false;
-
-                    for (Route existingRoute : existingAgency.routes) {
-
-                        // If there's a route ID match.
-                        if (freshRoute.routeId.equals(existingRoute.routeId) && !foundExistingRouteMatch) {
-
-                            // Existing and fresh routes have different contents.
-                            if (!freshRoute.equals(existingRoute)) {
-                                freshRoute.id = existingRoute.id;
-
-                                // The alerts have changed.
-                                if (freshRoute.alerts != null) {
-
-                                    if (!freshRoute.alerts.equals(existingRoute.alerts)) {
-
-                                        // Delete all existing alerts.
-                                        if (existingRoute.alerts != null) {
-                                            mEbeanServer.deleteAll(existingRoute.alerts);
-
-                                            // Delete all existing locations.
-                                            for (Alert existingAlert : existingRoute.alerts) {
-                                                mEbeanServer.deleteAll(existingAlert.locations);
-                                            }
-                                        }
-
-                                        // Save the new alerts.
-                                        insertAlerts(freshRoute);
-                                    }
-                                }
-                            }
-
-                            // Update the base properties of a route.
-                            mEbeanServer.update(Route.class)
-                                    .set("routeName", freshRoute.routeName)
-                                    .set("transitType", freshRoute.transitType)
-                                    .set("routeFlag", freshRoute.routeFlag)
-                                    .set("isDefault", freshRoute.isDefault)
-                                    .set("isSticky", freshRoute.isSticky)
-                                    .where()
-                                    .conjunction()
-                                    .eq("routeId", freshRoute.routeId)
-                                    .eq("agency.id", freshAgency.id)
-                                    .update();
-
-                            // Mark that we have found a route match.
-                            foundExistingRouteMatch = true;
-                        }
-                    }
-
-                    if (!foundExistingRouteMatch) {
-                        insertRoutes(freshAgency, Collections.singletonList(freshRoute));
-                    }
-                }
-
-                // Update the base properties of an Agency
-                mEbeanServer.update(Agency.class)
-                        .set("name", freshAgency.name)
-                        .set("phone", freshAgency.phone)
-                        .set("externalUri", freshAgency.externalUri)
-                        .set("utcOffset", freshAgency.utcOffset)
-                        .where()
-                        .idEq(freshAgency.id)
-                        .update();
-            }
-
-        } catch (PersistenceException e) {
-            Logger.error(String.format("Error saving agency alerts model to database: %s.", e.getMessage()));
-            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
-                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
-                createDatabase();
-            }
-            return false;
+            savedAgency.setName(agency.getName());
+            savedAgency.setUtcOffset(agency.getUtcOffset());
+            savedAgency.setPhone(agency.getPhone());
+            savedAgency.setExternalUri(agency.getExternalUri());
+            savedAgency.setRoutes(agency.getRoutes());
+            mEbeanServer.save(savedAgency);
 
         } catch (Exception e) {
-            Logger.error(String.format("Error saving agency bundle for %s. Rolling back.", freshAgency.name), e);
+            Logger.error(String.format("Error saving agency alerts model to database: %s.", e.getMessage()));
             return false;
         }
 
@@ -169,15 +66,31 @@ public class AgencyDao extends BaseDao {
     }
 
     /**
-     * Get a list of all agencies.
+     * Remove Alerts and Locations for a route.
      *
-     * @return list of agencies.
+     * @param routeId route id to delete children.
      */
-    @Nullable
-    public synchronized List<Agency> getAgencies() {
-        return mEbeanServer.find(Agency.class)
-                .fetch("routes", new FetchConfig().lazy())
-                .findList();
+    private void removeAlerts(@Nonnull String routeId) {
+        try {
+            List<Location> locations = mEbeanServer.find(Location.class)
+                    .fetch("alert", new FetchConfig().query())
+                    .fetch("alert.route", new FetchConfig().query())
+                    .where()
+                    .eq("alert.route.routeId", routeId)
+                    .findList();
+
+            List<Alert> alerts = mEbeanServer.find(Alert.class)
+                    .fetch("route", new FetchConfig().query())
+                    .where()
+                    .eq("route.routeId", routeId)
+                    .findList();
+
+            mEbeanServer.deleteAllPermanent(locations);
+            mEbeanServer.deleteAllPermanent(alerts);
+
+        } catch (Exception e) {
+            Logger.error(String.format("Error deleting alert or location models from database: %s.", e.getMessage()));
+        }
     }
 
     /**
@@ -188,26 +101,25 @@ public class AgencyDao extends BaseDao {
      * @return List of Routes.
      */
     @Nonnull
-    public List<Route> getRoutes(int agencyId, @Nonnull List<String> routeIds) {
-        List<Route> returnRouteList = new ArrayList<>();
+    public List<Route> getRoutes(String agencyId, @Nonnull List<String> routeIds) {
+        try {
+            return mEbeanServer.createQuery(Route.class)
+                    .setOrder(new OrderBy<>("routeId"))
+                    .fetch("agency", new FetchConfig().query())
+                    .fetch("alerts", new FetchConfig().lazy())
+                    .fetch("alerts.locations", new FetchConfig().lazy())
+                    .where()
+                    .conjunction()
+                    .eq("agency.id", agencyId)
+                    .in("routeId", routeIds)
+                    .endJunction()
+                    .findList();
 
-        List<Route> routes = getRoutes(agencyId);
-        if (routes != null && !routes.isEmpty()) {
-
-            // Loop through the string varargs..
-            for (String requestRoute : routeIds) {
-                requestRoute = requestRoute.trim().toLowerCase();
-
-                // ..and find a valid route match.
-                for (Route route : routes) {
-                    if (route.routeId != null && route.routeId.equals(requestRoute)) {
-                        returnRouteList.add(route);
-                        break;
-                    }
-                }
-            }
+        } catch (Exception e) {
+            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
         }
-        return returnRouteList;
+
+        return new ArrayList<>();
     }
 
     /**
@@ -217,62 +129,41 @@ public class AgencyDao extends BaseDao {
      * @return list of alerts for agency. Can be null.
      */
     @Nullable
-    public List<Route> getRoutes(int agencyId) {
+    public List<Route> getRoutes(String agencyId) {
         try {
             return mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency", new FetchConfig().query())
-                    .fetch("alerts", new FetchConfig().query())
-                    .fetch("alerts.locations", new FetchConfig().query())
+                    .fetch("alerts", new FetchConfig().lazy())
+                    .fetch("alerts.locations", new FetchConfig().lazy())
                     .where()
                     .eq("agency.id", agencyId)
                     .findList();
 
-        } catch (PersistenceException e) {
-            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
-            if (e.getMessage() != null &&
-                    e.getMessage().contains("does not exist") &&
-                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
-                createDatabase();
-            }
-
         } catch (Exception e) {
-            Logger.error("Error getting routes for agency.", e);
+            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
         }
 
         return null;
     }
 
     @Nullable
-    public Route getRoute(int agencyId, @Nonnull String routeId) {
+    public Route getRoute(String agencyId, @Nonnull String routeId) {
         try {
-            List<Route> routes = mEbeanServer.find(Route.class)
+            return mEbeanServer.find(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
-                    .fetch("agency", new FetchConfig().query())
-                    .fetch("alerts", new FetchConfig().query())
-                    .fetch("alerts.locations", new FetchConfig().query())
+                    .fetch("agency", new FetchConfig().lazy())
+                    .fetch("alerts", new FetchConfig().lazy())
+                    .fetch("alerts.locations", new FetchConfig().lazy())
                     .where()
                     .conjunction()
                     .eq("agency.id", agencyId)
                     .eq("routeId", routeId)
                     .endJunction()
-                    .findList();
-
-            if (!routes.isEmpty()) {
-                return routes.get(routes.size() - 1);
-            }
-
-        } catch (PersistenceException e) {
-            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains("does not exist") &&
-                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
-                createDatabase();
-            }
+                    .findOne();
 
         } catch (Exception e) {
-            Logger.error("Error getting routes for agency.", e);
+            Logger.error(String.format("Error fetching routes model from database: %s.", e.getMessage()));
         }
 
         return null;
@@ -285,45 +176,28 @@ public class AgencyDao extends BaseDao {
      * @return agency model with children, if found, or null.
      */
     @Nullable
-    public synchronized Agency getAgency(int agencyId) {
+    public synchronized Agency getAgency(String agencyId) {
         try {
-            List<Agency> agencies = mEbeanServer.find(Agency.class)
+            Agency agency = mEbeanServer.find(Agency.class)
                     .setOrder(new OrderBy<>("routes.routeId desc"))
-                    .fetch("routes", new FetchConfig().query())
-                    .fetch("routes.alerts", new FetchConfig().query())
-                    .fetch("routes.alerts.locations", new FetchConfig().query())
+                    .fetch("routes", new FetchConfig().lazy())
+                    .fetch("routes.alerts", new FetchConfig().lazy())
+                    .fetch("routes.alerts.locations", new FetchConfig().lazy())
                     .where()
                     .idEq(agencyId)
                     .query()
-                    .findList();
+                    .findOne();
 
-            if (!agencies.isEmpty()) {
-                return agencies.get(agencies.size() - 1);
-            }
-
-        } catch (PersistenceException e) {
-            Logger.error(String.format("Error fetching Agency models from database: %s.", e.getMessage()));
-
-            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
-                    e.getMessage().contains("Query threw SQLException:ERROR:")) {
-                createDatabase();
-            }
+            return agency;
 
         } catch (Exception e) {
-            Logger.error("Error getting routes for agency.", e);
+            Logger.error(String.format("Error fetching Agency models from database: %s.", e.getMessage()));
         }
 
         return null;
     }
 
-    /**
-     * Remove an agency.
-     *
-     * @param agencyId of agency
-     * @return boolean of success.
-     */
-
-    public synchronized boolean removeAgency(long agencyId) {
+    public void removeAgency(String agencyId) {
         try {
             List<Agency> agencies = mEbeanServer.find(Agency.class)
                     .fetch("routes")
@@ -333,13 +207,10 @@ public class AgencyDao extends BaseDao {
                     .idEq(agencyId)
                     .findList();
 
-            mEbeanServer.deleteAll(agencies);
+            mEbeanServer.deleteAllPermanent(agencies);
 
         } catch (Exception e) {
-            Logger.error("Error deleting agency.", e);
-            return false;
+            Logger.error(String.format("Error deleting Agency model from database: %s.", e.getMessage()));
         }
-
-        return true;
     }
 }

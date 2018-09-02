@@ -48,7 +48,7 @@ public class SeptaJsonTest {
         String jsonString = new String(Files.readAllBytes(path));
 
         final Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer(null))
+                .registerTypeAdapter(Agency.class, new SeptaAlertsDeserializer())
                 .create();
 
         septaAgency = gson.fromJson(jsonString, Agency.class);
@@ -62,23 +62,23 @@ public class SeptaJsonTest {
     @Test
     public void testDeserializeAgency() {
         assertNotNull(septaAgency);
-        assertEquals(septaAgency.name, SeptaAgencyUpdate.AGENCY_NAME);
-        assertEquals(septaAgency.id, Integer.valueOf(SeptaAgencyUpdate.AGENCY_ID));
-        assertNotNull(septaAgency.utcOffset);
-        assertEquals(septaAgency.utcOffset, Float.valueOf(-5F));
+        assertEquals(septaAgency.getName(), SeptaAgencyUpdate.AGENCY_NAME);
+        assertEquals(septaAgency.getId(), SeptaAgencyUpdate.AGENCY_ID);
+        assertNotNull(septaAgency.getUtcOffset());
+        assertEquals(septaAgency.getUtcOffset(), Float.valueOf(-5F));
     }
 
     @Test
     public void testDeserializeRoutes() {
-        assertNotNull(septaAgency.routes);
-        assertFalse(septaAgency.routes.isEmpty());
+        assertNotNull(septaAgency.getRoutes());
+        assertFalse(septaAgency.getRoutes().isEmpty());
     }
 
     @Test
     public void testDeserializeBusAlerts() {
         Route busRoute80 = null;
-        for (Route route : septaAgency.routes) {
-            if (route.routeId.equals("bus_route_80")) {
+        for (Route route : septaAgency.getRoutes()) {
+            if (route.getRouteId().equals("bus_route_80")) {
                 busRoute80 = route;
             }
         }
@@ -116,94 +116,83 @@ public class SeptaJsonTest {
         Calendar detour4LastUpdated = SeptaAlertsDeserializer.getParsedDate("Mar 15 2017 08:08:02:357AM", false);
 
         assertNotNull(busRoute80);
-        assertNotNull(busRoute80.alerts);
-        assertFalse(busRoute80.alerts.isEmpty());
-        assertEquals(busRoute80.alerts.size(), 4);
+        assertNotNull(busRoute80.getAlerts());
+        assertFalse(busRoute80.getAlerts().isEmpty());
+        assertEquals(busRoute80.getAlerts().size(), 1);
 
-        for (Alert alert : busRoute80.alerts) {
-            assertNotNull(alert.route);
+        for (Alert alert : busRoute80.getAlerts()) {
+            assertNotNull(alert.getType());
+            assertEquals(alert.getType(), AlertType.TYPE_DETOUR);
+            assertNotNull(alert.getMessageBody());
+            assertNotNull(alert.getMessageTitle());
+            assertNotNull(alert.getHighPriority());
+            assertTrue(alert.getHighPriority());
 
-            assertNotNull(alert.type);
-            assertTrue(alert.type == AlertType.TYPE_DETOUR);
-            assertNotNull(alert.messageBody);
-            assertNotNull(alert.messageTitle);
-            assertNotNull(alert.highPriority);
-            assertTrue(alert.highPriority);
+            assertNotNull(alert.getLocations());
+            assertEquals(alert.getLocations().size(), 2); // Start and end location.
 
-            assertNotNull(alert.locations);
-            assertEquals(alert.locations.size(), 2); // Start and end location.
+            assertNotNull(alert.getLocations().get(0));
+            assertNotNull(alert.getLocations().get(1));
 
-            assertNotNull(alert.locations.get(0));
-            assertNotNull(alert.locations.get(1));
+            if (alert.getMessageBody().equals(detour1Message)) {
+                assertEquals(alert.getLastUpdated(), detour1LastUpdated);
 
-            if (alert.messageBody.equals(detour1Message)) {
-                assertEquals(alert.lastUpdated, detour1LastUpdated);
+                Location startLocation = alert.getLocations().get(0);
+                assertEquals(startLocation.getName(), detour1StartLocation);
+                assertEquals(startLocation.getMessage(), detour1Reason);
+                assertEquals(startLocation.getSequence(), Integer.valueOf(0));
+                assertEquals(startLocation.getDate(), detour1StartDate);
 
-                Location startLocation = alert.locations.get(0);
-                assertEquals(startLocation.name, detour1StartLocation);
-                assertEquals(startLocation.message, detour1Reason);
-                assertEquals(startLocation.sequence, Integer.valueOf(0));
-                assertEquals(startLocation.date, detour1StartDate);
-                assertNotNull(startLocation.alert);
+                Location endLocation = alert.getLocations().get(1);
+                assertEquals(endLocation.getName(), detour1StartLocation);
+                assertEquals(endLocation.getMessage(), detour1Reason);
+                assertEquals(endLocation.getSequence(), Integer.valueOf(-1));
+                assertEquals(endLocation.getDate(), detour1EndDate);
 
-                Location endLocation = alert.locations.get(1);
-                assertEquals(endLocation.name, detour1StartLocation);
-                assertEquals(endLocation.message, detour1Reason);
-                assertEquals(endLocation.sequence, Integer.valueOf(-1));
-                assertEquals(endLocation.date, detour1EndDate);
-                assertNotNull(endLocation.alert);
-                assertNotNull(endLocation.alert);
+            } else if (alert.getMessageBody().equals(detour2Message)) {
+                assertEquals(alert.getLastUpdated(), detour2LastUpdated);
 
-            } else if (alert.messageBody.equals(detour2Message)) {
-                assertEquals(alert.lastUpdated, detour2LastUpdated);
+                Location startLocation = alert.getLocations().get(0);
+                assertEquals(startLocation.getName(), detour2StartLocation);
+                assertEquals(startLocation.getMessage(), detour2Reason);
+                assertEquals(startLocation.getSequence(), Integer.valueOf(0));
+                assertEquals(startLocation.getDate(), detour2StartDate);
 
-                Location startLocation = alert.locations.get(0);
-                assertEquals(startLocation.name, detour2StartLocation);
-                assertEquals(startLocation.message, detour2Reason);
-                assertEquals(startLocation.sequence, Integer.valueOf(0));
-                assertEquals(startLocation.date, detour2StartDate);
-                assertNotNull(startLocation.alert);
+                Location endLocation = alert.getLocations().get(1);
+                assertEquals(endLocation.getName(), detour2StartLocation);
+                assertEquals(endLocation.getMessage(), detour2Reason);
+                assertEquals(endLocation.getSequence(), Integer.valueOf(-1));
+                assertEquals(endLocation.getDate(), detour2EndDate);
 
-                Location endLocation = alert.locations.get(1);
-                assertEquals(endLocation.name, detour2StartLocation);
-                assertEquals(endLocation.message, detour2Reason);
-                assertEquals(endLocation.sequence, Integer.valueOf(-1));
-                assertEquals(endLocation.date, detour2EndDate);
-                assertNotNull(endLocation.alert);
+            } else if (alert.getMessageBody().equals(detour3Message)) {
+                assertEquals(alert.getLastUpdated(), detour3LastUpdated);
 
-            } else if (alert.messageBody.equals(detour3Message)) {
-                assertEquals(alert.lastUpdated, detour3LastUpdated);
+                Location startLocation = alert.getLocations().get(0);
+                assertEquals(startLocation.getName(), detour3StartLocation);
+                assertEquals(startLocation.getMessage(), detour3Reason);
+                assertEquals(startLocation.getSequence(), Integer.valueOf(0));
+                assertEquals(startLocation.getDate(), detour3StartDate);
 
-                Location startLocation = alert.locations.get(0);
-                assertEquals(startLocation.name, detour3StartLocation);
-                assertEquals(startLocation.message, detour3Reason);
-                assertEquals(startLocation.sequence, Integer.valueOf(0));
-                assertEquals(startLocation.date, detour3StartDate);
-                assertNotNull(startLocation.alert);
+                Location endLocation = alert.getLocations().get(1);
+                assertEquals(endLocation.getName(), detour3StartLocation);
+                assertEquals(endLocation.getMessage(), detour3Reason);
+                assertEquals(endLocation.getSequence(), Integer.valueOf(-1));
+                assertEquals(endLocation.getDate(), detour3EndDate);
 
-                Location endLocation = alert.locations.get(1);
-                assertEquals(endLocation.name, detour3StartLocation);
-                assertEquals(endLocation.message, detour3Reason);
-                assertEquals(endLocation.sequence, Integer.valueOf(-1));
-                assertEquals(endLocation.date, detour3EndDate);
-                assertNotNull(endLocation.alert);
+            } else if (alert.getMessageBody().equals(detour4Message)) {
+                assertEquals(alert.getLastUpdated(), detour4LastUpdated);
 
-            } else if (alert.messageBody.equals(detour4Message)) {
-                assertEquals(alert.lastUpdated, detour4LastUpdated);
+                Location startLocation = alert.getLocations().get(0);
+                assertEquals(startLocation.getName(), detour4StartLocation);
+                assertEquals(startLocation.getMessage(), detour4Reason);
+                assertEquals(startLocation.getSequence(), Integer.valueOf(0));
+                assertEquals(startLocation.getDate(), detour4StartDate);
 
-                Location startLocation = alert.locations.get(0);
-                assertEquals(startLocation.name, detour4StartLocation);
-                assertEquals(startLocation.message, detour4Reason);
-                assertEquals(startLocation.sequence, Integer.valueOf(0));
-                assertEquals(startLocation.date, detour4StartDate);
-                assertNotNull(startLocation.alert);
-
-                Location endLocation = alert.locations.get(1);
-                assertEquals(endLocation.name, detour4StartLocation);
-                assertEquals(endLocation.message, detour4Reason);
-                assertEquals(endLocation.sequence, Integer.valueOf(-1));
-                assertEquals(endLocation.date, detour4EndDate);
-                assertNotNull(endLocation.alert);
+                Location endLocation = alert.getLocations().get(1);
+                assertEquals(endLocation.getName(), detour4StartLocation);
+                assertEquals(endLocation.getMessage(), detour4Reason);
+                assertEquals(endLocation.getSequence(), Integer.valueOf(-1));
+                assertEquals(endLocation.getDate(), detour4EndDate);
             }
         }
     }
@@ -211,25 +200,25 @@ public class SeptaJsonTest {
     @Test
     public void testDeserializeTrolleyAlerts() {
         Route trolleyRoute13 = null;
-        for (Route route : septaAgency.routes) {
-            if (route.routeId.equals("trolley_route_13")) {
+        for (Route route : septaAgency.getRoutes()) {
+            if (route.getRouteId().equals("trolley_route_13")) {
                 trolleyRoute13 = route;
             }
         }
 
         assertNotNull(trolleyRoute13);
-        assertNotNull(trolleyRoute13.transitType);
-        assertEquals(trolleyRoute13.transitType, TransitType.TYPE_LIGHT_RAIL);
+        assertNotNull(trolleyRoute13.getTransitType());
+        assertEquals(trolleyRoute13.getTransitType(), TransitType.TYPE_LIGHT_RAIL);
 
-        assertNotNull(trolleyRoute13.alerts);
-        assertTrue(trolleyRoute13.alerts.isEmpty());
+        assertNotNull(trolleyRoute13.getAlerts());
+        assertTrue(trolleyRoute13.getAlerts().isEmpty());
     }
 
     @Test
     public void testDeserializeRailAlerts() {
         Route railRouteAir = null;
-        for (Route route : septaAgency.routes) {
-            if (route.routeId.equals("rr_route_apt")) {
+        for (Route route : septaAgency.getRoutes()) {
+            if (route.getRouteId().equals("rr_route_apt")) {
                 railRouteAir = route;
             }
         }
@@ -258,28 +247,28 @@ public class SeptaJsonTest {
 
         assertNotNull(railRouteAir);
 
-        assertNotNull(railRouteAir.transitType);
-        assertEquals(railRouteAir.transitType, TransitType.TYPE_RAIL);
-        assertNotNull(railRouteAir.routeName);
-        assertEquals(railRouteAir.routeName, "Airport");
+        assertNotNull(railRouteAir.getTransitType());
+        assertEquals(railRouteAir.getTransitType(), TransitType.TYPE_RAIL);
+        assertNotNull(railRouteAir.getRouteName());
+        assertEquals(railRouteAir.getRouteName(), "Airport");
 
-        assertNotNull(railRouteAir.alerts);
-        assertFalse(railRouteAir.alerts.isEmpty());
-        assertEquals(railRouteAir.alerts.size(), 1);
+        assertNotNull(railRouteAir.getAlerts());
+        assertFalse(railRouteAir.getAlerts().isEmpty());
+        assertEquals(railRouteAir.getAlerts().size(), 1);
 
-        assertEquals(railRouteAir.alerts.get(0).messageBody, alertMessage);
-        assertEquals(railRouteAir.alerts.get(0).type, AlertType.TYPE_INFORMATION);
-        assertEquals(railRouteAir.alerts.get(0).lastUpdated, lastUpdated);
+        assertEquals(railRouteAir.getAlerts().get(0).getMessageBody(), alertMessage);
+        assertEquals(railRouteAir.getAlerts().get(0).getType(), AlertType.TYPE_INFORMATION);
+        assertEquals(railRouteAir.getAlerts().get(0).getLastUpdated(), lastUpdated);
     }
 
     @Test
     public void testDeserializeSubwayAlerts() {
         Route subwayMfl = null;
         Route subwayBsl = null;
-        for (Route route : septaAgency.routes) {
-            if (route.routeId.equals("rr_route_mfl")) {
+        for (Route route : septaAgency.getRoutes()) {
+            if (route.getRouteId().equals("rr_route_mfl")) {
                 subwayMfl = route;
-            } else if (route.routeId.equals("rr_route_bsl")) {
+            } else if (route.getRouteId().equals("rr_route_bsl")) {
                 subwayBsl = route;
             }
         }
@@ -312,26 +301,26 @@ public class SeptaJsonTest {
 
         assertNotNull(subwayMfl);
 
-        assertNotNull(subwayMfl.transitType);
-        assertEquals(subwayMfl.transitType, TransitType.TYPE_SUBWAY);
-        assertNotNull(subwayMfl.routeName);
-        assertEquals(subwayMfl.routeName, "Market/Frankford Line");
+        assertNotNull(subwayMfl.getTransitType());
+        assertEquals(subwayMfl.getTransitType(), TransitType.TYPE_SUBWAY);
+        assertNotNull(subwayMfl.getRouteName());
+        assertEquals(subwayMfl.getRouteName(), "Market/Frankford Line");
 
-        assertNotNull(subwayMfl.alerts);
-        assertFalse(subwayMfl.alerts.isEmpty());
-        assertEquals(subwayMfl.alerts.size(), 1);
+        assertNotNull(subwayMfl.getAlerts());
+        assertFalse(subwayMfl.getAlerts().isEmpty());
+        assertEquals(subwayMfl.getAlerts().size(), 1);
 
-        assertEquals(mflAlertMessage, subwayMfl.alerts.get(0).messageBody);
-        assertEquals(AlertType.TYPE_INFORMATION, subwayMfl.alerts.get(0).type);
-        assertEquals(mflLastUpdated, subwayMfl.alerts.get(0).lastUpdated);
+        assertEquals(mflAlertMessage, subwayMfl.getAlerts().get(0).getMessageBody());
+        assertEquals(AlertType.TYPE_INFORMATION, subwayMfl.getAlerts().get(0).getType());
+        assertEquals(mflLastUpdated, subwayMfl.getAlerts().get(0).getLastUpdated());
 
-        assertNotNull(subwayBsl.transitType);
-        assertEquals(subwayBsl.transitType, TransitType.TYPE_SUBWAY);
-        assertNotNull(subwayBsl.routeName);
-        assertEquals(subwayBsl.routeName, "Broad Street Line");
+        assertNotNull(subwayBsl.getTransitType());
+        assertEquals(subwayBsl.getTransitType(), TransitType.TYPE_SUBWAY);
+        assertNotNull(subwayBsl.getRouteName());
+        assertEquals(subwayBsl.getRouteName(), "Broad Street Line");
 
         assertNotNull(subwayBsl);
-        assertNotNull(subwayBsl.alerts);
-        assertTrue(subwayBsl.alerts.isEmpty());
+        assertNotNull(subwayBsl.getAlerts());
+        assertTrue(subwayBsl.getAlerts().isEmpty());
     }
 }

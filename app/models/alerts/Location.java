@@ -1,9 +1,10 @@
 package models.alerts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
-import org.apache.commons.lang3.StringUtils;
+import io.ebean.annotation.PrivateOwned;
 
 import javax.persistence.*;
 import java.util.Calendar;
@@ -11,41 +12,100 @@ import java.util.Calendar;
 @Entity
 @Table(name = "locations", schema = "agency_alerts")
 public class Location extends Model implements Comparable<Location> {
-    public static Finder<Long, Location> find = new Finder<>(Location.class);
+    public static Finder<Integer, Location> find = new Finder<>(Location.class);
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(name = "location_id_seq_gen", sequenceName = "location_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq_gen")
-    public Integer id;
+    private Integer id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(
-            name = "alert_id",
-            table = "agency_alerts.alerts",
-            referencedColumnName = "id")
-    public Alert alert;
+    @PrivateOwned
+    @ManyToOne
+    private Alert alert;
 
     @Column(name = "name")
-    public String name;
+    private String name;
 
     @Column(name = "latitude")
-    public String latitude;
+    private String latitude;
 
     @Column(name = "longitude")
-    public String longitude;
+    private String longitude;
 
     @Column(name = "message", columnDefinition = "TEXT")
-    public String message;
+    private String message;
 
     @Column(name = "sequence")
-    public Integer sequence;
+    private Integer sequence;
 
     @Basic
     @Column(name = "date", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Calendar date;
+    private Calendar date;
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Integer getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(Integer sequence) {
+        this.sequence = sequence;
+    }
+
+    public Calendar getDate() {
+        return date;
+    }
+
+    public void setDate(Calendar date) {
+        this.date = date;
+    }
+
+    public Alert getAlert() {
+        return alert;
+    }
+
+    public void setAlert(Alert alert) {
+        this.alert = alert;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -53,16 +113,15 @@ public class Location extends Model implements Comparable<Location> {
             Location other = (Location) o;
 
             // Match on everything else.
-            boolean sameName = StringUtils.equals(name, other.name);
+            boolean sameName = CompareUtils.isEquals(name, other.name);
 
-            boolean sameMessage = StringUtils.equals(message, other.message);
+            boolean sameMessage = CompareUtils.isEquals(message, other.message);
 
-            boolean sameSequence = sequence == null && other.sequence == null ||
-                    (sequence != null && sequence.equals(other.sequence));
+            boolean sameSequence = CompareUtils.isEquals(this.sequence, other.sequence);
 
-            boolean sameLatitude = StringUtils.equals(latitude, other.latitude);
+            boolean sameLatitude = CompareUtils.isEquals(latitude, other.latitude);
 
-            boolean sameLongitude = StringUtils.equals(longitude, other.longitude);
+            boolean sameLongitude = CompareUtils.isEquals(longitude, other.longitude);
 
             // Match everything.
             return (sameName && sameMessage && sameSequence && sameLatitude && sameLongitude);
@@ -92,10 +151,6 @@ public class Location extends Model implements Comparable<Location> {
 
         hashCode += sequence != null
                 ? sequence.hashCode()
-                : hashCode;
-
-        hashCode += date != null
-                ? date.hashCode()
                 : hashCode;
 
         return hashCode.hashCode();

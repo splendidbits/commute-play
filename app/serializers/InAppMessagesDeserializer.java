@@ -9,7 +9,6 @@ import models.alerts.Alert;
 import models.alerts.Route;
 import play.Logger;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,19 +22,13 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
     private static final TimeZone timezone = TimeZone.getTimeZone("UTC");
     private Agency mAgency;
 
-    public InAppMessagesDeserializer(@Nullable Agency partialAgency) {
-        mAgency = partialAgency;
-
-        // Create agency if there was no partially filled agency from the client.
-        if (mAgency == null) {
-            mAgency.name = InAppMessageUpdate.AGENCY_NAME;
-            mAgency.phone = "+1 (555) 867 5309";
-            mAgency.utcOffset = -8f;
-            mAgency.routes = new ArrayList<>();
-            mAgency.externalUri = String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.PROD_API_SERVER_HOST);
-        }
-
+    public InAppMessagesDeserializer() {
         mAgency = new Agency(InAppMessageUpdate.AGENCY_ID);
+        mAgency.setName(InAppMessageUpdate.AGENCY_NAME);
+        mAgency.setPhone("+1 (555) 867 5309");
+        mAgency.setUtcOffset(-8f);
+        mAgency.setRoutes(new ArrayList<>());
+        mAgency.setExternalUri(String.format(Locale.US, "%s/alerts/v1/agency/2", Constants.PROD_API_SERVER_HOST));
     }
 
     @Override
@@ -69,25 +62,23 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
 
                     AlertType type = AlertType.TYPE_IN_APP;
                     Alert alert = new Alert();
-                    alert.type = type;
-                    alert.messageTitle = messageTitle;
-                    alert.messageSubtitle = messageSubtitle;
-                    alert.messageBody = messageBody;
-                    alert.highPriority = isHighPriority;
-                    alert.lastUpdated = lastUpdateCalendar;
+                    alert.setType(type);
+                    alert.setMessageTitle(messageTitle);
+                    alert.setMessageSubtitle(messageSubtitle);
+                    alert.setMessageBody(messageBody);
+                    alert.setHighPriority(isHighPriority);
+                    alert.setLastUpdated(lastUpdateCalendar);
                     alerts.add(alert);
                 }
 
                 if (!alerts.isEmpty()) {
                     Route route = new Route(InAppMessageUpdate.ROUTE_ID);
-                    route.routeId = InAppMessageUpdate.ROUTE_ID;
-                    route.routeName = InAppMessageUpdate.ROUTE_NAME;
-                    route.agency = mAgency;
-                    route.alerts = alerts;
-                    route.isSticky = true;
-                    route.isDefault = true;
+                    route.setRouteName(InAppMessageUpdate.ROUTE_NAME);
+                    route.setAlerts(alerts);
+                    route.setSticky(true);
+                    route.setDefault(true);
 
-                    mAgency.routes = Arrays.asList(route);
+                    mAgency.setRoutes(Arrays.asList(route));
                 }
             }
 
@@ -98,7 +89,7 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
             Logger.error("Error parsing json date(s) into alert object", e);
         }
 
-        Collections.sort(mAgency.routes);
+        Collections.sort(mAgency.getRoutes());
         Logger.info("Finished creating and sorting in-app messages.");
 
         return mAgency;

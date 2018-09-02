@@ -11,10 +11,7 @@ import io.ebean.config.ServerConfig;
 import main.Constants;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
-import models.alerts.Agency;
-import models.alerts.Alert;
-import models.alerts.Location;
-import models.alerts.Route;
+import models.alerts.*;
 import models.devices.Device;
 import models.devices.Subscription;
 import play.Application;
@@ -75,11 +72,14 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
 
         serverConfig.setRegister(true);
         serverConfig.setDefaultServer(true);
-        serverConfig.setUpdatesDeleteMissingChildren(false);
-        serverConfig.setClasses(models);
-        serverConfig.setDdlGenerate(false);
-        serverConfig.setUpdateChangesOnly(false);
+        serverConfig.setUpdatesDeleteMissingChildren(true);
 
-        return EbeanServerFactory.createWithContextClassLoader(serverConfig, application.classloader());
+        serverConfig.setClasses(models);
+
+        // TODO Remove
+//        serverConfig.setDdlGenerate(true);
+//        serverConfig.setDdlRun(true);
+
+        return EbeanServerFactory.create(serverConfig);
     }
 }
