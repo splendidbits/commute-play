@@ -2,7 +2,7 @@ name := "commutealerts"
 version := "1.0"
 
 lazy val buildSettings = Seq(
-  scalaVersion := "2.11.8"
+  scalaVersion := "2.12.6"
 )
 
 lazy val commutealerts = (project in file("."))
