@@ -11,33 +11,78 @@ import java.util.List;
 @Entity
 @Table(name = "agencies", schema = "agency_alerts")
 public class Agency extends Model implements Comparable<Agency> {
-    public static Finder<Integer, Agency> find = new Finder<>(Agency.class);
+    public static Finder<String, Agency> find = new Finder<>(Agency.class);
 
     @Id
     @Column(name = "id")
-    public Integer id;
+    private String id;
 
     @Column(name = "name")
-    public String name;
+    private String name;
 
     @Column(name = "phone")
-    public String phone;
+    private String phone;
 
     @Column(name = "external_uri", columnDefinition = "TEXT")
-    public String externalUri;
+    private String externalUri;
 
     @Column(name = "utc_offset")
-    public Float utcOffset;
+    private Float utcOffset;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "agency", fetch = FetchType.EAGER)
-    public List<Route> routes;
+    @OneToMany(mappedBy = "agency", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "agency_id", table = "agency_alerts.routes", referencedColumnName = "id")
+    private List<Route> routes;
 
-    @SuppressWarnings("unused")
-    private Agency() {
+    public Agency(String id) {
+        setId(id);
     }
 
-    public Agency(int id) {
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getExternalUri() {
+        return externalUri;
+    }
+
+    public void setExternalUri(String externalUri) {
+        this.externalUri = externalUri;
+    }
+
+    public Float getUtcOffset() {
+        return utcOffset;
+    }
+
+    public void setUtcOffset(Float utcOffset) {
+        this.utcOffset = utcOffset;
+    }
+
+    public List<Route> getRoutes() {
+        return routes;
+    }
+
+    public void setRoutes(List<Route> routes) {
+        this.routes = routes;
     }
 
     @Override

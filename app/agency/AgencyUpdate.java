@@ -10,7 +10,8 @@ import services.AgencyManager;
 import services.PushMessageManager;
 
 import javax.annotation.Nonnull;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base class that facilitates downloading alerts from an agency's server and sending them to the
@@ -56,70 +57,45 @@ public abstract class AgencyUpdate {
      * @param updatedAgency The agency which has been updated.
      */
     protected void processAgencyUpdate(Agency updatedAgency) {
-        if (updatedAgency != null) {
-            // Add the parent back-references back into each model.
-            AlertHelper.populateBackReferences(updatedAgency);
-
+        if (updatedAgency != null && updatedAgency.getRoutes() != null) {
             // Parse html and fix text formatting inconsistencies.
             AlertHelper.parseHtml(updatedAgency);
 
             // Get existing alerts for the agency.
-            Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.id, false);
+            Agency existingAgency = mAgencyManager.getSavedAgency(updatedAgency.getId(), false);
+            if (existingAgency == null) {
+                Logger.info(String.format("No existing agency found for %s. Saving but not dispatching.", updatedAgency.getName()));
+                mAgencyManager.saveAgency(updatedAgency);
+                return;
+            }
 
             // Diff the new and existing agency data and form a modifications model.
             AlertModifications modifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
             // Log some shit.
-            int updatedAlertCount = modifications.getUpdatedAlerts().size();
-            int staleAlertCount = modifications.getStaleAlerts().size();
-            int count = updatedAlertCount + staleAlertCount;
+            int updatedMessagesCount = 0;
+            for (Map.Entry<Route, List<Alert>> entry : modifications.getUpdatedAlerts().entrySet()) {
+                updatedMessagesCount += entry.getValue().size();
+            }
 
-            Logger.info(String.format("%s alerts found for %s.", count > 0 ? "* Updated" : "No updated", updatedAgency.name));
-            Logger.info(String.format("[%d] new alerts.", updatedAlertCount));
-            Logger.info(String.format("[%d] stale alerts.", staleAlertCount));
+            int staleMessagesCount = 0;
+            for (Map.Entry<Route, List<Alert>> entry : modifications.getStaleAlerts().entrySet()) {
+                staleMessagesCount += entry.getValue().size();
+            }
+            int totalMessagesCount = updatedMessagesCount + staleMessagesCount;
+
+            Logger.info(String.format("%s messages found for %s.", totalMessagesCount > 0 ? "* Updated" : "No updated", updatedAgency.getName()));
+            Logger.info(String.format("[%d] new messages.", updatedMessagesCount));
+            Logger.info(String.format("[%d] stale messages.", staleMessagesCount));
 
             if (modifications.hasChangedAlerts()) {
                 mAgencyManager.saveAgency(updatedAgency);
 
-                Logger.info(String.format("Updated %s Agency Alerts persisted. Sending to subscribers.", updatedAgency.name));
+                Logger.info(String.format("Updated %s Agency Alerts persisted. Sending to subscribers.", updatedAgency.getName()));
                 mPushMessageManager.dispatchAlerts(modifications);
 
             } else {
                 mAgencyManager.cacheAgency(updatedAgency);
-            }
-        }
-    }
-
-    /**
-     * Modify the data in a series of route alerts to test things.
-     *
-     * @param agency agency bundle.
-     */
-    private void createLoadTestUpdates(@Nonnull Agency agency) {
-        if (agency.routes != null) {
-            Alert previousAlert = null;
-
-            Collections.shuffle(agency.routes);
-            for (Route route : agency.routes) {
-
-                if (route.alerts != null) {
-                    Collections.shuffle(route.alerts);
-                    for (Alert alert : route.alerts) {
-                        alert.messageTitle = previousAlert != null
-                                ? previousAlert.messageTitle
-                                : alert.messageTitle;
-
-                        alert.messageSubtitle = previousAlert != null
-                                ? previousAlert.messageSubtitle
-                                : alert.messageSubtitle;
-
-                        alert.messageBody = previousAlert != null
-                                ? previousAlert.messageBody
-                                : alert.messageBody;
-
-                        previousAlert = alert;
-                    }
-                }
             }
         }
     }

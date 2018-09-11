@@ -8,9 +8,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -18,15 +16,17 @@ import static org.junit.Assert.*;
  * Test core functions of the Device Data Access Layer.
  */
 public class DeviceDaoTest extends CommuteTestApplication {
+    private static TestModelHelper testModelHelper;
 
     @BeforeClass
     public static void initialise() {
+        testModelHelper = new TestModelHelper(Calendar.getInstance(TimeZone.getTimeZone("EST")));
         // Save an account
-        Account testAccount = TestModelHelper.createTestAccount();
+        Account testAccount = testModelHelper.createTestAccount();
         mAccountDao.saveAccount(testAccount);
 
         // Save an agency
-        Agency testAgency = TestModelHelper.createTestAgency();
+        Agency testAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(testAgency);
     }
 
@@ -48,14 +48,14 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseDeviceInsert() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
         assertTrue(mDeviceDao.saveDevice(initialDevice));
 
         Device existingDevice = mDeviceDao.getDevice(initialDevice.deviceId);
         assertNotNull(existingDevice);
 
-        Device secondDevice = TestModelHelper.createTestDevice();
+        Device secondDevice = testModelHelper.createTestDevice();
         secondDevice.deviceId = "new_id";
         secondDevice.token = "new_token";
         secondDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
@@ -68,7 +68,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseDeviceUpdate() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
         assertTrue(mDeviceDao.saveDevice(initialDevice));
 
@@ -76,7 +76,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
         assertNotNull(existingDevice);
 
         String newDeviceToken = "updated_test_token";
-        Device newDevice = TestModelHelper.createTestDevice();
+        Device newDevice = testModelHelper.createTestDevice();
         newDevice.token = newDeviceToken;
         newDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
         assertTrue(mDeviceDao.saveDevice(newDevice));
@@ -93,14 +93,14 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseDeviceTokenUpdate() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
         // Change device token to new token id.
         mDeviceDao.saveDevice(initialDevice);
 
         String newDeviceToken = "updated_test_token";
-        Device updatedDevice = TestModelHelper.createTestDevice();
+        Device updatedDevice = testModelHelper.createTestDevice();
         updatedDevice.token = newDeviceToken;
         assertTrue(mDeviceDao.saveUpdatedToken(TestModelHelper.TEST_DEVICE_TOKEN, updatedDevice.token));
 
@@ -115,7 +115,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseDeviceRemove() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
         // Add test device.
@@ -128,7 +128,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseSubscriptionSave() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
         Route route = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
@@ -155,7 +155,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseSubscriptionUpdate() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
         Route initialRoute = new Route("test_route_1");
@@ -180,11 +180,11 @@ public class DeviceDaoTest extends CommuteTestApplication {
         Route updatedRoute1 = new Route("test_route_1");
         Route updatedRoute2 = new Route("test_route_2");
         Route updatedRoute3 = new Route("test_route_3");
-        Agency updatedAgency = TestModelHelper.createTestAgency();
-        updatedAgency.routes = Arrays.asList(updatedRoute1, updatedRoute2, updatedRoute3);
+        Agency updatedAgency = testModelHelper.createTestAgency();
+        updatedAgency.setRoutes(Arrays.asList(updatedRoute1, updatedRoute2, updatedRoute3));
         mAgencyDao.saveAgency(updatedAgency);
 
-        Device updatedDevice = TestModelHelper.createTestDevice();
+        Device updatedDevice = testModelHelper.createTestDevice();
         updatedDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
         Subscription subscription1 = new Subscription();
@@ -213,7 +213,7 @@ public class DeviceDaoTest extends CommuteTestApplication {
 
     @Test
     public void testDatabaseSubscriptionRemove() {
-        Device initialDevice = TestModelHelper.createTestDevice();
+        Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.subscriptions = null;
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 

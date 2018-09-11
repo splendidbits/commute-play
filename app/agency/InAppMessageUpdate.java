@@ -2,6 +2,13 @@ package agency;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import java.util.Locale;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
+import javax.inject.Inject;
+
 import main.Constants;
 import models.alerts.Agency;
 import play.Logger;
@@ -11,23 +18,17 @@ import serializers.InAppMessagesDeserializer;
 import services.AgencyManager;
 import services.PushMessageManager;
 
-import javax.inject.Inject;
-import java.util.Locale;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
 /**
  * Agency updater for the in-app messages.
  */
 public class InAppMessageUpdate extends AgencyUpdate {
     private static final int APP_ALERT_TIMEOUT = 1000 * 20;
 
-    public static final int AGENCY_ID = 2;
-    public static final String AGENCY_NAME = "Commute App";
-    public static final String ROUTE_ID = "commuteapp";
-    public static final String ROUTE_NAME = "Commute App Messages";
+    public static final String AGENCY_ID = "IN_APP";
+    public static final String AGENCY_NAME = "Commute App Feed";
+    public static final String ROUTE_ID = "commute";
+    public static final String ROUTE_NAME = AGENCY_NAME;
 
-    private ParseMessages mParseMessagesFunc;
     private WSClient mWsClient;
 
     @Inject
@@ -35,13 +36,12 @@ public class InAppMessageUpdate extends AgencyUpdate {
         super(agencyManager, pushMessageManager);
 
         mWsClient = wsClient;
-        mParseMessagesFunc = new ParseMessages();
     }
 
     @Override
     public void startAgencyUpdate() {
         Logger.info("Starting compilation of Commute App Message alerts.");
-        String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%d/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
+        String alertUrl = String.format(Locale.US, "%s/alerts/v1/agency/%s/raw?req1=all", Constants.PROD_API_SERVER_HOST, AGENCY_ID);
 
         try {
             Logger.info("Starting download of in-app messages.");
@@ -51,7 +51,7 @@ public class InAppMessageUpdate extends AgencyUpdate {
                     .setFollowRedirects(true)
                     .get();
 
-            downloadStage.thenApply(mParseMessagesFunc);
+            downloadStage.thenApply(new ParseMessages());
 
         } catch (Exception exception) {
             Logger.error("Error downloading agency data from " + alertUrl, exception);
@@ -70,7 +70,7 @@ public class InAppMessageUpdate extends AgencyUpdate {
 
                 // Create gson serializer
                 final Gson gson = new GsonBuilder()
-                        .registerTypeAdapter(Agency.class, new InAppMessagesDeserializer(null))
+                        .registerTypeAdapter(Agency.class, new InAppMessagesDeserializer())
                         .create();
 
                 Logger.info("Finished parsing in-app json body. Sending to AgencyUpdateService");

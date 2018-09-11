@@ -17,27 +17,30 @@ import services.PushMessageManager;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static junit.framework.TestCase.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test core functions of the Device Data Access Layer.
  */
 public class AlertModificationsTest extends CommuteTestApplication {
     private static PushMessageManager mPushMessageManager;
+    private static TestModelHelper testModelHelper;
 
     @BeforeClass
     public static void setup() {
+        testModelHelper = new TestModelHelper(Calendar.getInstance(TimeZone.getTimeZone("EST")));
         mPushMessageManager = application.injector().instanceOf(PushMessageManager.class);
 
         // Save an account
-        Account testAccount = TestModelHelper.createTestAccount();
+        Account testAccount = testModelHelper.createTestAccount();
         mAccountDao.saveAccount(testAccount);
 
-        Agency testAgency = TestModelHelper.createTestAgency();
+        Agency testAgency = testModelHelper.createTestAgency();
         mAgencyDao.saveAgency(testAgency);
 
         Route testRoute = mAgencyDao.getRoute(TestModelHelper.AGENCY_ID, TestModelHelper.ROUTE_ID);
-        Device testDevice = TestModelHelper.createTestDevice();
+        Device testDevice = testModelHelper.createTestDevice();
 
         Subscription testSubscription = new Subscription();
         testSubscription.route = testRoute;
@@ -59,7 +62,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         // Delete test Agency.
         Agency testAgency = mAgencyDao.getAgency(TestModelHelper.AGENCY_ID);
         if (testAgency != null) {
-            mAgencyDao.removeAgency(testAgency.id);
+            mAgencyDao.removeAgency(testAgency.getId());
         }
 
         // Delete test Account.
@@ -71,51 +74,50 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testUnchanged() {
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency updatedAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        Agency updatedAgency = testModelHelper.createTestAgency();
+
+        Alert secondAlert = testModelHelper.createTestAlert();
+        secondAlert.setMessageTitle("Second Alert Message Title");
+        secondAlert.setMessageSubtitle("Second Alert Message Subtitle");
+        secondAlert.setMessageBody("Second Alert Message Body");
+        secondAlert.setId(AlertHelper.createHash(secondAlert, "test_route_2"));
 
         // Populate second agency with an additional route, alerts, and locations.
-        Location secondLocation = TestModelHelper.createTestLocation();
-        secondLocation.message = "Second Location Test";
-        secondLocation.name = "Second Location Name";
-        secondLocation.date = Calendar.getInstance();
+        Location secondLocation = testModelHelper.createTestLocation();
+        secondLocation.setMessage("Second Location Test");
+        secondLocation.setName("Second Location Name");
+        secondLocation.setDate(Calendar.getInstance());
+        secondLocation.setId(AlertHelper.createHash(secondLocation));
 
-        Alert secondAlert = TestModelHelper.createTestAlert();
-        secondAlert.messageTitle = "Second Alert Message Title";
-        secondAlert.messageSubtitle = "Second Alert Message Subtitle";
-        secondAlert.messageBody = "Second Alert Message Body";
-        secondAlert.locations = Arrays.asList(TestModelHelper.createTestLocation(), secondLocation);
+        secondAlert.setLocations(Arrays.asList(testModelHelper.createTestLocation(), secondLocation));
 
-        Route secondRoute = TestModelHelper.createTestRoute();
-        secondRoute.routeId = "test_route_2";
-        secondRoute.routeName = "Second Route";
-        secondRoute.alerts = Arrays.asList(TestModelHelper.createTestAlert(), secondAlert);
+        Route secondRoute = testModelHelper.createTestRoute("test_route_2");
+        secondRoute.setRouteName("Second Route");
+        secondRoute.setAlerts(Arrays.asList(testModelHelper.createTestAlert(), secondAlert));
 
-        existingAgency.routes = Arrays.asList(TestModelHelper.createTestRoute(), secondRoute);
-        AlertHelper.populateBackReferences(existingAgency);
+        existingAgency.setRoutes(Arrays.asList(testModelHelper.createTestRoute(), secondRoute));
 
         // Populate second agency with the same data but reversed lists.
-        Location updatedAgencySecondLocation = TestModelHelper.createTestLocation();
-        updatedAgencySecondLocation.message = "Second Location Test";
-        updatedAgencySecondLocation.name = "Second Location Name";
-        updatedAgencySecondLocation.date = Calendar.getInstance();
+        Location updatedAgencySecondLocation = testModelHelper.createTestLocation();
+        updatedAgencySecondLocation.setMessage("Second Location Test");
+        updatedAgencySecondLocation.setName("Second Location Name");
+        updatedAgencySecondLocation.setDate(Calendar.getInstance());
 
-        Alert updatedAgencySecondAlert = TestModelHelper.createTestAlert();
-        updatedAgencySecondAlert.messageTitle = "Second Alert Message Title";
-        updatedAgencySecondAlert.messageSubtitle = "Second Alert Message Subtitle";
-        updatedAgencySecondAlert.messageBody = "Second Alert Message Body";
-        updatedAgencySecondAlert.locations = Arrays.asList(TestModelHelper.createTestLocation(), updatedAgencySecondLocation);
-        Collections.reverse(updatedAgencySecondAlert.locations);
+        Alert updatedAgencySecondAlert = testModelHelper.createTestAlert();
+        updatedAgencySecondAlert.setMessageTitle("Second Alert Message Title");
+        updatedAgencySecondAlert.setMessageSubtitle("Second Alert Message Subtitle");
+        updatedAgencySecondAlert.setMessageBody("Second Alert Message Body");
+        updatedAgencySecondAlert.setLocations(Arrays.asList(testModelHelper.createTestLocation(), updatedAgencySecondLocation));
+        Collections.reverse(updatedAgencySecondAlert.getLocations());
 
-        Route updatedAgencySecondRoute = TestModelHelper.createTestRoute();
-        updatedAgencySecondRoute.routeId = "test_route_2";
-        updatedAgencySecondRoute.routeName = "Second Route";
-        updatedAgencySecondRoute.alerts = Arrays.asList(TestModelHelper.createTestAlert(), updatedAgencySecondAlert);
-        Collections.reverse(updatedAgencySecondRoute.alerts);
+        Route updatedAgencySecondRoute = testModelHelper.createTestRoute("test_route_2");
+        updatedAgencySecondRoute.setRouteName("Second Route");
+        updatedAgencySecondRoute.setAlerts(Arrays.asList(testModelHelper.createTestAlert(), updatedAgencySecondAlert));
+        Collections.reverse(updatedAgencySecondRoute.getAlerts());
 
-        updatedAgency.routes = Arrays.asList(TestModelHelper.createTestRoute(), updatedAgencySecondRoute);
-        Collections.reverse(updatedAgency.routes);
-        AlertHelper.populateBackReferences(updatedAgency);
+        updatedAgency.setRoutes(Arrays.asList(testModelHelper.createTestRoute(), updatedAgencySecondRoute));
+        Collections.reverse(updatedAgency.getRoutes());
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, updatedAgency);
 
@@ -132,17 +134,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testInformationAlertAdd() {
         // First agency with the no alerts.
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        existingAgency.routes.get(0).alerts = new ArrayList<>();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert informationAlert = TestModelHelper.createTestAlert();
-        informationAlert.messageBody = "Information alert";
-        informationAlert.type = AlertType.TYPE_INFORMATION;
+        existingAgency.getRoutes().get(0).setAlerts(new ArrayList<>());
+
+        Alert informationAlert = testModelHelper.createTestAlert();
+        informationAlert.setMessageBody("Information alert");
+        informationAlert.setType(AlertType.TYPE_INFORMATION);
 
         // Second agency with an information alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Collections.singletonList(informationAlert);
-        informationAlert.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(informationAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -150,13 +153,13 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
 
         // Check there is 1 updated alert and 0 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(informationAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(informationAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -167,17 +170,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testDisruptionAlertAdd() {
         // First agency with the no alerts.
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        existingAgency.routes.get(0).alerts = new ArrayList<>();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert disruptionAlert = TestModelHelper.createTestAlert();
-        disruptionAlert.messageBody = "Disruption alert";
-        disruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        existingAgency.getRoutes().get(0).setAlerts(new ArrayList<>());
+
+        Alert disruptionAlert = testModelHelper.createTestAlert();
+        disruptionAlert.setMessageBody("Disruption alert");
+        disruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
         // Second agency with an disruption alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Collections.singletonList(disruptionAlert);
-        disruptionAlert.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(disruptionAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -185,13 +189,13 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
 
         // Check there is 1 updated alert and 0 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(disruptionAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(disruptionAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -202,17 +206,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testDetourAlertAdd() {
         // First agency with the no alerts.
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        existingAgency.routes.get(0).alerts = new ArrayList<>();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert detourAlert = TestModelHelper.createTestAlert();
-        detourAlert.messageBody = "Detour alert";
-        detourAlert.type = AlertType.TYPE_DETOUR;
+        existingAgency.getRoutes().get(0).setAlerts(new ArrayList<>());
+
+        Alert detourAlert = testModelHelper.createTestAlert();
+        detourAlert.setMessageBody("Detour alert");
+        detourAlert.setType(AlertType.TYPE_DETOUR);
 
         // Second agency with a detour alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Collections.singletonList(detourAlert);
-        detourAlert.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(detourAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -220,13 +225,13 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
 
         // Check there is 1 updated alert and 0 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(detourAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -236,24 +241,23 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testDisruptionAlertAddDisruptionAlertAdd() {
-        Alert firstDisruptionAlert = TestModelHelper.createTestAlert();
-        Alert secondDisruptionAlert = TestModelHelper.createTestAlert();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        firstDisruptionAlert.messageBody = "First disruption alert";
-        firstDisruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        Alert firstDisruptionAlert = testModelHelper.createTestAlert();
+        Alert secondDisruptionAlert = testModelHelper.createTestAlert();
 
-        // First agency with the first disruption alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        existingAgency.routes.get(0).alerts = Collections.singletonList(firstDisruptionAlert);
-        firstDisruptionAlert.route = existingAgency.routes.get(0);
+        firstDisruptionAlert.setMessageBody("First disruption alert");
+        firstDisruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
-        secondDisruptionAlert.messageBody = "Second disruption alert";
-        secondDisruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(firstDisruptionAlert));
+
+        secondDisruptionAlert.setMessageBody("Second disruption alert");
+        secondDisruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
         // Second agency with the first and second disruption alerts.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Arrays.asList(firstDisruptionAlert, secondDisruptionAlert);
-        secondDisruptionAlert.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Arrays.asList(firstDisruptionAlert, secondDisruptionAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -261,16 +265,16 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
 
         // Check there is 1 updated alert and 0 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(secondDisruptionAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(secondDisruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -280,28 +284,26 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testDisruptionAlertSingleRemove() {
-        Alert firstDisruptionAlert = TestModelHelper.createTestAlert();
-        firstDisruptionAlert.messageBody = "First disruption alert";
-        firstDisruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        Alert firstDisruptionAlert = testModelHelper.createTestAlert();
+        firstDisruptionAlert.setMessageBody("First disruption alert");
+        firstDisruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
-        Alert secondDisruptionAlert = TestModelHelper.createTestAlert();
-        secondDisruptionAlert.messageBody = "Second disruption alert";
-        secondDisruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        Alert secondDisruptionAlert = testModelHelper.createTestAlert();
+        secondDisruptionAlert.setMessageBody("Second disruption alert");
+        secondDisruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
         // First agency with the both disruption alerts added.
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        existingAgency.routes.get(0).alerts = Arrays.asList(firstDisruptionAlert, secondDisruptionAlert);
-        firstDisruptionAlert.route = existingAgency.routes.get(0);
-        secondDisruptionAlert.route = existingAgency.routes.get(0);
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
+        existingAgency.getRoutes().get(0).setAlerts(Arrays.asList(firstDisruptionAlert, secondDisruptionAlert));
 
         // Second agency with the first disruption alert removed.
-        Alert secondDisruptionAlert2 = TestModelHelper.createTestAlert();
-        secondDisruptionAlert2.messageBody = "Second disruption alert 2";
-        secondDisruptionAlert2.type = AlertType.TYPE_DISRUPTION;
+        Alert secondDisruptionAlert2 = testModelHelper.createTestAlert();
+        secondDisruptionAlert2.setMessageBody("Second disruption alert 2");
+        secondDisruptionAlert2.setType(AlertType.TYPE_DISRUPTION);
 
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Collections.singletonList(secondDisruptionAlert);
-        secondDisruptionAlert2.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(secondDisruptionAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -311,10 +313,11 @@ public class AlertModificationsTest extends CommuteTestApplication {
         // Check there is 0 updated alert and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().contains(firstDisruptionAlert));
+        assertTrue(alertModifications.getStaleAlerts().containsValue(firstDisruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getStaleAlerts().get(0).route);
+        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -325,18 +328,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testDisruptionAlertAddDisruptionAlertRemove() {
         // First agency with the first information alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert disruptionAlert = TestModelHelper.createTestAlert();
-        disruptionAlert.messageBody = "First disruption alert";
-        disruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        Alert disruptionAlert = testModelHelper.createTestAlert();
+        disruptionAlert.setMessageBody("First disruption alert");
+        disruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
-        existingAgency.routes.get(0).alerts = Collections.singletonList(disruptionAlert);
-        disruptionAlert.route = existingAgency.routes.get(0);
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(disruptionAlert));
 
         // Second agency with no information alerts.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = new ArrayList<>();
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(new ArrayList<>());
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -346,11 +349,11 @@ public class AlertModificationsTest extends CommuteTestApplication {
         // Check there is 0 updated alerts and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().contains(disruptionAlert));
+        assertTrue(alertModifications.getStaleAlerts().get(existingRoute).contains(disruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getStaleAlerts().get(0));
-        assertNotNull(alertModifications.getStaleAlerts().get(0).route);
+        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
 
         // Check there was 0 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -361,18 +364,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testDetourAlertAddDetourAlertRemove() {
         // First agency with the first detour alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert detourAlert = TestModelHelper.createTestAlert();
-        detourAlert.messageBody = "First detour alert";
-        detourAlert.type = AlertType.TYPE_DETOUR;
+        Alert detourAlert = testModelHelper.createTestAlert();
+        detourAlert.setMessageBody("First detour alert");
+        detourAlert.setType(AlertType.TYPE_DETOUR);
 
-        existingAgency.routes.get(0).alerts = Collections.singletonList(detourAlert);
-        detourAlert.route = existingAgency.routes.get(0);
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(detourAlert));
 
         // Second agency with no detour alerts.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = new ArrayList<>();
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(new ArrayList<>());
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -382,7 +385,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         // Check there is 0 updated alerts and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().contains(detourAlert));
+        assertTrue(alertModifications.getStaleAlerts().containsValue(detourAlert));
 
         // Check there was 0 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -393,23 +396,23 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testInformationDetourAlertSwap() {
         // First agency with an information alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert informationAlert = TestModelHelper.createTestAlert();
-        informationAlert.messageBody = "This is an information alert";
-        informationAlert.type = AlertType.TYPE_INFORMATION;
+        Alert informationAlert = testModelHelper.createTestAlert();
 
-        existingAgency.routes.get(0).alerts = Collections.singletonList(informationAlert);
-        informationAlert.route = existingAgency.routes.get(0);
+        informationAlert.setMessageBody("This is an information alert");
+        informationAlert.setType(AlertType.TYPE_INFORMATION);
 
-        Alert detourAlert = TestModelHelper.createTestAlert();
-        detourAlert.messageBody = "This is a detour alert";
-        detourAlert.type = AlertType.TYPE_DETOUR;
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(informationAlert));
+
+        Alert detourAlert = testModelHelper.createTestAlert();
+        detourAlert.setMessageBody("This is a detour alert");
+        detourAlert.setType(AlertType.TYPE_DETOUR);
 
         // Second agency with a detour alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
-        newAgency.routes.get(0).alerts = Collections.singletonList(detourAlert);
-        detourAlert.route = newAgency.routes.get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(detourAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -417,14 +420,13 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
+        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
 
         // Check there is 1 updated alert and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(detourAlert));
-        assertTrue(alertModifications.getStaleAlerts().contains(informationAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
+        assertTrue(alertModifications.getStaleAlerts().containsValue(informationAlert));
 
         // Check there was 1 updated alerts and 0 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -435,24 +437,23 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testDetourInformationAlertSwap() {
         // First agency with a detour alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Alert detourAlert = TestModelHelper.createTestAlert();
-        detourAlert.messageBody = "This is a detour alert";
-        detourAlert.type = AlertType.TYPE_DETOUR;
+        Alert detourAlert = testModelHelper.createTestAlert();
+        detourAlert.setMessageBody("This is a detour alert");
+        detourAlert.setType(AlertType.TYPE_DETOUR);
 
-        existingAgency.routes.get(0).alerts = Collections.singletonList(detourAlert);
-        detourAlert.route = existingAgency.routes.get(0);
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(detourAlert));
 
         // Second agency with an information alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        Alert informationAlert = TestModelHelper.createTestAlert();
-        informationAlert.messageBody = "This is an information alert";
-        informationAlert.type = AlertType.TYPE_INFORMATION;
+        Alert informationAlert = testModelHelper.createTestAlert();
+        informationAlert.setMessageBody("This is an information alert");
+        informationAlert.setType(AlertType.TYPE_INFORMATION);
 
-        newAgency.routes.get(0).alerts = Collections.singletonList(informationAlert);
-        informationAlert.route = newAgency.routes.get(0);
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(informationAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -461,13 +462,12 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         // The route exists.
         assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
 
         // Check there is 1 updated alert and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(informationAlert));
-        assertTrue(alertModifications.getStaleAlerts().contains(detourAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(informationAlert));
+        assertTrue(alertModifications.getStaleAlerts().containsValue(detourAlert));
 
         // Check there was 1 updated alerts and 0 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -478,29 +478,26 @@ public class AlertModificationsTest extends CommuteTestApplication {
     @Test
     public void testInformationDetourAlertSwapAddDisruptionAlert() {
         // First agency with an information alert.
-        Agency existingAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        Alert informationAlert = testModelHelper.createTestAlert();
 
-        Alert informationAlert = TestModelHelper.createTestAlert();
-        informationAlert.messageBody = "This is an information alert";
-        informationAlert.type = AlertType.TYPE_INFORMATION;
+        informationAlert.setMessageBody("This is an information alert");
+        informationAlert.setType(AlertType.TYPE_INFORMATION);
 
-        existingAgency.routes.get(0).alerts = Collections.singletonList(informationAlert);
-        informationAlert.route = existingAgency.routes.get(0);
+        existingAgency.getRoutes().get(0).setAlerts(Collections.singletonList(informationAlert));
 
         // Second agency with a detour alert and an added disruption alert.
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        Alert detourAlert = TestModelHelper.createTestAlert();
-        detourAlert.messageBody = "This is a detour alert";
-        detourAlert.type = AlertType.TYPE_DETOUR;
+        Alert detourAlert = testModelHelper.createTestAlert();
+        detourAlert.setMessageBody("This is a detour alert");
+        detourAlert.setType(AlertType.TYPE_DETOUR);
 
-        Alert disruptionAlert = TestModelHelper.createTestAlert();
-        disruptionAlert.messageBody = "This is an disruption alert";
-        disruptionAlert.type = AlertType.TYPE_DISRUPTION;
+        Alert disruptionAlert = testModelHelper.createTestAlert();
+        disruptionAlert.setMessageBody("This is an disruption alert");
+        disruptionAlert.setType(AlertType.TYPE_DISRUPTION);
 
-        newAgency.routes.get(0).alerts = Arrays.asList(detourAlert, disruptionAlert);
-        detourAlert.route = newAgency.routes.get(0);
-        disruptionAlert.route = newAgency.routes.get(0);
+        newAgency.getRoutes().get(0).setAlerts(Arrays.asList(detourAlert, disruptionAlert));
 
         // Get the modifications
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
@@ -509,13 +506,12 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         // The route exists.
         assertNotNull(alertModifications.getUpdatedAlerts().get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0).route);
 
         // Check there is 2 updated alerts and 1 stale alerts.
         assertEquals(alertModifications.getUpdatedAlerts().size(), 2);
         assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(detourAlert));
-        assertTrue(alertModifications.getStaleAlerts().contains(informationAlert));
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
+        assertTrue(alertModifications.getStaleAlerts().containsValue(informationAlert));
 
         // Check there was 2 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -525,10 +521,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testAlertRemoveAll() {
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        newAgency.routes.get(0).alerts = null;
+        newAgency.getRoutes().get(0).setAlerts(null);
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
         assertNotNull(alertModifications);
@@ -544,25 +540,22 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testLocationAdd() {
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        Location existingLocation = TestModelHelper.createTestLocation();
-        Location newLocation = TestModelHelper.createTestLocation();
-        newLocation.name = "New Location";
-        newLocation.date = Calendar.getInstance();
-        newLocation.latitude = "-75.1653533";
-        newLocation.longitude = "-75.1653533";
-        newLocation.message = "New Location Message";
-        newLocation.sequence = 42;
+        Location existingLocation = testModelHelper.createTestLocation();
+        Location newLocation = testModelHelper.createTestLocation();
+        newLocation.setName("New Location");
+        newLocation.setDate(Calendar.getInstance());
+        newLocation.setLongitude("-75.1653533");
+        newLocation.setLongitude("-75.1653533");
+        newLocation.setMessage("New Location Message");
+        newLocation.setSequence(42);
 
-        Alert updatedAlert = TestModelHelper.createTestAlert();
-        updatedAlert.locations = Arrays.asList(existingLocation, newLocation);
-        newAgency.routes.get(0).alerts = Collections.singletonList(updatedAlert);
-
-        existingLocation.alert = updatedAlert;
-        newLocation.alert = updatedAlert;
-        updatedAlert.route = newAgency.routes.get(0);
+        Alert updatedAlert = testModelHelper.createTestAlert();
+        updatedAlert.setLocations(Arrays.asList(existingLocation, newLocation));
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(updatedAlert));
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
@@ -570,8 +563,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().contains(updatedAlert));
-        assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 2);
+        assertTrue(alertModifications.getUpdatedAlerts().containsValue(updatedAlert));
+        assertEquals(alertModifications.getUpdatedAlerts().get(existingRoute).get(0).getLocations().size(), 2);
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getKey().size(), 1);
@@ -580,30 +573,31 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testLocationUpdate() {
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        final Route existingRoute = existingAgency.getRoutes().get(0);
 
-        Location updatedLocation = TestModelHelper.createTestLocation();
-        updatedLocation.name = "New Location";
-        updatedLocation.message = "New Location Message";
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        Alert updatedAlert = TestModelHelper.createTestAlert();
-        updatedAlert.locations = Collections.singletonList(updatedLocation);
+        Location updatedLocation = testModelHelper.createTestLocation();
+        updatedLocation.setName("New Location");
+        updatedLocation.setMessage("New Location Message");
 
-        Route updatedRoute = TestModelHelper.createTestRoute();
-        updatedRoute.alerts = Collections.singletonList(updatedAlert);
-        newAgency.routes = Collections.singletonList(updatedRoute);
-        updatedAlert.route = updatedRoute;
+        Alert updatedAlert = testModelHelper.createTestAlert();
+        updatedAlert.setLocations(Collections.singletonList(updatedLocation));
+
+        Route updatedRoute = testModelHelper.createTestRoute();
+        updatedRoute.setAlerts(Collections.singletonList(updatedAlert));
+        newAgency.setRoutes(Collections.singletonList(updatedRoute));
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
         assertNotNull(alertModifications);
         assertTrue(alertModifications.hasChangedAlerts());
-        assertFalse(alertModifications.getUpdatedAlerts().contains(TestModelHelper.createTestAlert()));
+        assertFalse(alertModifications.getUpdatedAlerts().containsValue(testModelHelper.createTestAlert()));
         assertFalse(alertModifications.getUpdatedAlerts().isEmpty());
         assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
         assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertEquals(alertModifications.getUpdatedAlerts().get(0).locations.size(), 1);
+        assertEquals(alertModifications.getUpdatedAlerts().get(existingRoute).get(0).getLocations().size(), 1);
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getValue().size(), 0);
@@ -612,14 +606,12 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
     @Test
     public void testLocationRemove() {
-        Agency existingAgency = TestModelHelper.createTestAgency();
-        Agency newAgency = TestModelHelper.createTestAgency();
+        Agency existingAgency = testModelHelper.createTestAgency();
+        Agency newAgency = testModelHelper.createTestAgency();
 
-        Alert updatedAlert = TestModelHelper.createTestAlert();
-        updatedAlert.locations = new ArrayList<>();
-
-        newAgency.routes.get(0).alerts = Collections.singletonList(updatedAlert);
-        updatedAlert.route = newAgency.routes.get(0);
+        Alert updatedAlert = testModelHelper.createTestAlert();
+        updatedAlert.setLocations(new ArrayList<>());
+        newAgency.getRoutes().get(0).setAlerts(Collections.singletonList(updatedAlert));
 
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 

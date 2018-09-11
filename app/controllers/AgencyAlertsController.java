@@ -2,6 +2,17 @@ package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.annotation.Nullable;
+
+import agency.InAppMessageUpdate;
+import agency.SeptaAgencyUpdate;
 import dao.AgencyDao;
 import main.Constants;
 import models.alerts.Agency;
@@ -13,14 +24,9 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import services.AgencyManager;
 
-import javax.annotation.Nullable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 public class AgencyAlertsController extends Controller {
+    // TODO Remove
+    // private static final String SEPTA_RAW_JSON_FEED = "http://localhost:8181/alerts/v1/agency/1/raw";
     private static final String SEPTA_RAW_JSON_FEED = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php";
     private static final String INAPP_RAW_JSON_FEED = String.format(Locale.US,
             "%s/alerts/inapp", Constants.PROD_API_SERVER_HOST);
@@ -46,29 +52,29 @@ public class AgencyAlertsController extends Controller {
      *
      * @return Raw Agency alerts feed (json, xml, etc) wrapped in a CompletionStage.
      */
-    public CompletionStage<Result> fetchRawAgencyAlerts(@Nullable Integer agencyId) {
+    public CompletionStage<Result> fetchRawAgencyAlerts(@Nullable String agencyId) {
         if (agencyId == null) {
             return CompletableFuture.completedFuture(badRequest());
         }
 
-        CompletionStage<WSResponse> agencyDownloadStage;
-        switch (agencyId) {
-            case 1:
-                String route = request().getQueryString("req1");
-                agencyDownloadStage = mWSClient
-                        .url(SEPTA_RAW_JSON_FEED)
-                        .setFollowRedirects(true)
-                        .setQueryString(route != null ? String.format(Locale.US, "req1=%s", route) : "all")
-                        .get();
-                break;
+        CompletionStage<WSResponse> agencyDownloadStage = null;
+        if (SeptaAgencyUpdate.AGENCY_ID.equals(agencyId)) {
+            String route = request().getQueryString("req1");
+            agencyDownloadStage = mWSClient
+                    .url(SEPTA_RAW_JSON_FEED)
+                    .setFollowRedirects(true)
+                    .setQueryString(route != null ? String.format(Locale.US, "req1=%s", route) : "all")
+                    .get();
 
-            case 2:
-            default:
+        } else if (InAppMessageUpdate.AGENCY_ID.equals(agencyId)) {
                 agencyDownloadStage = mWSClient
                         .url(INAPP_RAW_JSON_FEED)
                         .setFollowRedirects(true)
                         .get();
-                break;
+        }
+
+        if (agencyDownloadStage == null) {
+            return CompletableFuture.completedFuture(badRequest());
         }
 
         return agencyDownloadStage.thenApply(response -> {
@@ -87,7 +93,7 @@ public class AgencyAlertsController extends Controller {
      * @param agencyId id of the agency to return.
      * @return Entire agency in json format.
      */
-    public CompletionStage<Result> getAgencyAlerts(int agencyId) {
+    public CompletionStage<Result> getAgencyAlerts(String agencyId) {
         return CompletableFuture.supplyAsync(() -> {
             Agency agency = mAgencyManager.getCachedAgency(agencyId);
             if (agency == null) {
@@ -134,15 +140,15 @@ public class AgencyAlertsController extends Controller {
      * @param routeId  routeName for route.
      * @return Collection of matched alerts.
      */
-    public CompletableFuture<Result> getRouteAlerts(Integer agencyId, String routeId) {
+    public CompletableFuture<Result> getRouteAlerts(String agencyId, String routeId) {
         return CompletableFuture.supplyAsync(() -> {
             if (agencyId != null && routeId != null) {
 
                 // Check the agency cache for a valid route.
                 Agency agency = mAgencyManager.getCachedAgency(agencyId);
-                if (agency != null && agency.routes != null) {
-                    for (Route agencyRoute : agency.routes) {
-                        if (agencyRoute.routeId.equals(routeId)) {
+                if (agency != null && agency.getRoutes() != null) {
+                    for (Route agencyRoute : agency.getRoutes()) {
+                        if (agencyRoute.getRouteId().equals(routeId)) {
                             return ok(Json.toJson(agencyRoute));
                         }
                     }

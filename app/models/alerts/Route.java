@@ -1,18 +1,31 @@
 package models.alerts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+
 import enums.RouteFlag;
 import enums.TransitType;
 import helpers.CompareUtils;
 import io.ebean.Finder;
 import io.ebean.Model;
+import io.ebean.annotation.PrivateOwned;
 import models.devices.Subscription;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
@@ -21,49 +34,136 @@ public class Route extends Model implements Comparable<Route> {
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(name = "route_id_seq_gen", sequenceName = "route_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_id_seq_gen")
-    public String id;
+    private String routeId;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(
-            name = "agency_id",
-            table = "agency_alerts.agencies",
-            referencedColumnName = "id")
-    public Agency agency;
+    @OneToMany
+    private List<Subscription> subscriptions;
 
-    @Nullable
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    public List<Alert> alerts;
+    @PrivateOwned
+    @OneToMany(mappedBy = "route", orphanRemoval = true, fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+//    @OneToMany(mappedBy = "route", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "route_id", table = "agency_alerts.alerts", referencedColumnName = "id")
+    private List<Alert> alerts;
 
-    @JsonIgnore
-    @Nullable
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "route")
-    public List<Subscription> subscriptions;
-
-    @Column(name = "route_id")
-    public String routeId;
+    @ManyToOne
+    private Agency agency;
 
     @Column(name = "route_name")
-    public String routeName;
+    private String routeName;
 
     @Column(name = "route_flag")
     @Enumerated(EnumType.STRING)
-    public RouteFlag routeFlag;
+    private RouteFlag routeFlag;
 
     @Column(name = "transit_type")
     @Enumerated(EnumType.STRING)
-    public TransitType transitType;
+    private TransitType transitType;
 
     @Column(name = "is_default")
-    public Boolean isDefault = false;
+    private Boolean isDefault = false;
 
     @Column(name = "is_sticky")
-    public Boolean isSticky = false;
+    private Boolean isSticky = false;
 
     @Column(name = "external_uri", columnDefinition = "TEXT")
-    public String externalUri;
+    private String externalUri;
+
+    public Route(@Nonnull String routeId) {
+        setRouteId(routeId);
+    }
+
+    public Route(@Nonnull String routeId, String routeName) {
+        setRouteId(routeId);
+        setRouteName(routeName);
+    }
+
+    public Agency getAgency() {
+        return agency;
+    }
+
+    public void setAgency(Agency agency) {
+        this.agency = agency;
+    }
+
+    @Nullable
+    public List<Alert> getAlerts() {
+        return alerts;
+    }
+
+    public void setAlerts(@Nullable List<Alert> alerts) {
+        this.alerts = alerts;
+    }
+
+    @Nullable
+    public List<Subscription> getSubscriptions() {
+        return subscriptions;
+    }
+
+    public void setSubscriptions(@Nullable List<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
+    public String getRouteId() {
+        return routeId;
+    }
+
+    public void setRouteId(String routeId) {
+        this.routeId = routeId;
+    }
+
+    public String getRouteName() {
+        return routeName;
+    }
+
+    public void setRouteName(String routeName) {
+        this.routeName = routeName;
+    }
+
+    public RouteFlag getRouteFlag() {
+        return routeFlag;
+    }
+
+    public void setRouteFlag(RouteFlag routeFlag) {
+        this.routeFlag = routeFlag;
+    }
+
+    public TransitType getTransitType() {
+        return transitType;
+    }
+
+    public void setTransitType(TransitType transitType) {
+        this.transitType = transitType;
+    }
+
+    public Boolean getDefault() {
+        return isDefault;
+    }
+
+    public void setDefault(Boolean aDefault) {
+        isDefault = aDefault;
+    }
+
+    public Boolean getSticky() {
+        return isSticky;
+    }
+
+    public void setSticky(Boolean sticky) {
+        isSticky = sticky;
+    }
+
+    public String getExternalUri() {
+        return externalUri;
+    }
+
+    public void setExternalUri(String externalUri) {
+        this.externalUri = externalUri;
+    }
+
+    @Override
+    public int compareTo(@NotNull Route other) {
+        return equals(other) ? -1 : 0;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -76,9 +176,9 @@ public class Route extends Model implements Comparable<Route> {
 
             boolean sameRouteFlag = CompareUtils.isEquals(routeFlag, other.routeFlag);
 
-            boolean sameTransitType =CompareUtils.isEquals(transitType, other.transitType);
+            boolean sameTransitType = CompareUtils.isEquals(transitType, other.transitType);
 
-            boolean sameDefaults = isDefault == other.isDefault;
+            boolean sameDefaults = CompareUtils.isEquals(isDefault, other.isDefault);
 
             boolean sameUri = CompareUtils.isEquals(externalUri, other.externalUri);
 
@@ -120,23 +220,5 @@ public class Route extends Model implements Comparable<Route> {
                 : hashCode;
 
         return hashCode.hashCode();
-    }
-
-    @Override
-    public int compareTo(@NotNull Route other) {
-        return equals(other) ? -1 : 0;
-    }
-
-    @SuppressWarnings("unused")
-    protected Route() {
-    }
-
-    public Route(@Nonnull String routeId) {
-        this.routeId = routeId;
-    }
-
-    public Route(@Nonnull String routeId, String routeName) {
-        this.routeId = routeId;
-        this.routeName = routeName;
     }
 }

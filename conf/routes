@@ -12,9 +12,9 @@ POST        /gcm/v1/subscribe                        @controllers.SubscriptionCo
 
 # Public API endpoints
 GET         /alerts/v1/agency/all                    @controllers.AgencyAlertsController.getAgencies
-GET         /alerts/v1/agency/:aId                   @controllers.AgencyAlertsController.getAgencyAlerts(aId: Int)
-GET         /alerts/v1/agency/:aId/raw               @controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: Int)
-GET         /alerts/v1/agency/:aId/route/:rId        @controllers.AgencyAlertsController.getRouteAlerts(aId: Int, rId: String)
+GET         /alerts/v1/agency/:aId                   @controllers.AgencyAlertsController.getAgencyAlerts(aId: String)
+GET         /alerts/v1/agency/:aId/raw               @controllers.AgencyAlertsController.fetchRawAgencyAlerts(aId: String)
+GET         /alerts/v1/agency/:aId/route/:rId        @controllers.AgencyAlertsController.getRouteAlerts(aId: String, rId: String)
 
 # Signup
 GET         /signup                                  @controllers.SignupController.signup()
