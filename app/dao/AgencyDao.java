@@ -1,5 +1,12 @@
 package dao;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+
 import helpers.AlertHelper;
 import io.ebean.EbeanServer;
 import io.ebean.FetchConfig;
@@ -9,12 +16,6 @@ import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
 import play.Logger;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Agency route / alert database persistence functions.
@@ -106,12 +107,10 @@ public class AgencyDao extends BaseDao {
             return mEbeanServer.createQuery(Route.class)
                     .setOrder(new OrderBy<>("routeId"))
                     .fetch("agency", new FetchConfig().query())
-                    .fetch("alerts", new FetchConfig().lazy())
-                    .fetch("alerts.locations", new FetchConfig().lazy())
                     .where()
-                    .conjunction()
+                    .disjunction()
                     .eq("agency.id", agencyId)
-                    .in("routeId", routeIds)
+                    .in("id", routeIds)
                     .endJunction()
                     .findList();
 

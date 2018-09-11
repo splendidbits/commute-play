@@ -5,20 +5,24 @@ import com.google.inject.Provider;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Properties;
+
 import io.ebean.EbeanServer;
 import io.ebean.EbeanServerFactory;
 import io.ebean.config.ServerConfig;
 import main.Constants;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
-import models.alerts.*;
+import models.alerts.Agency;
+import models.alerts.Alert;
+import models.alerts.Location;
+import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
 import play.Application;
-
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * GNU General Public License v3.0.
@@ -73,13 +77,10 @@ public class CommuteEbeanServerProvider implements Provider<EbeanServer> {
         serverConfig.setRegister(true);
         serverConfig.setDefaultServer(true);
         serverConfig.setUpdatesDeleteMissingChildren(true);
+        serverConfig.setDdlGenerate(Constants.GENERATE_RUN_DLL_DATABASE);
+        serverConfig.setDdlRun(Constants.GENERATE_RUN_DLL_DATABASE);
 
         serverConfig.setClasses(models);
-
-        // TODO Remove
-//        serverConfig.setDdlGenerate(true);
-//        serverConfig.setDdlRun(true);
-
         return EbeanServerFactory.create(serverConfig);
     }
 }

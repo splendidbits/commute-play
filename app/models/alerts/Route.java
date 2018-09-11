@@ -1,6 +1,24 @@
 package models.alerts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+
 import enums.RouteFlag;
 import enums.TransitType;
 import helpers.CompareUtils;
@@ -8,12 +26,6 @@ import io.ebean.Finder;
 import io.ebean.Model;
 import io.ebean.annotation.PrivateOwned;
 import models.devices.Subscription;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "routes", schema = "agency_alerts")
@@ -49,10 +61,10 @@ public class Route extends Model implements Comparable<Route> {
     private TransitType transitType;
 
     @Column(name = "is_default")
-    private Boolean isDefault;
+    private Boolean isDefault = false;
 
     @Column(name = "is_sticky")
-    private Boolean isSticky;
+    private Boolean isSticky = false;
 
     @Column(name = "external_uri", columnDefinition = "TEXT")
     private String externalUri;

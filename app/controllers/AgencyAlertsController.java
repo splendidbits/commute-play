@@ -1,9 +1,18 @@
 package controllers;
 
-import agency.InAppMessageUpdate;
-import agency.SeptaAgencyUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.annotation.Nullable;
+
+import agency.InAppMessageUpdate;
+import agency.SeptaAgencyUpdate;
 import dao.AgencyDao;
 import main.Constants;
 import models.alerts.Agency;
@@ -15,17 +24,10 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import services.AgencyManager;
 
-import javax.annotation.Nullable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 public class AgencyAlertsController extends Controller {
     // TODO Remove
-//    private static final String SEPTA_RAW_JSON_FEED = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php";
-    private static final String SEPTA_RAW_JSON_FEED = "http://localhost:8181/alerts/v1/agency/1/raw";
+    // private static final String SEPTA_RAW_JSON_FEED = "http://localhost:8181/alerts/v1/agency/1/raw";
+    private static final String SEPTA_RAW_JSON_FEED = "http://www3.septa.org/hackathon/Alerts/get_alert_data.php";
     private static final String INAPP_RAW_JSON_FEED = String.format(Locale.US,
             "%s/alerts/inapp", Constants.PROD_API_SERVER_HOST);
 

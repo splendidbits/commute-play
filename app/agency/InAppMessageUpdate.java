@@ -2,6 +2,13 @@ package agency;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import java.util.Locale;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
+import javax.inject.Inject;
+
 import main.Constants;
 import models.alerts.Agency;
 import play.Logger;
@@ -10,11 +17,6 @@ import play.libs.ws.WSResponse;
 import serializers.InAppMessagesDeserializer;
 import services.AgencyManager;
 import services.PushMessageManager;
-
-import javax.inject.Inject;
-import java.util.Locale;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 /**
  * Agency updater for the in-app messages.
@@ -27,7 +29,6 @@ public class InAppMessageUpdate extends AgencyUpdate {
     public static final String ROUTE_ID = "commute";
     public static final String ROUTE_NAME = AGENCY_NAME;
 
-    private ParseMessages mParseMessagesFunc;
     private WSClient mWsClient;
 
     @Inject
@@ -35,7 +36,6 @@ public class InAppMessageUpdate extends AgencyUpdate {
         super(agencyManager, pushMessageManager);
 
         mWsClient = wsClient;
-        mParseMessagesFunc = new ParseMessages();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class InAppMessageUpdate extends AgencyUpdate {
                     .setFollowRedirects(true)
                     .get();
 
-            downloadStage.thenApply(mParseMessagesFunc);
+            downloadStage.thenApply(new ParseMessages());
 
         } catch (Exception exception) {
             Logger.error("Error downloading agency data from " + alertUrl, exception);
