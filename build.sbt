@@ -1,4 +1,4 @@
-name := "Commute Alerts"
+name := "commutealerts"
 version := "1.0"
 
 lazy val buildSettings = Seq(
@@ -17,18 +17,17 @@ libraryDependencies ++= Seq(
   javaJdbc,
   cacheApi,
   ehcache,
+  javaJpa,
   javaWs,
   guice,
+  "org.scala-lang" % "scala-library" % "2.12.6",
   "com.splendidbits" % "play-pushservices" % "1.2.2",
-  "org.postgresql" % "postgresql" % "42.2.2",
-  "org.jetbrains" % "annotations" % "13.0",
-  "com.google.code.gson" % "gson" % "2.8.2",
-  "org.jsoup" % "jsoup" % "1.10.1",
+  "org.postgresql" % "postgresql" % "42.2.5",
+  "org.jetbrains" % "annotations" % "16.0.2",
+  "com.google.code.gson" % "gson" % "2.8.5",
+  "org.jsoup" % "jsoup" % "1.11.3",
   "junit" % "junit" % "4.12" % Test
 )
-
-dependencyOverrides += "io.ebean" % "ebean" % "11.15.3"
-dependencyOverrides += "io.ebean" % "ebean-agent" % "11.11.1"
 
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.
