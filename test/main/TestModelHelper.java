@@ -1,8 +1,16 @@
+package main;
+
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.TimeZone;
+
+import javax.annotation.Nonnull;
+
 import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
 import enums.pushservices.PlatformType;
-import helpers.AlertHelper;
 import models.accounts.Account;
 import models.accounts.PlatformAccount;
 import models.alerts.Agency;
@@ -11,11 +19,6 @@ import models.alerts.Location;
 import models.alerts.Route;
 import models.devices.Device;
 
-import javax.annotation.Nonnull;
-import java.util.*;
-
-import static java.util.Arrays.asList;
-
 /**
  * GNU General Public License v3.0.
  * (This means you can use it as you wish, host and share modifications.)
@@ -23,7 +26,6 @@ import static java.util.Arrays.asList;
  */
 public class TestModelHelper {
     private Calendar alertLocationDate = Calendar.getInstance(TimeZone.getTimeZone("EST"));
-    private Integer alertId = null;
 
     static final String AGENCY_ID = "TEST";
     static final String ROUTE_ID = "test_route_1";
@@ -34,7 +36,6 @@ public class TestModelHelper {
     public TestModelHelper(Calendar withDate) {
         if (withDate != null) {
             alertLocationDate = withDate;
-            alertId = createTestAlert().getId();
         }
     }
 
@@ -47,7 +48,6 @@ public class TestModelHelper {
         location.setName("Location Name");
         location.setSequence(100);
         location.setDate(alertLocationDate);
-        location.setId(AlertHelper.createHash(location, alertId));
 
         return location;
     }
@@ -61,10 +61,9 @@ public class TestModelHelper {
         alert.setMessageBody("Alert Message Body");
         alert.setType(AlertType.TYPE_INFORMATION);
         alert.setLastUpdated(alertLocationDate);
-        alert.setId(AlertHelper.createHash(alert, ROUTE_ID));
 
         Location location = createTestLocation();
-        alert.setLocations(new ArrayList<>(asList(location)));
+        alert.setLocations(Collections.singletonList(location));
         return alert;
     }
 
@@ -83,7 +82,7 @@ public class TestModelHelper {
         route.setRouteName("Route Name");
 
         Alert alert = createTestAlert();
-        route.setAlerts(new ArrayList<>(asList(alert)));
+        route.setAlerts(Collections.singletonList(alert));
         return route;
     }
 
@@ -96,7 +95,7 @@ public class TestModelHelper {
         agency.setUtcOffset(-5F);
 
         Route route = createTestRoute(ROUTE_ID);
-        agency.setRoutes(new ArrayList<>(asList(route)));
+        agency.setRoutes(Collections.singletonList(route));
         return agency;
     }
 
@@ -114,7 +113,7 @@ public class TestModelHelper {
         newAccount.active = false;
         newAccount.email = "test@example.com";
         newAccount.dailyEstLimit = 51200L;
-        newAccount.platformAccounts = new ArrayList<>(asList(platformAccount));
+        newAccount.platformAccounts = Collections.singletonList(platformAccount);
 
         return newAccount;
     }

@@ -1,3 +1,16 @@
+package main;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TimeZone;
+
 import enums.AlertType;
 import helpers.AlertHelper;
 import javafx.util.Pair;
@@ -10,14 +23,11 @@ import models.alerts.Route;
 import models.devices.Device;
 import models.devices.Subscription;
 import models.pushservices.db.Message;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import services.PushMessageManager;
 
-import java.util.*;
-
-import static junit.framework.TestCase.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -81,14 +91,12 @@ public class AlertModificationsTest extends CommuteTestApplication {
         secondAlert.setMessageTitle("Second Alert Message Title");
         secondAlert.setMessageSubtitle("Second Alert Message Subtitle");
         secondAlert.setMessageBody("Second Alert Message Body");
-        secondAlert.setId(AlertHelper.createHash(secondAlert, "test_route_2"));
 
         // Populate second agency with an additional route, alerts, and locations.
         Location secondLocation = testModelHelper.createTestLocation();
         secondLocation.setMessage("Second Location Test");
         secondLocation.setName("Second Location Name");
         secondLocation.setDate(Calendar.getInstance());
-        secondLocation.setId(AlertHelper.createHash(secondLocation));
 
         secondAlert.setLocations(Arrays.asList(testModelHelper.createTestLocation(), secondLocation));
 
@@ -123,8 +131,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications);
         assertFalse(alertModifications.hasChangedAlerts());
-        assertTrue(alertModifications.getUpdatedAlerts().isEmpty());
-        assertTrue(alertModifications.getStaleAlerts().isEmpty());
+        assertTrue(alertModifications.getUpdatedAlerts(secondRoute.getRouteId()).isEmpty());
+        assertTrue(alertModifications.getStaleAlerts(secondRoute.getRouteId()).isEmpty());
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertTrue(dispatchedMessages.getKey().isEmpty());
@@ -153,18 +161,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlertRoutes());
+        assertEquals(1, alertModifications.getUpdatedAlertRoutes().size());
 
         // Check there is 1 updated alert and 0 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(informationAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(0, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(informationAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 0);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(0, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -189,18 +197,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()));
+        assertFalse(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).isEmpty());
 
         // Check there is 1 updated alert and 0 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(disruptionAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(0, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(disruptionAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 0);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(0, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -225,18 +233,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()));
+        assertFalse(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).isEmpty());
 
         // Check there is 1 updated alert and 0 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(0, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(detourAlert));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 0);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(0, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -265,21 +273,21 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute));
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()));
+        assertFalse(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).isEmpty());
 
         // Check there is 1 updated alert and 0 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(secondDisruptionAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(0, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(secondDisruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()));
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 0);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(0, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -311,18 +319,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // Check there is 0 updated alert and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().containsValue(firstDisruptionAlert));
+        assertEquals(0, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(firstDisruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
-        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getStaleAlerts(existingRoute.getRouteId()));
+        assertFalse(alertModifications.getStaleAlerts(existingRoute.getRouteId()).isEmpty());
 
         // Check there was 1 updated alert and 0 stale alerts processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 0);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(0, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -347,18 +355,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // Check there is 0 updated alerts and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().get(existingRoute).contains(disruptionAlert));
+        assertEquals(0, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(disruptionAlert));
 
         // The route exists.
-        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
-        assertNotNull(alertModifications.getStaleAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getStaleAlerts(existingRoute.getRouteId()));
+        assertFalse(alertModifications.getStaleAlerts(existingRoute.getRouteId()).isEmpty());
 
         // Check there was 0 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 0);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(0, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size(), 1);
     }
 
     @Test
@@ -383,14 +391,14 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // Check there is 0 updated alerts and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getStaleAlerts().containsValue(detourAlert));
+        assertEquals(0, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(detourAlert));
 
         // Check there was 0 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 0);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(0, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -420,18 +428,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(existingRoute).get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()));
 
         // Check there is 1 updated alert and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
-        assertTrue(alertModifications.getStaleAlerts().containsValue(informationAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(detourAlert));
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(informationAlert));
 
         // Check there was 1 updated alerts and 0 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -461,18 +469,18 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).get(0));
 
         // Check there is 1 updated alert and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(informationAlert));
-        assertTrue(alertModifications.getStaleAlerts().containsValue(detourAlert));
+        assertEquals(1, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(informationAlert));
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(detourAlert));
 
         // Check there was 1 updated alerts and 0 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 1);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(1, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size());
     }
 
     @Test
@@ -488,6 +496,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         // Second agency with a detour alert and an added disruption alert.
         Agency newAgency = testModelHelper.createTestAgency();
+        Route existingRoute = newAgency.getRoutes().get(0);
 
         Alert detourAlert = testModelHelper.createTestAlert();
         detourAlert.setMessageBody("This is a detour alert");
@@ -505,23 +514,24 @@ public class AlertModificationsTest extends CommuteTestApplication {
         assertTrue(alertModifications.hasChangedAlerts());
 
         // The route exists.
-        assertNotNull(alertModifications.getUpdatedAlerts().get(0));
+        assertNotNull(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).get(0));
 
         // Check there is 2 updated alerts and 1 stale alerts.
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 2);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(detourAlert));
-        assertTrue(alertModifications.getStaleAlerts().containsValue(informationAlert));
+        assertEquals(2, alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size());
+        assertEquals(1, alertModifications.getStaleAlerts(existingRoute.getRouteId()).size());
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(detourAlert));
+        assertTrue(alertModifications.getStaleAlerts(existingRoute.getRouteId()).contains(informationAlert));
 
         // Check there was 2 updated alerts and 1 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
-        assertEquals(dispatchedMessages.getKey().size(), 2);
-        assertEquals(dispatchedMessages.getValue().size(), 1);
+        assertEquals(2, dispatchedMessages.getKey().size());
+        assertEquals(1, dispatchedMessages.getValue().size());
     }
 
     @Test
     public void testAlertRemoveAll() {
         Agency existingAgency = testModelHelper.createTestAgency();
+        Route existingRoute = existingAgency.getRoutes().get(0);
         Agency newAgency = testModelHelper.createTestAgency();
 
         newAgency.getRoutes().get(0).setAlerts(null);
@@ -529,8 +539,8 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications);
         assertTrue(alertModifications.hasChangedAlerts());
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 0);
-        assertEquals(alertModifications.getStaleAlerts().size(), 1);
+        assertEquals(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size(), 0);
+        assertEquals(alertModifications.getStaleAlerts(existingRoute.getRouteId()).size(), 1);
 
         // Check there was 1 updated alerts and 0 stale alert processed.
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
@@ -561,10 +571,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications);
         assertTrue(alertModifications.hasChangedAlerts());
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertTrue(alertModifications.getUpdatedAlerts().containsValue(updatedAlert));
-        assertEquals(alertModifications.getUpdatedAlerts().get(existingRoute).get(0).getLocations().size(), 2);
+        assertEquals(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size(), 1);
+        assertEquals(alertModifications.getStaleAlerts(existingRoute.getRouteId()).size(), 0);
+        assertTrue(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(updatedAlert));
+        assertEquals(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).get(0).getLocations().size(), 2);
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getKey().size(), 1);
@@ -593,11 +603,11 @@ public class AlertModificationsTest extends CommuteTestApplication {
 
         assertNotNull(alertModifications);
         assertTrue(alertModifications.hasChangedAlerts());
-        assertFalse(alertModifications.getUpdatedAlerts().containsValue(testModelHelper.createTestAlert()));
-        assertFalse(alertModifications.getUpdatedAlerts().isEmpty());
-        assertEquals(alertModifications.getUpdatedAlerts().size(), 1);
-        assertEquals(alertModifications.getStaleAlerts().size(), 0);
-        assertEquals(alertModifications.getUpdatedAlerts().get(existingRoute).get(0).getLocations().size(), 1);
+        assertFalse(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).contains(testModelHelper.createTestAlert()));
+        assertFalse(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).isEmpty());
+        assertEquals(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).size(), 1);
+        assertEquals(alertModifications.getStaleAlerts(existingRoute.getRouteId()).size(), 0);
+        assertEquals(alertModifications.getUpdatedAlerts(existingRoute.getRouteId()).get(0).getLocations().size(), 1);
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getValue().size(), 0);
@@ -616,10 +626,10 @@ public class AlertModificationsTest extends CommuteTestApplication {
         AlertModifications alertModifications = AlertHelper.getAgencyModifications(existingAgency, newAgency);
 
         assertNotNull(alertModifications);
-        assertFalse(alertModifications.hasChangedAlerts());
+        assertTrue(alertModifications.hasChangedAlerts());
 
         Pair<Set<Message>, Set<Message>> dispatchedMessages = mPushMessageManager.dispatchAlerts(alertModifications);
         assertEquals(dispatchedMessages.getKey().size(), 0);
-        assertEquals(dispatchedMessages.getValue().size(), 0);
+        assertEquals(dispatchedMessages.getValue().size(), 1);
     }
 }

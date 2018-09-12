@@ -1,18 +1,27 @@
-import enums.AlertType;
-import enums.TransitType;
-import helpers.AlertHelper;
-import models.alerts.Agency;
-import models.alerts.Alert;
-import models.alerts.Location;
-import models.alerts.Route;
+package main;
+
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
+import java.util.TimeZone;
+
+import enums.AlertType;
+import enums.TransitType;
+import models.alerts.Agency;
+import models.alerts.Alert;
+import models.alerts.Location;
+import models.alerts.Route;
 
 import static java.util.Collections.singletonList;
-import static junit.framework.TestCase.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertTrue;
 
 /**
  * Test core functions of the Device Data Access Layer.
@@ -97,12 +106,8 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
         Location routeTwoLocation = testModelHelper.createTestLocation();
         routeTwoLocation.setName("new location");
-        routeTwoLocation.setId(AlertHelper.createHash(routeTwoLocation));
         routeTwoAlert.setLocations(new ArrayList<>(singletonList(routeTwoLocation)));
-
-        routeTwoAlert.setId(AlertHelper.createHash(routeTwoAlert, "route_2"));
         routeTwoAlert.setLocations(new ArrayList<>(singletonList(routeTwoLocation)));
-
 
         Route routeTwo = testModelHelper.createTestRoute("route_2");
         routeTwo.setRouteName("route_2");
@@ -187,7 +192,6 @@ public class AgencyDaoTest extends CommuteTestApplication {
 
         // Modify route1 to have one new alert with no locations, and the existing alert
         Alert existingAlert = testModelHelper.createTestAlert();
-        existingAlert.setId(AlertHelper.createHash(existingAlert, TestModelHelper.ROUTE_ID));
 
         Alert newAlert = new Alert();
         newAlert.setHighPriority(false);
@@ -196,7 +200,6 @@ public class AgencyDaoTest extends CommuteTestApplication {
         newAlert.setMessageBody("New Alert Message Body");
         newAlert.setType(AlertType.TYPE_DETOUR);
         newAlert.setLastUpdated(Calendar.getInstance());
-        newAlert.setId(AlertHelper.createHash(newAlert, TestModelHelper.ROUTE_ID));
 
         newAlert.setLocations(new ArrayList<>(singletonList(testModelHelper.createTestLocation())));
 

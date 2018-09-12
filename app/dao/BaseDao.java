@@ -1,10 +1,6 @@
 package dao;
 
 import io.ebean.EbeanServer;
-import io.ebean.config.ServerConfig;
-import io.ebeaninternal.api.SpiEbeanServer;
-import main.Constants;
-import play.Logger;
 
 /**
  * GNU General Public License v3.0.
@@ -16,18 +12,5 @@ class BaseDao {
 
     BaseDao(EbeanServer ebeanServer) {
         this.mEbeanServer = ebeanServer;
-    }
-
-    /**
-     * Attempt to create the database using the ebean ddl generated schemas.
-     */
-    void createDatabase() {
-        if (Constants.GENERATE_RUN_DLL_DATABASE) {
-            Logger.warn("Error performing action on EbeanServer. Creating database with generated schemas.");
-        }
-        ServerConfig serverConfig = ((SpiEbeanServer) mEbeanServer).getServerConfig();
-        serverConfig.setDdlGenerate(Constants.GENERATE_RUN_DLL_DATABASE);
-        serverConfig.setDdlRun(Constants.GENERATE_RUN_DLL_DATABASE);
-        serverConfig.runDbMigration(serverConfig.getDataSource());
     }
 }

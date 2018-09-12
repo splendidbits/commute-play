@@ -1,12 +1,17 @@
+package main;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import dao.AccountDao;
 import dao.AgencyDao;
 import dao.DeviceDao;
 import injection.modules.ApplicationModule;
 import injection.modules.DatabaseModule;
 import injection.pushservices.modules.PushServicesModule;
-import main.LifecycleListener;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import play.Application;
 import play.Mode;
 import play.api.inject.Binding;
@@ -14,9 +19,6 @@ import play.api.inject.BindingKey;
 import play.api.routing.Router;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.routing.RoutingDsl;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * GNU General Public License v3.0.

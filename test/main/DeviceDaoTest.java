@@ -1,16 +1,26 @@
-import models.accounts.Account;
-import models.alerts.Agency;
-import models.alerts.Route;
-import models.devices.Device;
-import models.devices.Subscription;
+package main;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
 
-import static org.junit.Assert.*;
+import models.accounts.Account;
+import models.alerts.Agency;
+import models.alerts.Route;
+import models.devices.Device;
+import models.devices.Subscription;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test core functions of the Device Data Access Layer.

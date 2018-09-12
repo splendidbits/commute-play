@@ -1,49 +1,41 @@
-import agency.SeptaAgencyUpdate;
+package main;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Calendar;
+
+import agency.SeptaAgencyUpdate;
 import enums.AlertType;
 import enums.TransitType;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import play.DefaultApplication;
-import play.Mode;
-import play.api.inject.Binding;
-import play.api.inject.BindingKey;
-import play.api.routing.Router;
-import play.inject.guice.GuiceApplicationBuilder;
 import serializers.SeptaAlertsDeserializer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * SEPTA Agency test.
  */
-public class SeptaJsonTest {
+public class SeptaJsonTest extends CommuteTestApplication {
     private static final String JSON_FILE_NAME = "/resources/json_septa.json";
     private static Agency septaAgency;
 
     @BeforeClass
     public static void setup() throws IOException {
-        Binding<Router> routesBindingOverride = new BindingKey<>(Router.class)
-                .toProvider(CommuteTestApplication.MockRouterProvider.class)
-                .eagerly();
-
-        DefaultApplication application = (DefaultApplication) new GuiceApplicationBuilder()
-                .in(Mode.TEST)
-                .overrides(routesBindingOverride)
-                .build();
-
         Path path = Paths.get(application.path().getCanonicalPath() + JSON_FILE_NAME);
         String jsonString = new String(Files.readAllBytes(path));
 

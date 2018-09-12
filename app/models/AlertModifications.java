@@ -1,13 +1,18 @@
 package models;
 
-import models.alerts.Alert;
-import models.alerts.Route;
+import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nonnull;
+
+import models.alerts.Alert;
+import models.alerts.Route;
 
 /**
  * Contains a list of new, updated, or removed (stale) alerts for an {@link models.alerts.Agency}
@@ -32,7 +37,18 @@ public class AlertModifications {
      * @return true if the agency has updated alerts since the previous agency set.
      */
     public boolean hasChangedAlerts() {
-        return !mUpdatedAlerts.isEmpty() || !mStaleAlerts.isEmpty();
+        for (Map.Entry<Route, List<Alert>> entry : mUpdatedAlerts.entrySet()) {
+            if (!CollectionUtils.isEmpty(entry.getValue())) {
+                return true;
+            }
+        }
+
+        for (Map.Entry<Route, List<Alert>> entry : mStaleAlerts.entrySet()) {
+            if (!CollectionUtils.isEmpty(entry.getValue())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -41,19 +57,20 @@ public class AlertModifications {
      * @param alert The alert to flag as updated or new.
      */
     public void addUpdatedAlert(@Nonnull Route route, @Nonnull Alert alert) {
-        List<Alert> alerts = new ArrayList<>();
-
-        for (Map.Entry<Route, List<Alert>> updatedEntry : mUpdatedAlerts.entrySet()) {
-            Route updatedRoute = updatedEntry.getKey();
-            List<Alert> updatedAlerts = updatedEntry.getValue();
-
-            if (updatedRoute.getRouteId().toLowerCase().equals(route.getRouteId().toLowerCase())) {
-                alerts = updatedAlerts;
+        Route routeKey = null;
+        for (Map.Entry<Route, List<Alert>> entry : mUpdatedAlerts.entrySet()) {
+            if (entry.getKey().getRouteId().equals(route.getRouteId())) {
+                routeKey = entry.getKey();
             }
         }
 
-        alerts.add(alert);
-        mUpdatedAlerts.put(route, alerts);
+        if (routeKey != null) {
+            List<Alert> alerts = new ArrayList<>(getUpdatedAlerts(routeKey.getRouteId()));
+            alerts.add(alert);
+            mUpdatedAlerts.put(routeKey, alerts);
+        } else {
+            mUpdatedAlerts.put(route, Collections.singletonList(alert));
+        }
     }
 
     /**
@@ -62,19 +79,29 @@ public class AlertModifications {
      * @param alert The alert which is deemed stale.
      */
     public void addStaleAlert(@Nonnull Route route, @Nonnull Alert alert) {
-        List<Alert> alerts = new ArrayList<>();
 
-        for (Map.Entry<Route, List<Alert>> updatedEntry : mStaleAlerts.entrySet()) {
-            Route updatedRoute = updatedEntry.getKey();
-            List<Alert> updatedAlerts = updatedEntry.getValue();
-
-            if (updatedRoute.getRouteId().toLowerCase().equals(route.getRouteId().toLowerCase())) {
-                alerts = updatedAlerts;
+        Route routeKey = null;
+        for (Map.Entry<Route, List<Alert>> entry : mStaleAlerts.entrySet()) {
+            if (entry.getKey().getRouteId().equals(route.getRouteId())) {
+                routeKey = entry.getKey();
             }
         }
 
-        alerts.add(alert);
-        mStaleAlerts.put(route, alerts);
+        if (routeKey != null) {
+            List<Alert> alerts = new ArrayList<>(getStaleAlerts(routeKey.getRouteId()));
+            alerts.add(alert);
+            mStaleAlerts.put(routeKey, alerts);
+        } else {
+            mStaleAlerts.put(route, Collections.singletonList(alert));
+        }
+    }
+
+    public Set<Route> getUpdatedAlertRoutes() {
+        return mUpdatedAlerts.keySet();
+    }
+
+    public Set<Route> getStaleAlertRoutes() {
+        return mStaleAlerts.keySet();
     }
 
     /**
@@ -82,16 +109,31 @@ public class AlertModifications {
      *
      * @return list of updated alerts.
      */
-    public Map<Route, List<Alert>> getUpdatedAlerts() {
-        return mUpdatedAlerts;
+    public List<Alert> getUpdatedAlerts(String routeId) {
+        if (routeId != null) {
+            for (Map.Entry<Route, List<Alert>> entry : mUpdatedAlerts.entrySet()) {
+                if (entry.getKey().getRouteId().equals(routeId)) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return new ArrayList<>();
     }
 
     /**
      * Get all alerts, which should be considered stale)
+     *
      * @return list of stale alerts.
      */
-    public Map<Route, List<Alert>> getStaleAlerts() {
-        return mStaleAlerts;
+    public List<Alert> getStaleAlerts(String routeId) {
+        if (routeId != null) {
+            for (Map.Entry<Route, List<Alert>> entry : mStaleAlerts.entrySet()) {
+                if (entry.getKey().getRouteId().equals(routeId)) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return new ArrayList<>();
     }
 
     /**

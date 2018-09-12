@@ -1,6 +1,15 @@
 package services;
 
 import com.google.inject.Inject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.annotation.Nonnull;
+
 import dao.AccountDao;
 import dao.DeviceDao;
 import enums.pushservices.FailureType;
@@ -21,9 +30,6 @@ import models.pushservices.db.PlatformFailure;
 import models.pushservices.db.Recipient;
 import play.Logger;
 import services.pushservices.TaskQueue;
-
-import javax.annotation.Nonnull;
-import java.util.*;
 
 /**
  * Intermediate Push Service manager for building and sending alert messages via
@@ -51,21 +57,20 @@ public class PushMessageManager {
         Set<Message> updatedAlertMessages = new HashSet<>();
         Set<Message> staleAlertMessages = new HashSet<>();
 
-        // Iterate through the updated (fresh) Alerts to send messages for.
-        for (Map.Entry<Route, List<Alert>> updatedAlertEntry : modifications.getUpdatedAlerts().entrySet()) {
-            String routeId = updatedAlertEntry.getKey().getRouteId();
-            List<Alert> alerts = updatedAlertEntry.getValue();
-
-            updatedAlertMessages.addAll(createAlertMessages(modifications.getAgencyId(), routeId, alerts, false));
+        for (Route route : modifications.getUpdatedAlertRoutes()) {
+            updatedAlertMessages.addAll(createAlertMessages(
+                    modifications.getAgencyId(),
+                    route,
+                    modifications.getUpdatedAlerts(route.getRouteId()), false));
         }
 
-        // Iterate through the removed (stale) Alerts to send messages for.
-        for (Map.Entry<Route, List<Alert>> staleAlertEntry : modifications.getStaleAlerts().entrySet()) {
-            String routeId = staleAlertEntry.getKey().getRouteId();
-            List<Alert> alerts = staleAlertEntry.getValue();
-
-            staleAlertMessages.addAll(createAlertMessages(modifications.getAgencyId(), routeId, alerts, true));
+        for (Route route : modifications.getStaleAlertRoutes()) {
+            staleAlertMessages.addAll(createAlertMessages(
+                    modifications.getAgencyId(),
+                    route,
+                    modifications.getStaleAlerts(route.getRouteId()), true));
         }
+
 
         MessageTaskQueueListener taskQueueListener = new MessageTaskQueueListener();
 
@@ -79,7 +84,6 @@ public class PushMessageManager {
 
         } catch (MessageValidationException e) {
             Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
-            return null;
         }
 
         return new Pair<>(updatedAlertMessages, staleAlertMessages);
@@ -92,15 +96,14 @@ public class PushMessageManager {
      * Creates a list of separate messages for every {@link PlatformAccount} in every {@link Account}.
      *
      * @param agencyId       The agencyId for the route.
-     * @param routeId        Route ID to fetch sending accounts for.
-     * @param alerts         Alert with Route for messages to send.
+     * @param route          Route ID to fetch sending accounts for.
      * @param isCancellation set whether the alert message is an update or cancellation (clear).
      * @return A list of push service {@link Message}s to send.
      */
     @Nonnull
-    private List<Message> createAlertMessages(String agencyId, @Nonnull String routeId, @Nonnull List<Alert> alerts, boolean isCancellation) {
+    private List<Message> createAlertMessages(String agencyId, @Nonnull Route route, @Nonnull List<Alert> updatedAlerts, boolean isCancellation) {
         List<Message> messages = new ArrayList<>();
-        List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, routeId);
+        List<Account> accounts = mAccountDao.getAccounts(PlatformType.SERVICE_GCM, agencyId, route.getRouteId());
 
         // Build a new message for the platform task per API and then Platform account.
         for (Account account : accounts) {
@@ -111,8 +114,8 @@ public class PushMessageManager {
 
                 // Create a message for each new alert in the route.
                 for (PlatformAccount platformAccount : account.platformAccounts) {
-                    for (Alert alert : alerts) {
-                        List<Message> alertMessages = AlertHelper.getAlertMessages(alert, account.devices, platformAccount, isCancellation);
+                    for (Alert alert : updatedAlerts) {
+                        List<Message> alertMessages = AlertHelper.getAlertMessages(alert, route, account.devices, platformAccount, isCancellation);
                         messages.addAll(alertMessages);
                     }
                 }
@@ -127,9 +130,8 @@ public class PushMessageManager {
      *
      * @param device  registration for newly registered device.
      * @param account platform account to send message to.
-     * @return boolean true if there were errors dispatching the registration message.
      */
-    public boolean sendRegistrationConfirmMessage(@Nonnull Device device, @Nonnull PlatformAccount account) {
+    public void sendRegistrationConfirmMessage(@Nonnull Device device, @Nonnull PlatformAccount account) {
         Message message = AlertHelper.buildDeviceRegisteredMessage(device, account);
 
         // Add the message task to the TaskQueue.
@@ -137,13 +139,11 @@ public class PushMessageManager {
             try {
                 Logger.info(String.format("Sending confirmation message for device %s to push-services module", device.deviceId));
                 mTaskQueue.queueMessages(Collections.singletonList(message), new MessageTaskQueueListener());
-                return true;
 
             } catch (MessageValidationException e) {
                 Logger.error(String.format("Commute Task threw an exception: %s", e.getMessage()));
             }
         }
-        return false;
     }
 
     /*

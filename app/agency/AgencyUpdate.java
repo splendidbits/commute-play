@@ -1,17 +1,14 @@
 package agency;
 
+import javax.annotation.Nonnull;
+
 import helpers.AlertHelper;
 import models.AlertModifications;
 import models.alerts.Agency;
-import models.alerts.Alert;
 import models.alerts.Route;
 import play.Logger;
 import services.AgencyManager;
 import services.PushMessageManager;
-
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Base class that facilitates downloading alerts from an agency's server and sending them to the
@@ -30,11 +27,11 @@ import java.util.Map;
  * 6: send data in batches of 1000 to google.
  */
 public abstract class AgencyUpdate {
-    protected static final int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
+    static final int AGENCY_DOWNLOAD_TIMEOUT_MS = 1000 * 60;
     private PushMessageManager mPushMessageManager;
     private AgencyManager mAgencyManager;
 
-    protected AgencyUpdate(@Nonnull AgencyManager agencyManager, @Nonnull PushMessageManager pushMessageManager) {
+    AgencyUpdate(@Nonnull AgencyManager agencyManager, @Nonnull PushMessageManager pushMessageManager) {
         mAgencyManager = agencyManager;
         mPushMessageManager = pushMessageManager;
     }
@@ -56,7 +53,7 @@ public abstract class AgencyUpdate {
      *
      * @param updatedAgency The agency which has been updated.
      */
-    protected void processAgencyUpdate(Agency updatedAgency) {
+    void processAgencyUpdate(Agency updatedAgency) {
         if (updatedAgency != null && updatedAgency.getRoutes() != null) {
             // Parse html and fix text formatting inconsistencies.
             AlertHelper.parseHtml(updatedAgency);
@@ -74,13 +71,13 @@ public abstract class AgencyUpdate {
 
             // Log some shit.
             int updatedMessagesCount = 0;
-            for (Map.Entry<Route, List<Alert>> entry : modifications.getUpdatedAlerts().entrySet()) {
-                updatedMessagesCount += entry.getValue().size();
+            for (Route route : modifications.getUpdatedAlertRoutes()) {
+                updatedMessagesCount += modifications.getUpdatedAlerts(route.getRouteId()).size();
             }
 
             int staleMessagesCount = 0;
-            for (Map.Entry<Route, List<Alert>> entry : modifications.getStaleAlerts().entrySet()) {
-                staleMessagesCount += entry.getValue().size();
+            for (Route route : modifications.getStaleAlertRoutes()) {
+                staleMessagesCount += modifications.getStaleAlerts(route.getRouteId()).size();
             }
             int totalMessagesCount = updatedMessagesCount + staleMessagesCount;
 

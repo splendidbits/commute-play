@@ -1,17 +1,18 @@
 package dao;
 
-import io.ebean.EbeanServer;
-import io.ebean.OrderBy;
-import models.devices.Device;
-import models.devices.Subscription;
-import play.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.persistence.PersistenceException;
-import java.util.ArrayList;
-import java.util.List;
+
+import io.ebean.EbeanServer;
+import io.ebean.OrderBy;
+import models.devices.Device;
+import models.devices.Subscription;
+import play.Logger;
 
 /**
  * A DAO class for both device device / subscription data.
@@ -45,11 +46,6 @@ public class DeviceDao extends BaseDao {
 
         } catch (PersistenceException e) {
             Logger.error(String.format("Error saving agency model to database: %s.", e.getMessage()));
-
-            if (e.getMessage() != null && e.getMessage().contains("does not exist") &&
-                    e.getMessage().contains("Query threw SQLException ERROR:")) {
-                createDatabase();
-            }
 
         } catch (Exception e) {
             Logger.error("Error getting routes for agency.", e);
@@ -190,7 +186,7 @@ public class DeviceDao extends BaseDao {
                     mEbeanServer.delete(matchingDevice);
                 }
 
-                mEbeanServer.insert(device);
+                mEbeanServer.save(device);
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getMessage());

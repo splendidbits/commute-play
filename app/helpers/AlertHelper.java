@@ -4,9 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -83,49 +83,6 @@ public class AlertHelper {
         }
     }
 
-    public static Integer createHash(Object... object) {
-        int hasCode = Arrays.deepHashCode(new Object[]{object});
-        return Math.abs(hasCode);
-    }
-
-    /**
-     * Iterate through all alerts in all routes, and add the route parent model to each
-     * alert -> route relation.
-     *
-     * @param agency The specified agency to fill alerts with routes.
-     */
-    public static void populateBackReferences(Agency agency) {
-        if (agency != null && agency.getRoutes() != null) {
-            for (Route route : agency.getRoutes()) {
-                if (route.getAlerts() == null) {
-                    route.setAgency(agency);
-                    populateBackReferences(route);
-                }
-            }
-        }
-    }
-
-    public static void populateBackReferences(Route route) {
-        if (route != null && route.getAlerts() != null) {
-            for (Alert alert : route.getAlerts()) {
-                if (alert.getRoute() == null) {
-                    alert.setRoute(route);
-                    populateBackReferences(alert);
-                }
-            }
-        }
-    }
-
-    public static void populateBackReferences(Alert alert) {
-        if (alert != null && alert.getLocations() != null) {
-            for (Location location : alert.getLocations()) {
-                if (location.getAlert() == null) {
-                    location.setAlert(alert);
-                }
-            }
-        }
-    }
-
     /**
      * Strip a string of HTML but preserve all kinds of line-breaks.
      *
@@ -199,17 +156,17 @@ public class AlertHelper {
      * @param isCancellation  set whether the alert message is an update or cancellation (clear).
      * @return List of platform messages for route.
      */
-    public static List<Message> getAlertMessages(@Nonnull Alert alert, @Nonnull List<Device> devices,
+    public static List<Message> getAlertMessages(@Nonnull Alert alert, @Nonnull Route route, @Nonnull List<Device> devices,
                                                  @Nonnull PlatformAccount platformAccount, boolean isCancellation) {
 
         // Build the message but truncate messages that are too long to avoid MessageTooBig errors.
         List<Message> messages;
         if (!isCancellation) {
-            messages = buildAlertUpdateMessage(alert, devices, platformAccount);
+            messages = buildAlertUpdateMessage(alert, route, devices, platformAccount);
 
         } else {
             // If the alerts list is empty or null, this route is cancelled.
-            messages = buildAlertCancelMessage(alert, devices, platformAccount);
+            messages = buildAlertCancelMessage(alert, route, devices, platformAccount);
         }
 
         for (Message message : messages) {
@@ -274,70 +231,68 @@ public class AlertHelper {
      * @return List of platform messages for route.
      */
     @Nonnull
-    private static List<Message> buildAlertUpdateMessage(@Nonnull Alert alert, @Nonnull List<Device> devices,
+    private static List<Message> buildAlertUpdateMessage(@Nonnull Alert alert, @Nonnull Route route, @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
         List<Message> messages = new ArrayList<>();
 
-        if (alert.getRoute() != null) {
-            Credentials credentials = getMessageCredentials(platformAccount);
+        Credentials credentials = getMessageCredentials(platformAccount);
 
-            if (credentials != null) {
-                Set<String> tokenSet = new HashSet<>();
-                for (Device device : devices) {
-                    tokenSet.add(device.token);
-                }
-
-                MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                        .setCollapseKey(alert.getRoute().getRouteId() + "-" + alert.getType().name())
-                        .setPlatformCredentials(credentials)
-                        .setDeviceTokens(tokenSet)
-                        .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
-                        .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
-                        .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.getRoute().getRouteId())
-                        .addData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, alert.getRoute().getRouteName())
-                        .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.getType().name())
-                        .addData(AlertMessageKey.KEY_ALERT_MESSAGE.value, alert.getMessageBody());
-
-                switch (alert.getType()) {
-                    case TYPE_DETOUR:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                        break;
-
-                    case TYPE_INFORMATION:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                        break;
-
-                    case TYPE_DISRUPTION:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                        break;
-
-                    case TYPE_WEATHER:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                        break;
-
-                    case TYPE_IN_APP:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
-                        break;
-
-                    case TYPE_MAINTENANCE:
-                        messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
-                        messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
-                        break;
-                }
-
-                try {
-                    messages.add(messageBuilder.build());
-                } catch (MessageValidationException e) {
-                    Logger.error("Exception building the alert update message.");
-                }
-            } else {
-                Logger.error("No Credentials model found for update message.");
+        if (credentials != null) {
+            Set<String> tokenSet = new HashSet<>();
+            for (Device device : devices) {
+                tokenSet.add(device.token);
             }
+
+            MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
+                    .setCollapseKey(route.getRouteId() + "-" + alert.getType().name())
+                    .setPlatformCredentials(credentials)
+                    .setDeviceTokens(tokenSet)
+                    .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
+                    .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
+                    .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, route.getRouteId())
+                    .addData(AlertMessageKey.KEY_ALERT_ROUTE_NAME.value, route.getRouteName())
+                    .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.getType().name())
+                    .addData(AlertMessageKey.KEY_ALERT_MESSAGE.value, alert.getMessageBody());
+
+            switch (alert.getType()) {
+                case TYPE_DETOUR:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                    break;
+
+                case TYPE_INFORMATION:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                    break;
+
+                case TYPE_DISRUPTION:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                    break;
+
+                case TYPE_WEATHER:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                    break;
+
+                case TYPE_IN_APP:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_LONG_TTL);
+                    break;
+
+                case TYPE_MAINTENANCE:
+                    messageBuilder.setMessagePriority(MessagePriority.PRIORITY_NORMAL);
+                    messageBuilder.setTimeToLiveSeconds(ALERT_SHORT_TTL);
+                    break;
+            }
+
+            try {
+                messages.add(messageBuilder.build());
+            } catch (MessageValidationException e) {
+                Logger.error("Exception building the alert update message.");
+            }
+        } else {
+            Logger.error("No Credentials model found for update message.");
         }
         return messages;
     }
@@ -352,6 +307,7 @@ public class AlertHelper {
      */
     @NotNull
     private static List<Message> buildAlertCancelMessage(@Nonnull Alert alert,
+                                                         @Nonnull Route route,
                                                          @Nonnull List<Device> devices,
                                                          @Nonnull PlatformAccount platformAccount) {
         List<Message> messages = new ArrayList<>();
@@ -359,11 +315,11 @@ public class AlertHelper {
 
         if (credentials != null) {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                    .setCollapseKey(alert.getRoute().getRouteId() + "-" + alert.getType().name())
+                    .setCollapseKey(route.getRouteId() + "-" + alert.getType().name())
                     .setPlatformCredentials(credentials)
                     .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
                     .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
-                    .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, alert.getRoute().getRouteId())
+                    .addData(AlertMessageKey.KEY_ALERT_ROUTE_ID.value, route.getRouteId())
                     .addData(AlertMessageKey.KEY_ALERT_CATEGORY.value, alert.getType().name());
 
             Set<String> tokenSet = new HashSet<>();
@@ -524,43 +480,35 @@ public class AlertHelper {
     /**
      * Creates a list of new and removed alerts for a given agency bundle.
      *
-     * @param existingAgency the currently saved agency.
-     * @param freshAgency    the agency which is to be updated.
+     * @param savedAgency the currently saved agency.
+     * @param freshAgency the agency which is to be updated.
      * @return A list of removed and added alerts for that agency.
      */
     @Nonnull
-    public static AlertModifications getAgencyModifications(Agency existingAgency, Agency freshAgency) {
-        Map<String, Set<enums.AlertType>> routeIdAlertTypes = new HashMap<>();
-        Set<Alert> ignoredAlerts = new HashSet<>();
+    public static AlertModifications getAgencyModifications(Agency savedAgency, Agency freshAgency) {
+        String agencyId = freshAgency != null
+                ? freshAgency.getId()
+                : savedAgency.getId();
 
-        // Both agencies do not exist. This is bad.
-        if (existingAgency == null && freshAgency == null) {
-            Logger.error("Both agencies for modifications calculation were null!");
-            return null;
-        }
+        AlertModifications alertModifications = new AlertModifications(agencyId);
+        Map<String, Set<enums.AlertType>> routeIdAlertTypes = new HashMap<>();
 
         // Copy the routes.
-        List<Route> existingRoutes = existingAgency != null
-                ? existingAgency.getRoutes()
+        List<Route> savedRoutes = savedAgency != null
+                ? savedAgency.getRoutes()
                 : new ArrayList<>();
 
         List<Route> freshRoutes = freshAgency != null
                 ? freshAgency.getRoutes()
                 : new ArrayList<>();
 
-        String agencyId = freshAgency != null
-                ? freshAgency.getId()
-                : existingAgency.getId();
-
-        AlertModifications alertModifications = new AlertModifications(agencyId);
-
         // Both existing and fresh routes are null.
-        if (freshRoutes == null && existingRoutes == null) {
+        if (freshRoutes == null && savedRoutes == null) {
             return alertModifications;
         }
 
         // Fresh agency routes exist while there are no Existing routes.
-        if ((existingRoutes == null || existingRoutes.isEmpty()) && (freshRoutes != null && !freshRoutes.isEmpty())) {
+        if (!CollectionUtils.isEmpty(freshRoutes) && CollectionUtils.isEmpty(savedRoutes)) {
             Logger.info(String.format("No existing routes for agency %s. Adding all routes as updated.", agencyId));
 
             for (Route freshRoute : freshRoutes) {
@@ -574,10 +522,10 @@ public class AlertHelper {
         }
 
         // Existing agency routes exists and there are no Fresh routes.
-        if ((freshRoutes == null || freshRoutes.isEmpty()) && (existingRoutes != null && !existingRoutes.isEmpty())) {
-            Logger.info(String.format("No new fresh routes for agency %d. Marking all existing as stale.", agencyId));
+        if (CollectionUtils.isEmpty(freshRoutes) && CollectionUtils.isEmpty(freshRoutes)) {
+            Logger.info(String.format("No new fresh routes for agency %s. Marking all existing as stale.", agencyId));
 
-            for (Route existingRoute : existingRoutes) {
+            for (Route existingRoute : savedRoutes) {
                 if (existingRoute.getAlerts() != null) {
                     for (Alert existingAlert : existingRoute.getAlerts()) {
                         alertModifications.addStaleAlert(existingRoute, existingAlert);
@@ -587,62 +535,63 @@ public class AlertHelper {
             return alertModifications;
         }
 
-        // Find updated / new fresh alerts.
-        if (freshRoutes != null) {
-            for (Route freshRoute : freshRoutes) {
 
-                boolean existingRouteExists = false;
-                for (Route existingRoute : existingRoutes) {
+        // Find updated, non-stale alerts.
+        for (Route freshRoute : freshRoutes) {
+            boolean existingRouteExists = false;
 
-                    // If the routes match.
-                    if (freshRoute.getRouteId().equals(existingRoute.getRouteId())) {
-                        String routeId = freshRoute.getRouteId();
-                        existingRouteExists = true;
+            for (Route savedRoute : savedRoutes) {
+                // Add the alert type to the route alert update types list.
+                Set<enums.AlertType> updatedAlertTypes = routeIdAlertTypes.containsKey(freshRoute.getRouteId())
+                        ? routeIdAlertTypes.get(freshRoute.getRouteId())
+                        : new HashSet<>();
 
-                        List<Alert> updatedAlerts = getUpdatedAlerts(existingRoute.getAlerts(), freshRoute.getAlerts(), ignoredAlerts);
-                        for (Alert updatedAlert : updatedAlerts) {
+                // If the routes match.
+                if (freshRoute.getRouteId().equals(savedRoute.getRouteId())) {
+                    existingRouteExists = true;
+                    String routeId = freshRoute.getRouteId();
 
-                            // Add the alert as an update.
+                    List<Alert> updatedAlerts = getUpdatedAlerts(savedRoute.getAlerts(), freshRoute.getAlerts(),
+                            alertModifications.getStaleAlerts(freshRoute.getRouteId()));
+
+                    for (Alert updatedAlert : updatedAlerts) {
+
+                        if (!updatedAlertTypes.contains(updatedAlert.getType())) {
                             alertModifications.addUpdatedAlert(freshRoute, updatedAlert);
-
-                            // Add the alert type to the route alert update types list.
-                            Set<enums.AlertType> updateRoutedAlertTypes = routeIdAlertTypes.containsKey(routeId)
-                                    ? routeIdAlertTypes.get(routeId)
-                                    : new HashSet<>();
-
-                            updateRoutedAlertTypes.add(updatedAlert.getType());
-                            routeIdAlertTypes.put(routeId, updateRoutedAlertTypes);
+                            updatedAlertTypes.add(updatedAlert.getType());
                         }
 
-                        // There was a route match so skip the inner loop.
-                        break;
+                        routeIdAlertTypes.put(routeId, updatedAlertTypes);
                     }
-                }
 
-                // The fresh route does not exist at all. Add all alerts as updated.
-                if (!existingRouteExists) {
-                    if (freshRoute.getAlerts() != null) {
-                        for (Alert freshAlert : freshRoute.getAlerts()) {
-                            alertModifications.addUpdatedAlert(freshRoute, freshAlert);
-                        }
+                    // There was a route match so skip the inner loop.
+                    break;
+                }
+            }
+
+            // The fresh route does not exist at all. Add all alerts as updated.
+            if (!existingRouteExists) {
+                if (freshRoute.getAlerts() != null) {
+                    for (Alert freshAlert : freshRoute.getAlerts()) {
+                        alertModifications.addUpdatedAlert(freshRoute, freshAlert);
                     }
                 }
             }
         }
 
-        // Find stale existing alerts.
-        if (existingRoutes != null) {
-            for (Route existingRoute : existingRoutes) {
-
+        // Find existing alerts which have become stale.
+        if (savedRoutes != null) {
+            for (Route existingRoute : savedRoutes) {
                 boolean freshRouteExists = false;
+
                 for (Route freshRoute : freshRoutes) {
 
-                    // If the routes match.
                     if (freshRoute.getRouteId().equals(existingRoute.getRouteId())) {
                         String routeId = freshRoute.getRouteId();
                         freshRouteExists = true;
 
-                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.getAlerts(), freshRoute.getAlerts(), ignoredAlerts);
+                        List<Alert> staleAlerts = getStaleAlerts(existingRoute.getAlerts(), freshRoute.getAlerts(),
+                                alertModifications.getStaleAlerts(freshRoute.getRouteId()));
                         for (Alert staleAlert : staleAlerts) {
 
                             // Only add the stale alert if the same alert type has not been marked as updated.
@@ -652,7 +601,10 @@ public class AlertHelper {
 
                             if (!updatedAlertTypes.contains(staleAlert.getType())) {
                                 alertModifications.addStaleAlert(existingRoute, staleAlert);
+                                updatedAlertTypes.add(staleAlert.getType());
                             }
+
+                            routeIdAlertTypes.put(routeId, updatedAlertTypes);
                         }
 
                         // There was a route match so skip the inner loop.
@@ -677,45 +629,61 @@ public class AlertHelper {
     /**
      * Get a list of fresh (new) alerts for a route.
      *
-     * @param existingAlerts The previous stored agency route alerts.
-     * @param freshAlerts    The current fresh agency route alerts.
+     * @param savedAlerts The previous stored agency route alerts.
+     * @param freshAlerts The current fresh agency route alerts.
      * @return The list of new route alerts.
      */
     @Nonnull
-    private static List<Alert> getUpdatedAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
+    private static List<Alert> getUpdatedAlerts(List<Alert> savedAlerts, List<Alert> freshAlerts, List<Alert> ignoredAlerts) {
         List<Alert> updatedAlerts = new ArrayList<>();
 
-        if (freshAlerts == null) {
+        // fresh and existing alerts are empty
+        if (CollectionUtils.isEmpty(freshAlerts) && CollectionUtils.isEmpty(savedAlerts)) {
             return new ArrayList<>();
         }
 
-        if (CompareUtils.isEquals(existingAlerts, freshAlerts)) {
-            return updatedAlerts;
+        // saved alerts exist but there are no fresh alerts
+        if (CollectionUtils.isEmpty(freshAlerts) && !CollectionUtils.isEmpty(savedAlerts)) {
+            return new ArrayList<>();
+        }
+
+        // fresh alerts exist but there are no saved alerts
+        if (!CollectionUtils.isEmpty(freshAlerts) && CollectionUtils.isEmpty(savedAlerts)) {
+            return freshAlerts;
         }
 
         // Iterate through and add each updated alert that did not already exist before.
-        for (Alert freshAlert : freshAlerts) {
+        if (freshAlerts != null) {
+            for (Alert freshAlert : freshAlerts) {
 
-            // If everything matches in the alerts, but the locations have been
-            // deleted, do not treat as an update, but rather skip the alert altogether.
-            for (Alert existingAlert : existingAlerts) {
-                Alert existingAlertNoLocations = new Alert();
-                existingAlertNoLocations.setLocations(new ArrayList<>());
-                existingAlertNoLocations.setMessageTitle(existingAlert.getMessageTitle());
-                existingAlertNoLocations.setMessageSubtitle(existingAlert.getMessageSubtitle());
-                existingAlertNoLocations.setMessageBody(existingAlert.getMessageBody());
-                existingAlertNoLocations.setType(existingAlert.getType());
-                existingAlertNoLocations.setExternalUri(existingAlert.getExternalUri());
-                existingAlertNoLocations.setHighPriority(existingAlert.getHighPriority());
-                existingAlertNoLocations.setLastUpdated(existingAlert.getLastUpdated());
+                boolean shouldAddAlert = false;
+                for (Alert savedAlert : savedAlerts) {
 
-                if (freshAlert.equals(existingAlertNoLocations)) {
-                    ignoredAlerts.add(freshAlert);
+                    // If there are locations,
+                    Alert savedAlertNoLocations = new Alert();
+                    savedAlertNoLocations.setLocations(new ArrayList<>());
+                    savedAlertNoLocations.setMessageTitle(savedAlert.getMessageTitle());
+                    savedAlertNoLocations.setMessageSubtitle(savedAlert.getMessageSubtitle());
+                    savedAlertNoLocations.setMessageBody(savedAlert.getMessageBody());
+                    savedAlertNoLocations.setType(savedAlert.getType());
+                    savedAlertNoLocations.setExternalUri(savedAlert.getExternalUri());
+                    savedAlertNoLocations.setHighPriority(savedAlert.getHighPriority());
+                    savedAlertNoLocations.setLastUpdated(savedAlert.getLastUpdated());
+
+                    // Add mismatched Alerts if they don't contain locations.
+                    // (Alerts with locations should never be marked as stale.)
+                    if (!savedAlerts.contains(freshAlert) &&
+                            !ignoredAlerts.contains(freshAlert) &&
+                            !savedAlertNoLocations.equals(freshAlert) &&
+                            !updatedAlerts.contains(freshAlert)) {
+                        shouldAddAlert = true;
+                        break;
+                    }
                 }
-            }
 
-            if (!existingAlerts.contains(freshAlert) && !ignoredAlerts.contains(freshAlert)) {
-                updatedAlerts.add(freshAlert);
+                if (shouldAddAlert) {
+                    updatedAlerts.add(freshAlert);
+                }
             }
         }
 
@@ -725,33 +693,36 @@ public class AlertHelper {
     /**
      * Get a list of stale (cancelled) alerts for a route.
      *
-     * @param existingAlerts The previous stored agency route alerts.
-     * @param freshAlerts    The current fresh agency route alerts.
+     * @param savedAlerts The previous stored agency route alerts.
+     * @param freshAlerts The current fresh agency route alerts.
      * @return The list of stale route alerts.
      */
     @Nonnull
-    private static List<Alert> getStaleAlerts(List<Alert> existingAlerts, List<Alert> freshAlerts, Set<Alert> ignoredAlerts) {
+    private static List<Alert> getStaleAlerts(List<Alert> savedAlerts, List<Alert> freshAlerts, List<Alert> ignoredAlerts) {
         List<Alert> staleAlerts = new ArrayList<>();
 
-        // If there are no fresh alerts, mark all existing as stale.
-        if (freshAlerts == null || freshAlerts.isEmpty()) {
-            return existingAlerts;
+        // fresh and existing alerts are empty
+        if (CollectionUtils.isEmpty(freshAlerts) && CollectionUtils.isEmpty(savedAlerts)) {
+            return new ArrayList<>();
         }
 
-        // Iterate through and add each staleAlert.
-        for (Alert existingAlert : existingAlerts) {
-            Alert existingAlertNoLocations = new Alert();
-            existingAlertNoLocations.setLocations(new ArrayList<>());
-            existingAlertNoLocations.setMessageTitle(existingAlert.getMessageTitle());
-            existingAlertNoLocations.setMessageSubtitle(existingAlert.getMessageSubtitle());
-            existingAlertNoLocations.setMessageBody(existingAlert.getMessageBody());
-            existingAlertNoLocations.setType(existingAlert.getType());
-            existingAlertNoLocations.setExternalUri(existingAlert.getExternalUri());
-            existingAlertNoLocations.setHighPriority(existingAlert.getHighPriority());
-            existingAlertNoLocations.setLastUpdated(existingAlert.getLastUpdated());
+        // saved alerts exist but there are no fresh alerts
+        if (CollectionUtils.isEmpty(freshAlerts) && !CollectionUtils.isEmpty(savedAlerts)) {
+            return savedAlerts;
+        }
 
-            if (!freshAlerts.contains(existingAlert) && !ignoredAlerts.contains(existingAlertNoLocations)) {
-                staleAlerts.add(existingAlert);
+        // fresh alerts exist but there are no saved alerts
+        if (!CollectionUtils.isEmpty(freshAlerts) && CollectionUtils.isEmpty(savedAlerts)) {
+            return new ArrayList<>();
+        }
+
+        for (Alert savedAlert : savedAlerts) {
+
+            // Add mismatched Alerts if they don't contain locations.
+            // (Alerts with locations should never be marked as stale.)
+            if (!freshAlerts.contains(savedAlert) &&
+                    !ignoredAlerts.contains(savedAlert)) {
+                staleAlerts.add(savedAlert);
             }
         }
 

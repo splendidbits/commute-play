@@ -1,13 +1,19 @@
-import enums.pushservices.PlatformType;
-import models.accounts.Account;
-import models.accounts.PlatformAccount;
+package main;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import static org.junit.Assert.*;
+import enums.pushservices.PlatformType;
+import models.accounts.Account;
+import models.accounts.PlatformAccount;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test core functions of the Device Data Access Layer.

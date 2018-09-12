@@ -1,21 +1,33 @@
 package serializers;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+
+import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import agency.SeptaAgencyUpdate;
-import com.google.gson.*;
 import enums.AlertType;
 import enums.RouteFlag;
 import enums.TransitType;
-import helpers.AlertHelper;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Location;
 import models.alerts.Route;
 import play.Logger;
-
-import java.lang.reflect.Type;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 /**
  * Gson SEPTA Alerts Deserializer. Convert the SEPTA www3 alerts feed into
@@ -188,7 +200,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.setMessageTitle(type.title);
                             alert.setMessageSubtitle(detourReason);
                             alert.setMessageBody(detourMessage);
-                            alert.setId(AlertHelper.createHash(alert, routeId));
 
                             // Add the detour startup and end locations if they exist.
                             ArrayList<Location> detourLocations = new ArrayList<>();
@@ -198,7 +209,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                                 startLocation.setDate(getParsedDate(detourStartDate, true));
                                 startLocation.setSequence(0);
                                 startLocation.setMessage(detourReason);
-                                startLocation.setId(AlertHelper.createHash(startLocation, alert.getId()));
 
                                 detourLocations.add(startLocation);
                             }
@@ -209,7 +219,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                                 endLocation.setDate(getParsedDate(detourEndDate, true));
                                 endLocation.setSequence(-1);
                                 endLocation.setMessage(detourReason);
-                                endLocation.setId(AlertHelper.createHash(endLocation, alert.getId()));
 
                                 detourLocations.add(endLocation);
                             }
@@ -230,7 +239,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.setType(typeWeather);
                             alert.setMessageTitle(typeWeather.title);
                             alert.setMessageBody(currentMessage);
-                            alert.setId(AlertHelper.createHash(alert, routeId));
 
                             rowAlerts.add(alert);
                         }
@@ -244,7 +252,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.setType(typeInformation);
                             alert.setMessageTitle(typeInformation.title);
                             alert.setMessageBody(advisoryMessage);
-                            alert.setId(AlertHelper.createHash(alert, routeId));
 
                             rowAlerts.add(alert);
                         }
@@ -258,7 +265,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                             alert.setType(typeCurrent);
                             alert.setMessageTitle(typeCurrent.title);
                             alert.setMessageBody(currentMessage);
-                            alert.setId(AlertHelper.createHash(alert, routeId));
 
                             rowAlerts.add(alert);
                         }
