@@ -229,7 +229,7 @@ public class DeviceDao extends BaseDao {
                             latestSavedDevice.appKey= device.appKey;
                             latestSavedDevice.userKey = device.userKey;
                             latestSavedDevice.timeRegistered = new Date();
-                            mEbeanServer.update(latestSavedDevice);
+                            mEbeanServer.save(latestSavedDevice);
 
                         } else {
                             mEbeanServer.delete(matchingDevices.get(i));
@@ -237,7 +237,7 @@ public class DeviceDao extends BaseDao {
                     }
 
                 } else {
-                    mEbeanServer.update(device);
+                    mEbeanServer.save(device);
                 }
 
             } catch (Exception e) {
