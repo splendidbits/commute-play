@@ -168,7 +168,9 @@ public class DeviceDaoTest extends CommuteTestApplication {
         Device initialDevice = testModelHelper.createTestDevice();
         initialDevice.account = mAccountDao.getAccountForKey(TestModelHelper.ACCOUNT_API_KEY);
 
-        Route initialRoute = new Route("test_route_1");
+        Route initialRoute = new Route();
+        initialRoute.setRouteId("test_route_1");
+
         Subscription initialSubscription = new Subscription();
         initialSubscription.route = initialRoute;
         initialSubscription.device = initialDevice;
@@ -187,9 +189,15 @@ public class DeviceDaoTest extends CommuteTestApplication {
         assertEquals(fetchedDevice.subscriptions.size(), 1);
 
         // Save some more routes.
-        Route updatedRoute1 = new Route("test_route_1");
-        Route updatedRoute2 = new Route("test_route_2");
-        Route updatedRoute3 = new Route("test_route_3");
+        Route updatedRoute1 = new Route();
+        updatedRoute1.setRouteId("test_route_1");
+
+        Route updatedRoute2 = new Route();
+        updatedRoute2.setRouteId("test_route_2");
+
+        Route updatedRoute3 = new Route();
+        updatedRoute3.setRouteId("test_route_3");
+
         Agency updatedAgency = testModelHelper.createTestAgency();
         updatedAgency.setRoutes(Arrays.asList(updatedRoute1, updatedRoute2, updatedRoute3));
         mAgencyDao.saveAgency(updatedAgency);

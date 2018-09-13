@@ -21,7 +21,6 @@ import java.util.TimeZone;
 
 import agency.SeptaAgencyUpdate;
 import enums.AlertType;
-import enums.RouteFlag;
 import enums.TransitType;
 import models.alerts.Agency;
 import models.alerts.Alert;
@@ -127,7 +126,9 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                          * There's should be a list of (possibly empty) alerts for this single array entry in the
                          * json document. Check to see if there's already a Route model stored for this routeId.
                          */
-                        Route route = new Route(routeId, routeName);
+                        Route route = new Route();
+                        route.setRouteId(routeId);
+                        route.setRouteName(routeName);
 
                         if (routesMap.containsKey(route.getRouteId())) {
                             route = routesMap.get(route.getRouteId());
@@ -173,9 +174,6 @@ public class SeptaAlertsDeserializer implements JsonDeserializer<Agency> {
                         if (routeId.contains("generic")) {
                             route.setSticky(true);
                             route.setDefault(true);
-
-                        } else if (routeId.contains("bso") || routeId.contains("mfo")) {
-                            route.setRouteFlag(RouteFlag.TYPE_OWL);
                         }
 
                         /*

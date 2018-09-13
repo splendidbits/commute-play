@@ -1,18 +1,30 @@
 package serializers;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+
+import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import agency.InAppMessageUpdate;
-import com.google.gson.*;
 import enums.AlertType;
 import main.Constants;
 import models.alerts.Agency;
 import models.alerts.Alert;
 import models.alerts.Route;
 import play.Logger;
-
-import java.lang.reflect.Type;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 /**
  * Gson SEPTA Alerts Deserializer. Convert the SEPTA www3 alerts feed into
@@ -72,7 +84,8 @@ public class InAppMessagesDeserializer implements JsonDeserializer<Agency> {
                 }
 
                 if (!alerts.isEmpty()) {
-                    Route route = new Route(InAppMessageUpdate.ROUTE_ID);
+                    Route route = new Route();
+                    route.setRouteId(InAppMessageUpdate.ROUTE_ID);
                     route.setRouteName(InAppMessageUpdate.ROUTE_NAME);
                     route.setAlerts(alerts);
                     route.setSticky(true);

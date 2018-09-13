@@ -1,5 +1,14 @@
 package controllers;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+
 import dao.AccountDao;
 import dao.DeviceDao;
 import enums.pushservices.FailureType;
@@ -20,14 +29,6 @@ import play.mvc.Http;
 import play.mvc.Result;
 import services.PushMessageManager;
 import services.pushservices.TaskQueue;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 
 /**
@@ -134,8 +135,9 @@ public class DeviceController extends Controller {
     @Nonnull
     private CompletionStage<DeviceControllerResult> initiateRegistration(Http.Request request) {
         return CompletableFuture.supplyAsync(() -> {
-
             Map<String, String[]> requestMap = request.body().asFormUrlEncoded();
+            boolean deviceUpdated = false;
+
             if (requestMap == null) {
                 return DeviceControllerResult.MISSING_PARAMS_RESULT;
             }
@@ -174,25 +176,39 @@ public class DeviceController extends Controller {
                 return DeviceControllerResult.BAD_ACCOUNT;
             }
 
-            Device device = new Device(deviceId, registrationId);
-            device.account = account;
-            device.appKey = appKey;
-            device.userKey = userKey;
+            Device device = mDeviceDao.getDevice(deviceId, registrationId);
+            if (device == null) {
+                deviceUpdated = true;
 
-            // Return error if there were no platform accounts for apiKey.
-            if (account.platformAccounts == null || account.platformAccounts.isEmpty()) {
-                return DeviceControllerResult.BAD_ACCOUNT;
-            }
+                device = new Device();
+                device.account = account;
+                device.appKey = appKey;
+                device.userKey = userKey;
+                device.token = registrationId;
+                device.deviceId = deviceId;
 
-            if (!mDeviceDao.saveDevice(device)) {
-                return DeviceControllerResult.UNKNOWN_ERROR;
+            } else {
+                if (!device.deviceId.equals(deviceId)) {
+                    device.deviceId = deviceId;
+                    deviceUpdated = true;
+                }
+                if (!device.token.equals(registrationId)) {
+                    device.token = registrationId;
+                    deviceUpdated = true;
+                }
             }
 
             // Send update using one of each platform.
-            for (PlatformAccount platformAccount : account.platformAccounts) {
-                if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
-                    mPushMessageManager.sendRegistrationConfirmMessage(device, platformAccount);
-                    break;
+            if (deviceUpdated) {
+                if (!mDeviceDao.saveDevice(device)) {
+                    return DeviceControllerResult.UNKNOWN_ERROR;
+                }
+
+                for (PlatformAccount platformAccount : account.platformAccounts) {
+                    if (platformAccount.platformType.equals(PlatformType.SERVICE_GCM)) {
+                        mPushMessageManager.sendRegistrationConfirmMessage(device, platformAccount);
+                        break;
+                    }
                 }
             }
 

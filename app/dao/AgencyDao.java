@@ -1,6 +1,7 @@
 package dao;
 
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,11 +121,12 @@ public class AgencyDao extends BaseDao {
 
             // Loop through the string varargs..
             for (String requestRoute : routeIds) {
-                requestRoute = requestRoute.trim().toLowerCase();
 
                 // ..and find a valid route match.
                 for (Route route : routes) {
-                    if (route.getRouteId() != null && route.getRouteId().equals(requestRoute)) {
+                    if (!StringUtils.isEmpty(route.getRouteId())
+                            && route.getRouteId().trim().toLowerCase().equals(
+                                    requestRoute.trim().toLowerCase())) {
                         returnRouteList.add(route);
                         break;
                     }
@@ -144,7 +146,7 @@ public class AgencyDao extends BaseDao {
     public List<Route> getRoutes(String agencyId) {
         try {
             return mEbeanServer.createQuery(Route.class)
-                    .setOrder(new OrderBy<>("routeId"))
+                    .setOrder(new OrderBy<>("routeId desc"))
                     .fetch("agency", new FetchConfig().query())
                     .fetch("alerts", new FetchConfig().query())
                     .fetch("alerts.locations", new FetchConfig().query())
@@ -166,7 +168,7 @@ public class AgencyDao extends BaseDao {
     public Route getRoute(String agencyId, @Nonnull String routeId) {
         try {
             List<Route> routes = mEbeanServer.find(Route.class)
-                    .setOrder(new OrderBy<>("routeId"))
+                    .setOrder(new OrderBy<>("routeId descc"))
                     .fetch("agency", new FetchConfig().query())
                     .fetch("alerts", new FetchConfig().query())
                     .fetch("alerts.locations", new FetchConfig().query())

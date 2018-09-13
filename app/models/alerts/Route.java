@@ -6,7 +6,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -19,7 +18,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import enums.RouteFlag;
 import enums.TransitType;
 import helpers.CompareUtils;
 import io.ebean.Finder;
@@ -42,8 +40,6 @@ public class Route extends Model implements Comparable<Route> {
 
     @PrivateOwned
     @OneToMany(mappedBy = "route", orphanRemoval = true, fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
-//    @OneToMany(mappedBy = "route", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JoinColumn(name = "route_id", table = "agency_alerts.alerts", referencedColumnName = "id")
     private List<Alert> alerts;
 
     @ManyToOne
@@ -51,10 +47,6 @@ public class Route extends Model implements Comparable<Route> {
 
     @Column(name = "route_name")
     private String routeName;
-
-    @Column(name = "route_flag")
-    @Enumerated(EnumType.STRING)
-    private RouteFlag routeFlag;
 
     @Column(name = "transit_type")
     @Enumerated(EnumType.STRING)
@@ -68,15 +60,6 @@ public class Route extends Model implements Comparable<Route> {
 
     @Column(name = "external_uri", columnDefinition = "TEXT")
     private String externalUri;
-
-    public Route(@Nonnull String routeId) {
-        setRouteId(routeId);
-    }
-
-    public Route(@Nonnull String routeId, String routeName) {
-        setRouteId(routeId);
-        setRouteName(routeName);
-    }
 
     public Agency getAgency() {
         return agency;
@@ -118,14 +101,6 @@ public class Route extends Model implements Comparable<Route> {
 
     public void setRouteName(String routeName) {
         this.routeName = routeName;
-    }
-
-    public RouteFlag getRouteFlag() {
-        return routeFlag;
-    }
-
-    public void setRouteFlag(RouteFlag routeFlag) {
-        this.routeFlag = routeFlag;
     }
 
     public TransitType getTransitType() {
@@ -174,8 +149,6 @@ public class Route extends Model implements Comparable<Route> {
 
             boolean sameRouteName = CompareUtils.isEquals(routeName, other.routeName);
 
-            boolean sameRouteFlag = CompareUtils.isEquals(routeFlag, other.routeFlag);
-
             boolean sameTransitType = CompareUtils.isEquals(transitType, other.transitType);
 
             boolean sameDefaults = CompareUtils.isEquals(isDefault, other.isDefault);
@@ -184,7 +157,7 @@ public class Route extends Model implements Comparable<Route> {
 
             boolean sameAlerts = CompareUtils.isEquals(alerts, other.alerts);
 
-            return sameRouteId && sameRouteName && sameRouteFlag && sameTransitType && sameDefaults && sameUri && sameAlerts;
+            return sameRouteId && sameRouteName && sameTransitType && sameDefaults && sameUri && sameAlerts;
         }
         return obj.equals(this);
     }
@@ -199,10 +172,6 @@ public class Route extends Model implements Comparable<Route> {
 
         hashCode += routeName != null
                 ? routeName.hashCode()
-                : hashCode;
-
-        hashCode += routeFlag != null
-                ? routeFlag.hashCode()
                 : hashCode;
 
         hashCode += transitType != null

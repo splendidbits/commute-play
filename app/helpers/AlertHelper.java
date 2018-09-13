@@ -244,7 +244,7 @@ public class AlertHelper {
             }
 
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                    .setCollapseKey(route.getRouteId() + "-" + alert.getType().name())
+                    .setCollapseKey(alert.getType().name() + "-" + route.getRouteId())
                     .setPlatformCredentials(credentials)
                     .setDeviceTokens(tokenSet)
                     .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_NOTIFY.value)
@@ -315,7 +315,7 @@ public class AlertHelper {
 
         if (credentials != null) {
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
-                    .setCollapseKey(route.getRouteId() + "-" + alert.getType().name())
+                    .setCollapseKey(alert.getType().name() + "-" + route.getRouteId())
                     .setPlatformCredentials(credentials)
                     .addData(MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)
                     .addData(LEGACY_MESSAGE_TYPE_KEY, MessageType.TYPE_MESSAGE_CANCEL.value)

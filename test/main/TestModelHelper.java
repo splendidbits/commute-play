@@ -8,7 +8,6 @@ import java.util.TimeZone;
 import javax.annotation.Nonnull;
 
 import enums.AlertType;
-import enums.RouteFlag;
 import enums.TransitType;
 import enums.pushservices.PlatformType;
 import models.accounts.Account;
@@ -74,10 +73,10 @@ public class TestModelHelper {
 
     @Nonnull
     public Route createTestRoute(String id) {
-        Route route = new Route(id);
+        Route route = new Route();
+        route.setRouteId(id);
         route.setExternalUri("http://example.com");
         route.setSticky(false);
-        route.setRouteFlag(RouteFlag.TYPE_PRIVATE);
         route.setTransitType(TransitType.TYPE_SPECIAL);
         route.setRouteName("Route Name");
 

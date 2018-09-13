@@ -1,5 +1,16 @@
 package controllers;
 
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.inject.Inject;
+
 import dao.AgencyDao;
 import dao.DeviceDao;
 import models.alerts.Route;
@@ -8,14 +19,6 @@ import models.devices.Subscription;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * The public API endpoint controller that handles devices subscribing to agency routes
@@ -84,7 +87,12 @@ public class SubscriptionController extends Controller {
                         ? formEncodedMap.get(ROUTE_LIST_KEY)[0].trim().split(" ")
                         : null;
 
-                if (agencyId != null && deviceId != null && routes != null) {
+                if (!StringUtils.isEmpty(agencyId) && !StringUtils.isEmpty(deviceId) && routes != null) {
+
+                    // Fixes incorrect agencyId set in Android app.
+                    if (agencyId.equals("1")) {
+                        agencyId = "SEPTA";
+                    }
 
                     // Check that the device is already registered.
                     Device device = mDeviceDao.getDevice(deviceId);
