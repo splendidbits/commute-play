@@ -1,15 +1,32 @@
 package models.devices;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.ebean.Finder;
-import io.ebean.Model;
-import models.accounts.Account;
+
+import java.util.Date;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.persistence.*;
-import java.util.Date;
-import java.util.List;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import io.ebean.Finder;
+import io.ebean.Model;
+import models.accounts.Account;
 
 @Entity
 @Table(name = "devices", schema = "device_information")
@@ -36,7 +53,7 @@ public class Device extends Model {
     public String userKey;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
@@ -44,7 +61,7 @@ public class Device extends Model {
     public Account account;
 
     @Nullable
-    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Subscription> subscriptions;
 
     @Basic
