@@ -218,27 +218,14 @@ public class DeviceDao extends BaseDao {
                         .query()
                         .findList();
 
-                if (!CollectionUtils.isEmpty(matchingDevices)) {
-                    for (int i = 0; i < matchingDevices.size(); i++) {
-                        if (i == 0) {
-                            Device latestSavedDevice = matchingDevices.get(i);
-                            latestSavedDevice.account = device.account;
-                            latestSavedDevice.deviceId = device.deviceId;
-                            latestSavedDevice.token = device.token;
-                            latestSavedDevice.subscriptions = device.subscriptions;
-                            latestSavedDevice.appKey= device.appKey;
-                            latestSavedDevice.userKey = device.userKey;
-                            latestSavedDevice.timeRegistered = new Date();
-                            mEbeanServer.save(latestSavedDevice);
-
-                        } else {
-                            mEbeanServer.delete(matchingDevices.get(i));
-                        }
+                for (Device matchingDevice : matchingDevices) {
+                    if (matchingDevice.subscriptions != null) {
+                        mEbeanServer.deleteAll(matchingDevice.subscriptions);
                     }
-
-                } else {
-                    mEbeanServer.save(device);
+                    mEbeanServer.delete(matchingDevice);
                 }
+
+                mEbeanServer.save(device);
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getMessage());
