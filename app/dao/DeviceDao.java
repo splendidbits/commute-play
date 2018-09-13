@@ -3,7 +3,6 @@ package dao;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -218,14 +217,20 @@ public class DeviceDao extends BaseDao {
                         .query()
                         .findList();
 
-                for (Device matchingDevice : matchingDevices) {
-                    if (matchingDevice.subscriptions != null) {
-                        mEbeanServer.deleteAll(matchingDevice.subscriptions);
+                if (!CollectionUtils.isEmpty(matchingDevices)) {
+                    for (Device matchingDevice : matchingDevices) {
+                        mEbeanServer.update(Device.class)
+                                .set("deviceId", device.deviceId)
+                                .set("token", device.token)
+                                .set("appKey", device.appKey)
+                                .set("userKey", device.userKey)
+                                .where()
+                                .eq("id", matchingDevice.id)
+                                .update();
                     }
-                    mEbeanServer.delete(matchingDevice);
+                } else {
+                    mEbeanServer.save(device);
                 }
-
-                mEbeanServer.save(device);
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getMessage());
