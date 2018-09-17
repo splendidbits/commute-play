@@ -52,7 +52,7 @@ public class Device extends Model {
     private String userKey;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.REFRESH)
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
@@ -60,7 +60,7 @@ public class Device extends Model {
     private Account account;
 
     @Nullable
-    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "device", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<Subscription> subscriptions;
 
     @Basic

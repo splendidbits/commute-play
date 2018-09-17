@@ -1,5 +1,6 @@
 package dao;
 
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -203,7 +204,7 @@ public class DeviceDao extends BaseDao {
         if (!StringUtils.isEmpty(device.getDeviceId()) && device.getAccount() != null) {
 
             try {
-                Device matchingDevice = mEbeanServer.find(Device.class)
+                List<Device> matchingDevices = mEbeanServer.find(Device.class)
                         .setOrder(new OrderBy<>("time_registered desc"))
                         .fetch("account")
                         .fetch("subscriptions")
@@ -215,13 +216,27 @@ public class DeviceDao extends BaseDao {
                         .eq("token", device.getToken())
                         .endJunction()
                         .query()
-                        .findOne();
+                        .findList();
 
-                if (matchingDevice != null) {
-                    mEbeanServer.update(device);
-                } else {
-                    mEbeanServer.save(device);
+                Long matchingDeviceId = null;
+                if (!CollectionUtils.isEmpty(matchingDevices)) {
+                    for (int i = 0; i < matchingDevices.size(); i++) {
+                        Device matchingDevice = matchingDevices.get(i);
+
+                        if (i == 0) {
+                            matchingDeviceId = matchingDevice.getId();
+                        }
+
+                        if (!CollectionUtils.isEmpty(matchingDevice.getSubscriptions())) {
+                            mEbeanServer.deleteAllPermanent(matchingDevice.getSubscriptions());
+                        }
+                    }
                 }
+
+                if (matchingDeviceId != null) {
+                    device.setId(matchingDeviceId);
+                }
+                mEbeanServer.save(device);
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.getDeviceId()), e.getMessage());

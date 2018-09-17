@@ -114,9 +114,9 @@ public class SubscriptionController extends Controller {
 
                         // Persist the subscriptions
                         device.setSubscriptions(subscriptions);
-                        mDeviceDao.saveDevice(device);
-
-                        return SubscriptionResult.OK;
+                        if (mDeviceDao.saveDevice(device)) {
+                            return SubscriptionResult.OK;
+                        }
                     }
                 }
             }
