@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Date;
 import java.util.List;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -38,44 +37,100 @@ public class Device extends Model {
     @Column(name = "id")
     @SequenceGenerator(name = "device_id_seq_gen", sequenceName = "device_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "device_id_seq_gen")
-    public Long id;
+    private Long id;
 
     @Column(name = "device_id", columnDefinition = "TEXT")
-	public String deviceId;
+	private String deviceId;
 
     @Column(name = "token", columnDefinition = "TEXT")
-    public String token;
+    private String token;
 
     @Column(name = "app_key")
-    public String appKey;
+    private String appKey;
 
     @Column(name = "user_key")
-    public String userKey;
+    private String userKey;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     @JoinColumn(
             name = "account_id",
             table = "api_accounts.accounts",
             referencedColumnName = "id")
-    public Account account;
+    private Account account;
 
     @Nullable
-    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    public List<Subscription> subscriptions;
+    @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Subscription> subscriptions;
 
     @Basic
     @Column(name = "time_registered", columnDefinition = "timestamp without time zone")
     @Temporal(TemporalType.TIMESTAMP)
-    public Date timeRegistered;
+    private Date timeRegistered;
 
-    @SuppressWarnings("unused")
-    public Device() {
+    public Long getId() {
+        return id;
     }
 
-    public Device(@Nonnull String deviceId, @Nonnull String token) {
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getAppKey() {
+        return appKey;
+    }
+
+    public void setAppKey(String appKey) {
+        this.appKey = appKey;
+    }
+
+    public String getUserKey() {
+        return userKey;
+    }
+
+    public void setUserKey(String userKey) {
+        this.userKey = userKey;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    @Nullable
+    public List<Subscription> getSubscriptions() {
+        return subscriptions;
+    }
+
+    public void setSubscriptions(@Nullable List<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
+    public Date getTimeRegistered() {
+        return timeRegistered;
+    }
+
+    public void setTimeRegistered(Date timeRegistered) {
+        this.timeRegistered = timeRegistered;
     }
 
     @Override

@@ -107,13 +107,13 @@ public class SubscriptionController extends Controller {
                     if (!validRoutes.isEmpty()) {
                         for (Route route : validRoutes) {
                             Subscription subscription = new Subscription();
-                            subscription.device = device;
-                            subscription.route = route;
+                            subscription.setDevice(device);
+                            subscription.setRoute(route);
                             subscriptions.add(subscription);
                         }
 
                         // Persist the subscriptions
-                        device.subscriptions = subscriptions;
+                        device.setSubscriptions(subscriptions);
                         mDeviceDao.saveDevice(device);
 
                         return SubscriptionResult.OK;

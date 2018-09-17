@@ -137,7 +137,7 @@ public class PushMessageManager {
         // Add the message task to the TaskQueue.
         if (message != null) {
             try {
-                Logger.info(String.format("Sending confirmation message for device %s to push-services module", device.deviceId));
+                Logger.info(String.format("Sending confirmation message for device %s to push-services module", device.getDeviceId()));
                 mTaskQueue.queueMessages(Collections.singletonList(message), new MessageTaskQueueListener());
 
             } catch (MessageValidationException e) {

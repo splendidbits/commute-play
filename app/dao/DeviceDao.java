@@ -1,5 +1,7 @@
 package dao;
 
+import org.springframework.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,7 +81,7 @@ public class DeviceDao extends BaseDao {
                     : null;
 
             Logger.info(device != null
-                    ? String.format("Found device with deviceId %s", device.deviceId)
+                    ? String.format("Found device with deviceId %s", device.getDeviceId())
                     : String.format("No device found for deviceId %s", deviceId));
 
             return device;
@@ -115,7 +117,7 @@ public class DeviceDao extends BaseDao {
                     : null;
 
             Logger.info(device != null
-                    ? String.format("Found device with deviceId %s", device.deviceId)
+                    ? String.format("Found device with deviceId %s", device.getDeviceId())
                     : String.format("No device found for deviceId %s", deviceId));
 
             return device;
@@ -198,10 +200,10 @@ public class DeviceDao extends BaseDao {
      * @return success boolean.
      */
     public boolean saveDevice(@Nonnull Device device) {
-        if (device.deviceId != null && device.account != null) {
+        if (!StringUtils.isEmpty(device.getDeviceId()) && device.getAccount() != null) {
 
             try {
-                List<Device> matchingDevices = mEbeanServer.find(Device.class)
+                Device matchingDevice = mEbeanServer.find(Device.class)
                         .setOrder(new OrderBy<>("time_registered desc"))
                         .fetch("account")
                         .fetch("subscriptions")
@@ -209,23 +211,20 @@ public class DeviceDao extends BaseDao {
                         .fetch("subscriptions.route.agency")
                         .where()
                         .disjunction()
-                        .eq("deviceId", device.deviceId)
-                        .eq("token", device.token)
+                        .eq("deviceId", device.getDeviceId())
+                        .eq("token", device.getToken())
                         .endJunction()
                         .query()
-                        .findList();
+                        .findOne();
 
-                for (Device matchingDevice : matchingDevices) {
-                    if (matchingDevice.subscriptions != null) {
-                        mEbeanServer.deleteAllPermanent(matchingDevice.subscriptions);
-                    }
-                    mEbeanServer.deletePermanent(matchingDevice);
+                if (matchingDevice != null) {
+                    mEbeanServer.update(device);
+                } else {
+                    mEbeanServer.save(device);
                 }
 
-                mEbeanServer.save(device);
-
             } catch (Exception e) {
-                Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.deviceId), e.getMessage());
+                Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.getDeviceId()), e.getMessage());
                 return false;
             }
 

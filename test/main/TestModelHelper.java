@@ -119,8 +119,10 @@ public class TestModelHelper {
 
     @Nonnull
     public Device createTestDevice() {
-        Device device = new Device(TEST_DEVICE_ID, TEST_DEVICE_TOKEN);
-        device.timeRegistered = new Date();
+        Device device = new Device();
+        device.setDeviceId(TEST_DEVICE_ID);
+        device.setToken(TEST_DEVICE_TOKEN);
+        device.setTimeRegistered(new Date());
         return device;
     }
 }

@@ -5,6 +5,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -201,9 +202,9 @@ public class AlertHelper {
     public static Message buildDeviceRegisteredMessage(@Nonnull Device device, @Nonnull PlatformAccount platformAccount) {
         Credentials credentials = getMessageCredentials(platformAccount);
 
-        if (device.token != null && credentials != null) {
+        if (!StringUtils.isEmpty(device.getToken()) && credentials != null) {
             Set<String> tokens = new HashSet<>();
-            tokens.add(device.token);
+            tokens.add(device.getToken());
 
             try {
                 return new MessageBuilder.Builder()
@@ -240,7 +241,7 @@ public class AlertHelper {
         if (credentials != null) {
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
-                tokenSet.add(device.token);
+                tokenSet.add(device.getToken());
             }
 
             MessageBuilder.Builder messageBuilder = new MessageBuilder.Builder()
@@ -324,7 +325,7 @@ public class AlertHelper {
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
-                tokenSet.add(device.token);
+                tokenSet.add(device.getToken());
             }
 
             messageBuilder.setDeviceTokens(tokenSet);
@@ -358,7 +359,7 @@ public class AlertHelper {
 
             Set<String> tokenSet = new HashSet<>();
             for (Device device : devices) {
-                tokenSet.add(device.token);
+                tokenSet.add(device.getToken());
             }
 
             messageBuilder.setDeviceTokens(tokenSet);

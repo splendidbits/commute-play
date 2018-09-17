@@ -53,11 +53,11 @@ public class AlertModificationsTest extends CommuteTestApplication {
         Device testDevice = testModelHelper.createTestDevice();
 
         Subscription testSubscription = new Subscription();
-        testSubscription.route = testRoute;
-        testSubscription.device = testDevice;
+        testSubscription.setRoute(testRoute);
+        testSubscription.setDevice(testDevice);
 
-        testDevice.account = testAccount;
-        testDevice.subscriptions = Collections.singletonList(testSubscription);
+        testDevice.setAccount(testAccount);
+        testDevice.setSubscriptions(Collections.singletonList(testSubscription));
         mDeviceDao.saveDevice(testDevice);
     }
 
@@ -66,7 +66,7 @@ public class AlertModificationsTest extends CommuteTestApplication {
         // Delete test Device.
         Device testDevice = mDeviceDao.getDevice(TestModelHelper.TEST_DEVICE_ID);
         if (testDevice != null) {
-            mDeviceDao.removeDevice(testDevice.token);
+            mDeviceDao.removeDevice(testDevice.getDeviceId());
         }
 
         // Delete test Agency.

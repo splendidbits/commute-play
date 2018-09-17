@@ -181,19 +181,19 @@ public class DeviceController extends Controller {
                 deviceUpdated = true;
 
                 device = new Device();
-                device.account = account;
-                device.appKey = appKey;
-                device.userKey = userKey;
-                device.token = registrationId;
-                device.deviceId = deviceId;
+                device.setAccount(account);
+                device.setAppKey(appKey);
+                device.setUserKey(userKey);
+                device.setToken(registrationId);
+                device.setDeviceId(deviceId);
 
             } else {
-                if (!device.deviceId.equals(deviceId)) {
-                    device.deviceId = deviceId;
+                if (!device.getDeviceId().equals(deviceId)) {
+                    device.setDeviceId(deviceId);
                     deviceUpdated = true;
                 }
-                if (!device.token.equals(registrationId)) {
-                    device.token = registrationId;
+                if (!device.getToken().equals(registrationId)) {
+                    device.setToken(registrationId);
                     deviceUpdated = true;
                 }
             }
