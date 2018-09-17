@@ -235,8 +235,10 @@ public class DeviceDao extends BaseDao {
 
                 if (matchingDeviceId != null) {
                     device.setId(matchingDeviceId);
+                    mEbeanServer.update(device);
+                } else {
+                    mEbeanServer.save(device);
                 }
-                mEbeanServer.save(device);
 
             } catch (Exception e) {
                 Logger.error(String.format("Error saving device and subscriptions for deviceId: %s.", device.getDeviceId()), e.getMessage());
